@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<!--
+These codes are licensed under CC0.
+http://creativecommons.org/publicdomain/zero/1.0
+-->
+
+<meta charset="UTF-8">
+<meta name="viewport" content="initial-scale=1.0, user-scalable=no">
+
+<title>プレーヤー　フォーマット</title>
+
+<script>
+
+if (confirm('openノベルプレーヤーで記録されたデータを完全削除できます。\n（プレーヤーのページは必ず閉じておいてください。）')) {
+	if (prompt('「完全削除します」と入力してください。', '') == '完全削除します') {
+		indexedDB.deleteDatabase('open-novel')
+		alert('完全削除しました。')
+	} else alert('削除を中止しました。')
+} else alert('削除を中止しました')
+
+</script>
