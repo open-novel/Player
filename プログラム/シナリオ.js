@@ -24,7 +24,7 @@ export async function play ( scenario, baseURL ) {
 		function textEval ( text ) {
 
 			if ( typeof text != 'string' ) return text
-			$.log( 'E', text )
+			// $.log( 'E', text )
 			function $Get( key ) {
 				if ( ! varMap.has( key ) ) {
 					varMap.set( key, 0 ) 
@@ -74,21 +74,22 @@ export async function play ( scenario, baseURL ) {
 
 					Action.removePortraits( )
 
-					await Promise.all( prop.map( p => {
+					/*await*/ Promise.all( prop.map( p => {
 
 						let [ pos, name ] = p.map( textEval )
 
-						if ( ! pos ) return
+						if ( ! name ) return
+						pos = pos.normalize('NFKC')
+
 
 						if ( pos == '左' ) pos = [ 0, 0, 1 ]
 						else if ( pos == '右' ) pos = [ -0, 0, 1 ]
-						else if ( pos  ) { 
+						else if ( pos ) { 
 							pos = pos.match( /-?\d+(?=%|％)/g )
 							if ( pos.length == 1 ) pos[ 1 ] = 0
 							if ( pos.length == 2 ) pos[ 2 ] = 100
 							pos = pos.map( d => d / 100 )
-							$.log( pos )
-						}
+						} else throw `立ち絵『${ name }』の位置指定が不正です。`
 
 						let url = `${ baseURL }/立ち絵/${ name }.png`
 						return Action.showPortraits( url, pos )
@@ -99,19 +100,30 @@ export async function play ( scenario, baseURL ) {
 				} break
 				case '背景': {
 
-					let [ pos, name ] = prop.map( textEval )
+					Action.removeBGImage( )
 
-					if ( ! name ) {
-						Action.removeBGImage( )
-						continue
-					}
+					/*await*/ Promise.all( prop.map( p => {
 
-					let url = `${ baseURL }/背景/${ name }.jpg`
-					await Action.showBGImage( url )
+						let [ pos, name ] = p.map( textEval )
 
+						if ( ! name ) [ name, pos ] = [ pos, name ]
+						if ( ! name ) return
+						pos = pos.normalize('NFKC')
+
+						if ( pos ) { 
+							pos = pos.match( /-?\d+(?=%|％)/g )
+							if ( pos.length == 1 ) pos[ 1 ] = 0
+							if ( pos.length == 2 ) pos[ 2 ] = 100
+							pos = pos.map( d => d / 100 )
+						} else pos = [ 0, 0, 100 ]
+
+						let url = `${ baseURL }/背景/${ name }.jpg`
+						return Action.showBGImage( url, pos )
+
+					} ) )
 
 				} break
-				case '選択肢': {
+				case '選択': {
 
 					let act = await Action.showChoices( prop.map( c => c.map( textEval ) ) )
 					$.log( type, act )
@@ -169,9 +181,19 @@ export async function play ( scenario, baseURL ) {
 					}
 
 				} break
+				case 'エフェクト': {
+
+					let [ type, value ] = prop[ 0 ].map( textEval )
+
+					value = value.normalize( 'NFKC' )
+					value = ( value.match( /\d+/ ) || [ 0 ] ) [ 0 ]
+
+					await Action.runEffect( type, value )
+
+				} break
 				case 'スクリプト': {
 
-					switch ( prop ) {
+					switch ( textEval( prop ) ) {
 
 						case '終わる': case　'おわる': {
 
@@ -328,19 +350,20 @@ export function parse ( text ) {
 				       case 'パラメータ': type = '変数'
 				break; case '立ち絵': type = '立絵'
 				break; case 'ＢＧＭ': type = 'BGM'
+				break; case '選択肢': type = '選択'
 			}
 
 			switch ( type ) {
 
 				case 'コメント': /* 何もしない */
 				break
-				case '立絵': case '変数': case '入力':
+				case '立絵': case '背景': case '変数': case '入力': case 'エフェクト':
 					subParse( type, children )
 				break
-				case '会話': case '背景':
+				case '会話':
 					subParse( type, children, { separate: true } )
 				break
-				case '選択肢':　case '分岐':
+				case '選択':　case '分岐':
 					subParse( type, children, { subjump: true } )
 				break
 				default :
@@ -475,25 +498,9 @@ export function parse ( text ) {
 					prop = prop.map( parseText )
 				
 				} break
-				case '立絵': {
+				case '立絵': case '背景': case '選択': case 'エフェクト': {
 
-					prop = prop.map( p => {
-						let [ pos, name ] = p.map( parseText )
-						return [ pos.normalize('NFKC'), name ]
-					} )
-
-				} break
-				case '背景': {
-
-					let [ pos, name ] = prop.map( parseText )
-					if ( name == `''` ) [ name, pos ] = [ pos, name ]
-					pos = pos.normalize('NFKC')
-					prop = [ pos, name ]	
-
-				} break
-				case '選択肢': {
-
-					prop = prop.map( c => c.map( parseText ) )
+					prop = prop.map( p => p.map( parseText ) )
 
 				} break
 				case '分岐': {
@@ -515,7 +522,7 @@ export function parse ( text ) {
 
 
 				} break
-				case 'マーク': case 'BGM': {
+				case 'マーク': case 'BGM': case 'スクリプト': {
 
 					prop = parseText( prop )
 

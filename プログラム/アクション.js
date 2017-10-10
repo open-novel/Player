@@ -41,6 +41,27 @@ const frame = new $.Awaiter
 } ) ( )
 
 
+const action = new $.Awaiter
+export function onAction ( type ) {
+	
+	$.log( type )
+	action.fire( type, true )
+}
+
+
+
+const trigger =　new class Trigger{
+	
+	step( ) { return this.stepOr( ) }
+	stepOr( ...awaiters ) {
+		return Promise.race( 
+			[ layer.on( 'click' ), action.on( 'next' ), ...awaiters ] )
+	}
+	stepOrFrameupdate( ) { return this.stepOr( frame.on( 'update' ) ) }
+	stepOrTimeout( ms ) { return this.stepOr( $.timeout( ms ) ) }
+}
+
+
 
 export async function showMessage( name, text, speed ) {
 		
@@ -63,8 +84,7 @@ export async function showMessage( name, text, speed ) {
 
 	loop: while ( true ) {
 
-		let interrupt = await Promise.race( 
-			[ frame.on( 'update' ), layer.on( 'click' ), action.on( 'next' ) ] )
+		let interrupt = await trigger.stepOrFrameupdate( )
 
 		let to = interrupt ? len : speed * time.get( ) / 1000 | 0
 
@@ -73,8 +93,7 @@ export async function showMessage( name, text, speed ) {
 			if ( wait ) {
 				index ++
 				time.pause( )
-				await Promise.race( 
-					[ $.timeout( wait / speed * 1000 ), layer.on( 'click' ), action.on( 'next' ) ] )
+				await trigger.stepOrTimeout( wait / speed * 1000 )
 				time.resume( )
 				continue loop
 			}
@@ -84,7 +103,7 @@ export async function showMessage( name, text, speed ) {
 		if ( to >= len ) break
 	}
 
-	await Promise.race( [ layer.on( 'click' ), action.on( 'next' ) ] )
+	await trigger.step( )
 
 }
 
@@ -120,9 +139,6 @@ function decoText ( text ) {
 
 
 
-
-
-
 async function getImage ( blob ) {
 	let img = new Image
 	let { promise, resolve } = new $.Deferred
@@ -131,6 +147,43 @@ async function getImage ( blob ) {
 	await promise
 	return img
 }
+
+
+
+let effect = new $.Awaiter
+
+export async function runEffect ( type, sec ) {
+
+	$.log( 'EF', type, sec )
+	let ms = sec * 1000
+
+	sw: switch ( type ) {
+
+		case '準備': {
+
+			effect = new $.Awaiter
+			effect.enabled = true
+			return
+
+		} break
+		case 'フェード': {
+
+			let time = new $.Time
+			while ( true ) {
+				let interrupt = await trigger.stepOrFrameupdate( )
+				let prog = interrupt ? 1 : time.get( ) / ms
+				if ( prog > 1 ) prog = 1
+				effect.fire( 'fade', prog )
+				if ( prog == 1 ) break sw
+			}
+
+		}
+	}
+
+	effect.enabled = false
+
+}
+
 
 
 export async function showBGImage ( url ) {
@@ -157,10 +210,29 @@ export async function showPortraits ( url, [ x, y, h ] ) {
 	portrait.img = img
 	layer.portraitGroup.append( portrait )
 
+	if ( effect.enabled ) {
+		portrait.o = 0
+		while ( true ) {
+			let prog = await effect.on( 'fade' )
+			portrait.o = prog
+			if ( prog == 1 ) break
+		}
+	}
+	
+
 }
 
 
 export async function removePortraits ( ) {
+	
+	// if ( effect.enabled ) {
+	// 	while ( true ) {
+	// 		let prog = await effect.on( 'fade' )
+	// 		layer.portraitGroup.o = 1 - prog
+	// 		if ( prog == 1 ) break
+	// 	}
+	// }
+
 	layer.portraitGroup.removeChildren( )
 }
 
@@ -202,13 +274,5 @@ export async function showChoices ( choices ) {
 }
 
 export { playBGM, stopBGM } from './サウンド.js'
-
-
-const action = new $.Awaiter
-export function onAction ( type ) {
-	
-	$.log( type )
-	action.fire( type, true )
-}
 
 

@@ -16,7 +16,7 @@ let setting = { }
 
 async function init ( { ctx } ) {
 
-	opt = await $.fetchFile( 'json', './設定.json' )
+	opt = await $.fetchFile( 'json', './プログラム/設定.json' )
 	opt.ctx = ctx
 	opt.setting = setting
 	//Object.assign( setting, systemSetting )
