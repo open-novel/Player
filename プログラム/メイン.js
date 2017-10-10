@@ -58,6 +58,7 @@ async function main( ) {
 
 
 	canvas.addEventListener( `wheel`, e => {
+		e.preventDefault( )
 		let type = e.deltaY >= 0 ? 'next' : 'back'
 		Player.onKeyEvent( { type } )
 	} )
