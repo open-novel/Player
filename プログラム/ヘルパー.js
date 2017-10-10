@@ -45,9 +45,18 @@ export function AwaitRegister ( fn ) {
 
 }
 
-export async function fetchFile( type, url ) {
-	return await ( await fetch( url ) )[ type ]( )
+
+const　cacheMap = new Map
+
+export async function fetchFile ( type, url ) {
+	let file = cacheMap.get( url ) 
+	if ( file ) return file
+	
+	file = await ( await fetch( url ) )[ type ]( )
+	cacheMap.set( url, file )
+	return file
 }
+
 
 
 export function parseSetting ( text ) {
@@ -69,6 +78,7 @@ export function parseSetting ( text ) {
 	log( setting )
 	return setting
 }
+
 
 
 

@@ -110,6 +110,14 @@ class Node {
 
 export class GroupNode extends Node {
 
+	searchImg ( target ) {
+
+		for ( let node of this.children ) {
+			if ( node.img.src == target.img.src ) return node
+		}
+
+	}
+	
 }
 
 

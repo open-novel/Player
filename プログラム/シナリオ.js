@@ -186,7 +186,7 @@ export async function play ( scenario, baseURL ) {
 					let [ type, value ] = prop[ 0 ].map( textEval )
 
 					value = value.normalize( 'NFKC' )
-					value = ( value.match( /\d+/ ) || [ 0 ] ) [ 0 ]
+					value = + ( value.match( /[\d.]+/ ) || [ 0 ] ) [ 0 ]
 
 					await Action.runEffect( type, value )
 

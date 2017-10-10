@@ -154,11 +154,13 @@ class ProgressTimer　extends $.Awaiter {
 
 	constructor ( ms = 0 ) {
 		super( )
+		this.enabled = !! ms
 		this.ms = ms
 		if ( ms ) this.start( )	
 	}
 
 	async start ( ) {
+		if ( ! this.enabled ) return $.error( '完了したタイマーの再利用がありました' )
 		let time = new $.Time
 		while ( true ) {
 			let interrupt = await trigger.stepOrFrameupdate( )
@@ -167,22 +169,23 @@ class ProgressTimer　extends $.Awaiter {
 			this.fire( 'step', prog )
 			if ( prog == 1 ) break
 		}
+		this.enabled = false
 	}
 }
 
-let effect = new $.Awaiter
+
+let effect = new ProgressTimer( 0 )
 
 export async function runEffect ( type, sec ) {
 
 	$.log( 'EF', type, sec )
 	let ms = sec * 1000
 
-	sw: switch ( type ) {
+	switch ( type ) {
 
 		case '準備': {
 
 			effect = new ProgressTimer
-			effect.enabled = true
 			return
 
 		} break
@@ -193,8 +196,6 @@ export async function runEffect ( type, sec ) {
 
 		}
 	}
-
-	effect.enabled = false
 
 }
 
@@ -220,12 +221,24 @@ export async function showPortraits ( url, [ x, y, h ] ) {
 	let img = await getImage( blob )
 	let w = 9 / 16 * h * img.naturalWidth / img.naturalHeight
 	//$.log( { x, y, w, h, img } )
-	let portrait = new Renderer.ImageNode( { name: 'portrait', x, y, w, h, o: 0 } )
-	portrait.img = img
-	layer.portraitGroup.append( portrait )
+	let portrait = new Renderer.ImageNode( { name: 'portrait', x, y, w, h, o: 0, img } )
 
 	let eff = effect.enabled ? effect : new ProgressTimer( 150 )
 	let type = effect.enabled ? await eff.on( 'type' ) : 'フェード'
+
+	let old = { }
+
+	$.log( 'show', type, old )
+
+	switch ( type ) {
+		case 'フェード': {
+			layer.portraitGroup.append( portrait )
+		} break
+		case 'トランス': {
+			old.port = layer.portraitGroup.searchImg( portrait )
+			old.data = Object.assign( { }, old.port )
+		} break
+	}
 
 	while ( true ) {
 		let prog = await eff.on( 'step' )
@@ -233,7 +246,13 @@ export async function showPortraits ( url, [ x, y, h ] ) {
 
 			case 'フェード': {
 				portrait.o = prog
-			}
+			} break
+			case 'トランス': {
+				[ 'x', 'y', 'w', 'h' ].forEach( p => {
+					old.port[ p ] = old.data[ p ] * ( 1 - prog ) + portrait[ p ] * prog
+				} )
+
+			} break
 
 		}
 		if ( prog == 1 ) break
@@ -250,13 +269,19 @@ export async function removePortraits ( ) {
 	let eff = effect.enabled ? effect : new ProgressTimer( 150 )
 	let type = effect.enabled ? await eff.on( 'type' ) : 'フェード'
 
+	$.log( 'remv', type )
+
 	while ( true ) {
 		let prog = await eff.on( 'step' )
 		switch ( type ) {
 
 			case 'フェード': {
 				for ( let portrait of children ) { portrait.o = 1 - prog }
-			}
+			} break
+			case 'トランス': {
+				//
+
+			} break
 
 		}
 		if ( prog == 1 ) break
