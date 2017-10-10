@@ -94,8 +94,7 @@ export class Awaiter {
 
 	on ( key ) {
 
-		if ( ! this[ key ] ) this[ key ] = { }
-		let { promise, resolve } = this[ key ]
+		let { promise, resolve } = this[ key ] || { }
 		if ( ! promise ) {
 			( { promise, resolve } = new Deferred )
 			this[ key ] = { promise, resolve }

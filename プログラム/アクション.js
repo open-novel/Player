@@ -154,17 +154,16 @@ class ProgressTimer　extends $.Awaiter {
 
 	constructor ( ms = 0 ) {
 		super( )
-		this.enabled = !! ms
-		this.ms = ms
-		if ( ms ) this.start( )	
+		this.enabled = !! ( ms >= 0 )
+		if ( ms > 0 ) this.start( ms )	
 	}
 
-	async start ( ) {
+	async start ( ms ) {
 		if ( ! this.enabled ) return $.error( '完了したタイマーの再利用がありました' )
 		let time = new $.Time
 		while ( true ) {
 			let interrupt = await trigger.stepOrFrameupdate( )
-			let prog = interrupt ? 1 : time.get( ) / this.ms
+			let prog = interrupt ? 1 : time.get( ) / ms
 			if ( prog > 1 ) prog = 1
 			this.fire( 'step', prog )
 			if ( prog == 1 ) break
@@ -174,27 +173,21 @@ class ProgressTimer　extends $.Awaiter {
 }
 
 
-let effect = new ProgressTimer( 0 )
+let effect = new ProgressTimer( -1 )
 
 export async function runEffect ( type, sec ) {
 
 	$.log( 'EF', type, sec )
 	let ms = sec * 1000
 
-	switch ( type ) {
+	if ( type == 'フラッシュ' ) return
 
-		case '準備': {
-
-			effect = new ProgressTimer
-			return
-
-		} break
-		default : {
-
-			effect.fire( 'type', type )
-			await effect.start( ms )
-
-		}
+	if ( type == '準備' ) {
+		effect = new ProgressTimer
+		return
+	} else {
+		effect.fire( 'type', type )
+		await effect.start( ms )
 	}
 
 }
@@ -217,18 +210,17 @@ export async function removeBGImage ( ) {
 
 export async function showPortraits ( url, [ x, y, h ] ) {
 	
+	let eff = effect.enabled ? effect : new ProgressTimer( 150 )
+	let type = effect.enabled ? await eff.on( 'type' ) : 'フェード'
+
+	
 	let blob = await $.fetchFile( 'blob', url )
 	let img = await getImage( blob )
 	let w = 9 / 16 * h * img.naturalWidth / img.naturalHeight
 	//$.log( { x, y, w, h, img } )
 	let portrait = new Renderer.ImageNode( { name: 'portrait', x, y, w, h, o: 0, img } )
 
-	let eff = effect.enabled ? effect : new ProgressTimer( 150 )
-	let type = effect.enabled ? await eff.on( 'type' ) : 'フェード'
-
 	let old = { }
-
-	$.log( 'show', type, old )
 
 	switch ( type ) {
 		case 'フェード': {
@@ -237,6 +229,7 @@ export async function showPortraits ( url, [ x, y, h ] ) {
 		case 'トランス': {
 			old.port = layer.portraitGroup.searchImg( portrait )
 			old.data = Object.assign( { }, old.port )
+				$.log( 'show', type, old )
 		} break
 	}
 
@@ -269,7 +262,7 @@ export async function removePortraits ( ) {
 	let eff = effect.enabled ? effect : new ProgressTimer( 150 )
 	let type = effect.enabled ? await eff.on( 'type' ) : 'フェード'
 
-	$.log( 'remv', type )
+	$.log( 'remv', type, effect )
 
 	while ( true ) {
 		let prog = await eff.on( 'step' )
