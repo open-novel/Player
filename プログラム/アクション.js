@@ -225,15 +225,17 @@ export async function showPortraits ( url, [ x, y, h ] ) {
 
 export async function removePortraits ( ) {
 	
-	// if ( effect.enabled ) {
-	// 	while ( true ) {
-	// 		let prog = await effect.on( 'fade' )
-	// 		layer.portraitGroup.o = 1 - prog
-	// 		if ( prog == 1 ) break
-	// 	}
-	// }
+	let children = layer.portraitGroup.children
 
-	layer.portraitGroup.removeChildren( )
+	if ( effect.enabled ) {
+		while ( true ) {
+			let prog = await effect.on( 'fade' )
+			for ( let portrait of children ) { portrait.o = 1 - prog }
+			if ( prog == 1 ) break
+		}
+	}
+	
+	for ( let portrait of children ) { portrait.remove( ) }
 }
 
 

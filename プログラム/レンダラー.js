@@ -24,14 +24,13 @@ async function init ( opt ) {
 export let { target: initRanderer, register: nextInit } = new $.AwaitRegister( init )
 
 
-const registrants = new Map
 
 class Node {
 
 	constructor ( opt ) {
 
 		const def = { name: 'undefined', x: 0, y: 0, w: 1, h: 1, o: 1,
-			fill: '', stroke: '', shadow: true, region: '', children: [ ],
+			fill: '', stroke: '', shadow: true, region: '', children: new Set,
 			awaiter: new $.Awaiter }
 
 		Object.assign( this, def, opt )
@@ -61,7 +60,7 @@ class Node {
 	append ( node ) {
 
 		node.parent = this
-		this.children.push( node )
+		this.children.add( node )
 
 		let that = this
 		do {
@@ -74,15 +73,18 @@ class Node {
 
 	removeChildren ( ) {
 		
-		for ( let node of this.children ) {
-			let that = this
-			do {
-				that[ node.name ] = undefined
-				that = that.parent
-			} while ( that ) 
-		}
+		for ( let node of this.children ) { node.remove( ) }
 
-		this.children.length = [ ]
+	}
+
+	remove ( ) {
+
+		let that = this.parent
+		while ( that ) {
+			that[ this.name ] = undefined
+			that.children.delete( this )
+			that = that.parent
+		}
 
 	}
 
