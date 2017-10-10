@@ -89,6 +89,7 @@ class Node {
 	}
 
 	fire ( eType ) {
+	
 		let type = { up: 'click', move: 'focus' }[ eType ] || 'undefined'
 
 		this.awaiter.fire( type, true )
@@ -105,11 +106,6 @@ class Node {
 
 	hide ( ) { this.o = 0 }
 
-}
-
-
-export class GroupNode extends Node {
-
 	searchImg ( target ) {
 
 		for ( let node of this.children ) {
@@ -117,6 +113,11 @@ export class GroupNode extends Node {
 		}
 
 	}
+
+}
+
+
+export class GroupNode extends Node {
 	
 }
 

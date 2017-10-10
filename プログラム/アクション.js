@@ -138,12 +138,18 @@ function decoText ( text ) {
 }
 
 
+const　cacheMap = new WeakMap
 
 async function getImage ( blob ) {
 	let img = new Image
 	let { promise, resolve } = new $.Deferred
 	img.onload = resolve
-	img.src = URL.createObjectURL( blob )
+	let url = cacheMap.get( blob )
+	if ( ! url ) {
+		url = URL.createObjectURL( blob )
+		cacheMap.set( blob, url )
+	}
+	img.src = url
 	await promise
 	return img
 }
@@ -229,7 +235,7 @@ export async function showPortraits ( url, [ x, y, h ] ) {
 		case 'トランス': {
 			old.port = layer.portraitGroup.searchImg( portrait )
 			old.data = Object.assign( { }, old.port )
-				$.log( 'show', type, old )
+				//$.log( 'show', type, old )
 		} break
 	}
 
@@ -262,7 +268,7 @@ export async function removePortraits ( ) {
 	let eff = effect.enabled ? effect : new ProgressTimer( 150 )
 	let type = effect.enabled ? await eff.on( 'type' ) : 'フェード'
 
-	$.log( 'remv', type, effect )
+	//$.log( 'remv', type, effect )
 
 	while ( true ) {
 		let prog = await eff.on( 'step' )
