@@ -150,6 +150,26 @@ async function getImage ( blob ) {
 
 
 
+class ProgressTimer　extends $.Awaiter {
+
+	constructor ( ms = 0 ) {
+		super( )
+		this.ms = ms
+		if ( ms ) this.start( )	
+	}
+
+	async start ( ) {
+		let time = new $.Time
+		while ( true ) {
+			let interrupt = await trigger.stepOrFrameupdate( )
+			let prog = interrupt ? 1 : time.get( ) / this.ms
+			if ( prog > 1 ) prog = 1
+			this.fire( 'step', prog )
+			if ( prog == 1 ) break
+		}
+	}
+}
+
 let effect = new $.Awaiter
 
 export async function runEffect ( type, sec ) {
@@ -161,21 +181,15 @@ export async function runEffect ( type, sec ) {
 
 		case '準備': {
 
-			effect = new $.Awaiter
+			effect = new ProgressTimer
 			effect.enabled = true
 			return
 
 		} break
-		case 'フェード': {
+		default : {
 
-			let time = new $.Time
-			while ( true ) {
-				let interrupt = await trigger.stepOrFrameupdate( )
-				let prog = interrupt ? 1 : time.get( ) / ms
-				if ( prog > 1 ) prog = 1
-				effect.fire( 'fade', prog )
-				if ( prog == 1 ) break sw
-			}
+			effect.fire( 'type', type )
+			await effect.start( ms )
 
 		}
 	}
@@ -206,17 +220,23 @@ export async function showPortraits ( url, [ x, y, h ] ) {
 	let img = await getImage( blob )
 	let w = 9 / 16 * h * img.naturalWidth / img.naturalHeight
 	//$.log( { x, y, w, h, img } )
-	let portrait = new Renderer.ImageNode( { name: 'portrait', x, y, w, h } )
+	let portrait = new Renderer.ImageNode( { name: 'portrait', x, y, w, h, o: 0 } )
 	portrait.img = img
 	layer.portraitGroup.append( portrait )
 
-	if ( effect.enabled ) {
-		portrait.o = 0
-		while ( true ) {
-			let prog = await effect.on( 'fade' )
-			portrait.o = prog
-			if ( prog == 1 ) break
+	let eff = effect.enabled ? effect : new ProgressTimer( 150 )
+	let type = effect.enabled ? await eff.on( 'type' ) : 'フェード'
+
+	while ( true ) {
+		let prog = await eff.on( 'step' )
+		switch ( type ) {
+
+			case 'フェード': {
+				portrait.o = prog
+			}
+
 		}
+		if ( prog == 1 ) break
 	}
 	
 
@@ -225,15 +245,23 @@ export async function showPortraits ( url, [ x, y, h ] ) {
 
 export async function removePortraits ( ) {
 	
-	let children = layer.portraitGroup.children
+	let children = [ ... layer.portraitGroup.children ]
 
-	if ( effect.enabled ) {
-		while ( true ) {
-			let prog = await effect.on( 'fade' )
-			for ( let portrait of children ) { portrait.o = 1 - prog }
-			if ( prog == 1 ) break
+	let eff = effect.enabled ? effect : new ProgressTimer( 150 )
+	let type = effect.enabled ? await eff.on( 'type' ) : 'フェード'
+
+	while ( true ) {
+		let prog = await eff.on( 'step' )
+		switch ( type ) {
+
+			case 'フェード': {
+				for ( let portrait of children ) { portrait.o = 1 - prog }
+			}
+
 		}
+		if ( prog == 1 ) break
 	}
+
 	
 	for ( let portrait of children ) { portrait.remove( ) }
 }
