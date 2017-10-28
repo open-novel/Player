@@ -4,25 +4,21 @@ http://creativecommons.org/publicdomain/zero/1.0
 */
 
 import * as $ from './ヘルパー.js'
-import * as Scenario from './シナリオ.js'
 import * as Action from './アクション.js'
-import * as Renderer from './レンダラー.js'
-import * as Sound from './サウンド.js'
+import * as DB from './データベース.js'
 
-let opt = { }
-
-let setting = { }
+let settings = null
 
 
 async function init ( { ctx } ) {
 
-	opt = await $.fetchFile( 'json', './プログラム/設定.json' )
-	opt.ctx = ctx
-	opt.setting = setting
+	settings = await $.fetchFile( 'json', './プログラム/設定.json' )
+	settings.ctx = ctx
 	//Object.assign( setting, systemSetting )
-	$.log( opt )
+	$.log( settings )
 
-	await Action.initAction( opt )
+	await DB.init( )
+	await Action.initAction( settings )
 
 	await play( )
 
@@ -37,7 +33,7 @@ async function play ( ) {
 	while ( true ) {
 
 		let res = await playSystemOpening( ).catch( e => $.error( e ) || 'error' )
-		await Action.initAction( opt )
+		await Action.initAction( settings )
 
 		if ( res == 'error' ) await Action.showMessage( '', '問題が発生しました', 50 )
 		else await  Action.showMessage( '', '再生が終了しました', 50 )
@@ -59,17 +55,7 @@ async function playSystemOpening ( ) {
 
 	let title = await Action.showChoices( titleList.map( title => [ title, title ] ) )
 
-
-	let scenarioSetting =  $.parseSetting(
-		await $.fetchFile( 'text', `../作品/${ title }/設定.txt` )
-	)
-	
-	let text = await $.fetchFile( 'text', `../作品/${ title }/シナリオ/${ scenarioSetting[ '開始シナリオ' ] }.txt` )
-
-	let scenario = await Scenario.parse( text, `../作品/${ title }` )
-
-	await Action.initAction( opt )
-	await Scenario.play( scenario, `../作品/${ title }` )
+	await Action.play( Object.assign( settings, { title } ) )
 
 } 
 
@@ -77,9 +63,9 @@ async function playSystemOpening ( ) {
 export let { target: initPlayer, register: nextInit } = new $.AwaitRegister( init )
 
 
-export function onPointerEvent ( { type, x, y } ) {
+export function onPointerEvent ( { type, button, x, y } ) {
 
-	Renderer.onPoint( { type, x, y } )
+	Action.onPoint( { type, button, x, y } )
 }
 
 export function onKeyEvent ( { type } ) {

@@ -52,9 +52,14 @@ async function main( ) {
 
 	for ( let type of captureEventTypes ) {
 		canvas.addEventListener( `pointer${ type }`, e => {
-			Player.onPointerEvent( { type, x: e.layerX, y: e.layerY } )
-		} )
+			e.preventDefault( ), e.stopPropagation( )
+			if ( e.button > 3 ) return
+			let button = [ 'left' ,'middle', 'right' ] [ e.button ]
+			Player.onPointerEvent( { type, button, x: e.layerX, y: e.layerY } )
+		}, true )
 	}
+
+	window.addEventListener( 'contextmenu', e => e.preventDefault( ) )
 
 
 	canvas.addEventListener( `wheel`, e => {

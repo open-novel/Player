@@ -7,13 +7,26 @@ import * as $ from './ヘルパー.js'
 import * as Action from './アクション.js'
 
 
-export async function play ( scenario, baseURL ) {
+let state = null, isStop = true
 
-	let isStop = false
-	let varMap = new Map
+export function getState ( ) {
+	return state
+}
+
+export function setState ( _state ) {
+	state = _state
+	isStop = 'newState'
+}
+
+
+export async function play ( { scenario, act = scenario[ 0 ], baseURL, varMap = new Map } ) {
+
+	isStop = false
 	$.log( varMap )
 
-	return await playAct( scenario[ 0 ], scenario )
+	state = { scenario, baseURL, varMap }
+
+	return await playAct( act, scenario )
 
 
 
@@ -55,7 +68,10 @@ export async function play ( scenario, baseURL ) {
 
 		do {
 
+			if ( isStop == 'newState' ) return play( state )
 			if ( isStop ) return
+
+			state.act = act
 
 			let { type, prop } = act
 
@@ -212,7 +228,9 @@ export async function play ( scenario, baseURL ) {
 				} break
 				case 'マーク': {
 
-					// 何もしない
+					let mark = textEval( prop )
+					$.log( 'マーク', mark )
+					state.mark = mark
 
 				} break
 				default : {

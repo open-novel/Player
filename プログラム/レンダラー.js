@@ -88,10 +88,9 @@ class Node {
 
 	}
 
-	fire ( eType ) {
-	
-		let type = { up: 'click', move: 'focus' }[ eType ] || 'undefined'
+	fire ( type ) {
 
+		//$.log( 'fire', type )
 		this.awaiter.fire( type, true )
 
 	}
@@ -238,25 +237,72 @@ export class ImageNode extends Node {
 
 function initLayer ( ) {
 
-	layerRoot = new GroupNode( { name: 'root', region: 'opaque' } )
 
-	let bgImage = new ImageNode( { name: 'backgroundImage', fill: 'rgba( 0, 0, 0, 1 )' } )
-	layerRoot.append( bgImage )
+	layerRoot　= function generateNode ( obj, parent ) {
 
-	let portGroup = new GroupNode( { name: 'portraitGroup' } ) 
-	layerRoot.append( portGroup )
+		let type = obj.type, children = obj.children
+		delete obj.type, delete obj.children
 
-	let convBox = new RectangleNode( { name: 'conversationBox', y: .75, h: .25, shadow: false, fill: 'rgba( 0, 0, 100, .5 )' } ) 
-	layerRoot.append( convBox )
+		if ( ! type ) return $.warn( 'タイプが不明です。' )
 
-	let nameArea = new DecoTextNode( { name: 'nameArea', x: .05, w: .1, y: .2, size: .175, fill: 'rgba( 255, 255, 200, .9 )' } )
-	convBox.append( nameArea )
+		let node = new {
+			Group: GroupNode,
+			Image: ImageNode,
+			Rectangle: RectangleNode,
+			DecoText: DecoTextNode,
+		} [ type ] ( obj )
 
-	let mesArea = new DecoTextNode( { name: 'messageArea', x: .2, w: .75, y: .2, size: .175, fill: 'rgba( 255, 255, 200, .9 )' } )
-	convBox.append( mesArea )
+		if ( parent ) parent.append( node )
 
-	let inputBox = new RectangleNode( { name: 'inputBox', o: 0, x: .05, y: .05, w: .9, h: .65, fill: 'rgba( 200, 200, 255, .25 )' } ) 
-	layerRoot.append( inputBox )
+		if ( children ) {
+			for ( let child of children ) {
+				generateNode( child, node )
+			}
+		}
+
+		return node
+
+	} ( {
+		type: 'Group', name: 'root',
+		region: 'opaque',
+		children: [
+			{ 
+				type: 'Image', name: 'backgroundImage',
+				fill: 'rgba( 0, 0, 0, 1 )'
+			},
+			{
+				type: 'Group', name: 'portraitGroup'
+			},
+			{
+				type: 'Rectangle',  name: 'conversationBox',
+				y: .75, h: .25, shadow: false, fill: 'rgba( 0, 0, 100, .5 )',
+				children: [
+					{
+						type: 'DecoText', name: 'nameArea',
+						x: .05, w: .1, y: .2, size: .175, fill: 'rgba( 255, 255, 200, .9 )'
+					},
+					{
+						type: 'DecoText', name: 'messageArea',
+						x: .2, w: .75, y: .2, size: .175, fill: 'rgba( 255, 255, 200, .9 )'
+					},
+				]
+			},
+			{
+				type: 'Rectangle', name: 'inputBox',
+				o: 0, x: .05, y: .05, w: .9, h: .65, fill: 'rgba( 200, 200, 255, .25 )'
+			},
+			{
+				type: 'Rectangle', name: 'menuBox',
+				region: 'opaque', o: 0, fill: 'rgba( 255, 255, 255, .9 )',
+				children: [
+					{
+						type: 'Rectangle', name: 'menuSubBox',
+
+					}
+				]
+			},
+		]
+	} )
 
 	$.log( layerRoot )
 
@@ -266,7 +312,7 @@ function initLayer ( ) {
 
 export function drawCanvas ( ) {
 
-	if ( !ctx ) return
+	if ( ! ctx ) return
 
 	let rect = ctx.canvas.getBoundingClientRect( )
 	ctx.canvas.width = W = rect.width
@@ -274,20 +320,23 @@ export function drawCanvas ( ) {
 
 	ctx.clearRect( 0, 0, W, H )
 
-	draw( layerRoot, { x: 0, y: 0, w: W, h: H } )
+	draw( layerRoot, { x: 0, y: 0, w: W, h: H, o: 1 } )
 
 	function draw ( node, base ) {
+
+		if ( node.o == 0 ) return
 		
 		let prop = {
 			x: base.x + node.x * base.w,
 			y: base.y + node.y * base.h,
 			w: base.w * node.w,
 			h: base.h * node.h,
+			o: base.o * node.o,
 		}
 
-		// $.log( node.name, prop )
+		//$.log( node.name, prop )
 
-		ctx.globalAlpha = node.o
+		ctx.globalAlpha = prop.o
 
 		node.draw( prop )
 		for ( let childnode of node.children ) { draw( childnode, prop ) }
@@ -296,11 +345,13 @@ export function drawCanvas ( ) {
 }
 
 
-
+let pointers = { }, timers = new WeakMap
 export function onPoint ( { type, x, y } ) {
 
 	if ( ! ctx ) return
 	
+	//$.log( 'event', type, x, y )
+
 	let list = drawHRCanvas( )
 
 	let d = HRCtx.getImageData( 0, 0, W, H ).data
@@ -308,14 +359,53 @@ export function onPoint ( { type, x, y } ) {
 	let id = d[ i ] * 256**2 + d[ i + 1 ] * 256 + d[ i + 2 ]
 
 	let node = list[ id ]
+	if ( ! node ) return
 
 	//$.log( type, id, node )
+	let newPointer = new Set
+	let pointer = pointers[ type == 'move' ? 'move' : 'click' ] || new Set
 
-	while ( node ) {
-		if ( node.region ) node.fire( type )
+	W: do {
+
+		if ( ! node.region ) continue
+
+		newPointer.add( node )
+
+		switch ( type ) {
+			case 'move': {
+				if( ! pointer.delete( node ) ) node.fire( 'over' )
+			} break
+			case 'down': {
+				node.fire( 'down' )
+				timers.set( node, new $.Time )
+			} break
+			case 'up': {
+				node.fire( 'up' )
+				if( pointer.delete( node ) ) {
+					let time = timers.get( node ).get( )
+					if ( time < 500 ) node.fire( 'click' )
+					else { layerRoot.fire( 'menu' ); break W }
+				}
+			} break
+			default : {
+				$.error( '期待されていない値' )
+			}
+		}
+		
 		if ( node.region == 'opaque' ) break
-		node = node.parent
-	}
+		
+	} while ( node = node.parent )
+
+	switch ( type ) {
+		case 'move': {
+			for ( let p of pointer ) p.fire( 'out' )
+		} break
+		case 'up': {
+			for ( let p of pointer ) p.fire( 'up' )
+		} break
+	}		
+
+	pointers[ type == 'move' ? 'move' : 'click' ]　= newPointer
 
 }
 

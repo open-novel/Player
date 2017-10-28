@@ -4,29 +4,47 @@ http://creativecommons.org/publicdomain/zero/1.0
 */
 
 import * as $ from './ヘルパー.js'
+import * as Scenario from './シナリオ.js'
 import * as Renderer from './レンダラー.js'
 import * as Sound from './サウンド.js'
+import * as DB from './データベース.js'
 
 
-let layer, setting
+
+let layer, settings
 
 
-export async function init ( opt ) {
+export async function init ( _settings ) {
+
+	settings = _settings
+	layer = await Renderer.initRanderer( settings )
+	layer.on( 'menu' ).then( showMenu )
+	await Sound.initSound( settings )
+
+}
+
+
+export async function play ( settings ) {
+
+	let { title } = settings
+
+	let scenarioSetting =  $.parseSetting(
+		await $.fetchFile( 'text', `../作品/${ title }/設定.txt` )
+	)
 	
-	setting = opt.setting
+	let text = await $.fetchFile( 'text', `../作品/${ title }/シナリオ/${ scenarioSetting[ '開始シナリオ' ] }.txt` )
 
-	await Renderer.initRanderer( opt )
-	await Sound.initSound( opt )
+	let scenario = await Scenario.parse( text, `../作品/${ title }` )
+
+	await init( settings )
+	let state = { scenario, baseURL: `../作品/${ title }` } 
+	await Scenario.play( state )
 
 }
 
 
 export let { target: initAction, register: nextInit } = new $.AwaitRegister( init )
 
-
-;( async function updatingLayerCache ( ) {
-	while ( true ) layer = await Renderer.nextInit( )
-} )( )
 
 
 
@@ -49,21 +67,75 @@ export function onAction ( type ) {
 }
 
 
+export async function onPoint ( { type, button, x, y } ) {
 
-const trigger =　new class Trigger{
+	if ( button == 'middle' ) return
+	if ( button == 'right' ) {
+		if ( type == 'up' ) layer.fire( 'menu' )
+		return
+	}
+	Renderer.onPoint( { type, x, y } )
+}
+
+
+const trigger =　new class Trigger {
 	
-	step( ) { return this.stepOr( ) }
-	stepOr( ...awaiters ) {
+	step ( ) { return this.stepOr( ) }
+	stepOr ( ...awaiters ) {
 		return Promise.race( 
 			[ layer.on( 'click' ), action.on( 'next' ), ...awaiters ] )
 	}
-	stepOrFrameupdate( ) { return this.stepOr( frame.on( 'update' ) ) }
-	stepOrTimeout( ms ) { return this.stepOr( $.timeout( ms ) ) }
+	stepOrFrameupdate ( ) { return this.stepOr( frame.on( 'update' ) ) }
+	stepOrTimeout ( ms ) { return this.stepOr( $.timeout( ms ) ) }
 }
 
 
 
-export async function showMessage( name, text, speed ) {
+async function showMenu ( ) {
+	
+	let { menuBox, menuSubBox: subBox } = layer
+	menuBox.show( )
+
+	layer.on( 'menu' ).then( closeMenu )
+
+	let choices = [ 'セーブ', 'ロード', 'ダミー' ]
+	switch ( await showChoices( choices, subBox ) ) {
+
+		case 'セーブ': {
+			let index = await showSaveData( )
+			await DB.saveState( settings.title, index, Scenario.getState( ) )
+
+		} break
+		case 'ロード': {
+			let index = await showSaveData( )
+			Scenario.setState( await DB.loadState( settings.title, index ) )
+		} break
+		default: $.error( 'UnEx' )
+	}
+
+	async function showSaveData ( ) {
+
+		let choices = [ ...Array( 12 ).keys( ) ].map( i => {
+			return [ 'No.' + i, i ]
+		} )
+		return await showChoices( choices, subBox )
+
+	}
+
+
+
+}
+
+
+async function closeMenu ( ) {
+	
+	layer.menuBox.hide( )
+
+	layer.on( 'menu' ).then( showMenu )
+}
+
+
+export async function showMessage ( name, text, speed ) {
 		
 
 	layer.nameArea.clear( ), layer.messageArea.clear( )
@@ -291,11 +363,10 @@ export async function removePortraits ( ) {
 }
 
 
-export async function showChoices ( choices ) {
+export async function showChoices ( choices, inputBox = layer.inputBox ) {
 	
 	let m = .05
 
-	let inputBox = layer.inputBox
 	let nextClicks = [ ]
 
 	let len = choices.length
@@ -304,7 +375,7 @@ export async function showChoices ( choices ) {
 	let h = ( ( 1 - m ) - m * 3 ) / 3
 
 	for ( let i = 0; i < len; i++ ) {
-		let [ key, val ] = choices[ i ]
+		let [ key, val ] = Array.isArray( choices[ i ] ) ? choices[ i ] : [ choices[ i ], choices[ i ] ]
 		let row = i % 3, col = i / 3 | 0
 		let [ x, y ] = [ m + ( w + m ) * col, m + ( h + m ) * row ]
 
