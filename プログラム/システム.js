@@ -24,7 +24,7 @@ async function play ( ctx ) {
 	await DB.init( )
 	await Action.initAction( settings )
 
-	await Action.sysMessage( 'openノベルプレイヤー v1.0α' )
+	await Action.sysMessage( 'openノベルプレイヤー v1.0α 17/10/31' )
 
 	while ( true ) {
 

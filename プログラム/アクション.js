@@ -101,16 +101,15 @@ class Trigger {
 
 async function showMenu ( layer ) {
 
+	let title = settings.title
+	if ( ! title ) return closeMenu( )
 
 	let { menuBox, menuSubBox: subBox } = layer
-	let title = settings.title
 	menuBox.show( )
 
 	layer.on( 'menu' ).then( ( ) => closeMenu( layer ) )
 
 	let choices = [ 'セーブ', 'ロード', '終了する' ].map( label => ( { label } ) )
-
-	if ( ! title ) $.disableChoiceList( [ 'セーブ', 'ロード', '終了する' ], choices )
 
 	switch ( await showChoices( layer, choices, subBox, 4 ) ) {
 
