@@ -57,7 +57,7 @@ export function disableChoiceList ( disables, choiceList ) {
 }
 
 
-export async function getSaveChoices ( title, num, isLoad = false ) {
+export async function getSaveChoices ( title, num, { isLoad = false } = { } ) {
 
 	let stateList = await DB.getStateList( title )
 	let choices = [ ...Array( num ).keys( ) ].map( i => {

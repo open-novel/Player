@@ -123,7 +123,7 @@ async function showMenu ( layer ) {
 		} break
 		case 'ロード': {
 		
-			let choices = await $.getSaveChoices( title, 20, true )
+			let choices = await $.getSaveChoices( title, 20, { isLoad: true } )
 			let index = await showChoices( layer, choices, subBox, 5 )
 			let state = await DB.loadState( title, index, 4 )
 			stateList.push( state )
