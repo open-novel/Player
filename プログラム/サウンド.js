@@ -4,6 +4,7 @@ http://creativecommons.org/publicdomain/zero/1.0
 */
 
 import * as $ from './ヘルパー.js'
+import * as DB from './データベース.js'
 
 
 let ctx, out, bgm
@@ -28,7 +29,7 @@ export let { target: initSound, register: nextInit } = new $.AwaitRegister( init
 
 export async function playBGM ( path ) {
 	
-	bgm.src = path
+	bgm.src = URL.createObjectURL( await DB.getFile( path ) )
 	await bgm.play( )
 
 }

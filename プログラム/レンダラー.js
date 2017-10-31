@@ -11,8 +11,10 @@ let [ W, H ] = [ 1, 1 ]
 
 let layerRoot = null
 
-let HRCanvas = new OffscreenCanvas( W, H, { alpha: false } )
-let HRCtx = HRCanvas.getContext( '2d' )
+let HRCanvas = //new OffscreenCanvas( W, H, { alpha: false } )
+	document.createElement( 'canvas' )
+
+let HRCtx = HRCanvas.getContext( '2d', { alpha: false } )
 
 async function init ( opt ) { 
 

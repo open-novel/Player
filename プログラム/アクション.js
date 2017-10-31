@@ -443,9 +443,6 @@ export async function showChoices ( layer, choices, inputBox = layer.inputBox, r
 }
 
 
-export function getDBFile ( path ) {
-	return DB.getFile( path )
-}
 
 export { playBGM, stopBGM } from './サウンド.js'
 

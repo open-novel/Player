@@ -5,6 +5,7 @@ http://creativecommons.org/publicdomain/zero/1.0
 
 import * as $ from './ヘルパー.js'
 import * as Action from './アクション.js'
+import * as DB from './データベース.js'
 
 
 let stateMap = new WeakMap
@@ -58,7 +59,7 @@ export async function play ( layer, state ) {
 
 			if ( typeof scenario_act_title != 'object' ) {
 				let title = scenario_act_title
-				let text = await Action.getDBFile( [ basePath, 'シナリオ', title ].join( '/' ) )
+				let text = await DB.getFile( [ basePath, 'シナリオ', title ].join( '/' ) )
 				newScenario = await parse( text )
 			} else if( Array.isArray( scenario_act_title ) ) newScenario = scenario_act_title
 			else act = scenario_act_title
