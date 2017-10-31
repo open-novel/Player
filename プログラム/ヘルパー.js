@@ -3,6 +3,7 @@ These codes are licensed under CC0.
 http://creativecommons.org/publicdomain/zero/1.0
 */
 
+
 export const log	= console.log.bind( console )
 export const info	= console.info.bind( console )
 export const warn	= console.warn.bind( console )
@@ -44,19 +45,6 @@ export function AwaitRegister ( fn ) {
 	}
 
 }
-
-
-const　cacheMap = new Map
-
-export async function fetchFile ( type, url ) {
-	let file = cacheMap.get( url ) 
-	if ( file ) return file
-	
-	file = await ( await fetch( url ) )[ type ]( )
-	cacheMap.set( url, file )
-	return file
-}
-
 
 
 export function parseSetting ( text ) {

@@ -16,24 +16,25 @@ export function getState ( layer ) {
 
 export async function play ( layer, state ) {
 
-	let { scenario, act = scenario[ 0 ], actStack = [ ], baseURL, varMap = new Map } = state
-	Object.assign( state, { act, actStack, varMap } )
+	let { scenario, act = scenario[ 0 ], scenarioStack = [ ], title: basePath, varMap = new Map } = state
+	Object.assign( state, { act, scenarioStack, varMap } )
 
 
 	for ( let [ url, pos ] of state.portraits || [ ] ) Action.showPortrait( layer, url, pos )
 	for ( let [ url, pos ] of state.BGImages  || [ ] ) Action.showBGImage( layer, url, pos )
 	if ( state.BGM ) Action.playBGM( state.BGM )
 
-	do {
+	while ( act || scenarioStack.length ) {
 		if ( act ) await playAct( act, scenario )
-		act = actStack.pop( )
-	} while ( act || actStack.length )
+		;( { act, scenario } = scenarioStack.pop( ) || { } )
+	}
 
 
 
 
 	async function playAct( act, scenario ) {
 
+		$.log( 'ACT', scenario )
 
 		function textEval ( text ) {
 
@@ -51,25 +52,31 @@ export async function play ( layer, state ) {
 
 		async function playScnario( scenario_act_title, jumpMark = '$root' ) {
 
-			$.log( actStack )
+			$.log( scenarioStack )
 
 			let act, newScenario = scenario
 
 			if ( typeof scenario_act_title != 'object' ) {
 				let title = scenario_act_title
-				let text = await $.fetchFile( 'text', `${ baseURL }/シナリオ/${ title }.txt` )
+				let text = await Action.getDBFile( [ basePath, 'シナリオ', title ].join( '/' ) )
 				newScenario = await parse( text )
 			} else if( Array.isArray( scenario_act_title ) ) newScenario = scenario_act_title
 			else act = scenario_act_title
 
 			if ( ! act ) act = newScenario.find( act => act.type == 'マーク' && textEval( act.prop ) == jumpMark )
-			if ( ! act ) { $.log( newScenario ) ;throw `"${ jumpMark }" 指定されたマークが見つかりません` }
+			if ( ! act ) { $.log( 'mark not found', jumpMark, newScenario ); return; }
 
 
 
 			await playAct( act, newScenario )
 
 		}
+
+
+		function pushScenarioStack ( returnAct ) {
+			if ( returnAct ) scenarioStack.push( { act: returnAct, scenario } )
+		}
+
 
 		do {
 
@@ -109,14 +116,14 @@ export async function play ( layer, state ) {
 						else if ( pos ) { 
 							pos = pos.match( /-?\d+(?=%|％)/g )
 							if ( pos.length == 1 ) pos[ 1 ] = 0
-							if ( pos.length == 2 ) pos[ 2 ] = 100
+							if ( pos.length == 2 ) pos[ 2 ] = 1
 							pos = pos.map( d => d / 100 )
 						} else throw `立ち絵『${ name }』の位置指定が不正です。`
 
-						let url = `${ baseURL }/立ち絵/${ name }.png`
+						let path = [ basePath, '立ち絵', name ].join( '/' )
 
-						state.portraits.push( [ url, pos ] ) 
-						return Action.showPortrait( layer, url, pos )
+						state.portraits.push( [ path, pos ] ) 
+						return Action.showPortrait( layer, path, pos )
 
 					} ) )
 
@@ -138,23 +145,25 @@ export async function play ( layer, state ) {
 						if ( pos ) { 
 							pos = pos.match( /-?\d+(?=%|％)/g )
 							if ( pos.length == 1 ) pos[ 1 ] = 0
-							if ( pos.length == 2 ) pos[ 2 ] = 100
+							if ( pos.length == 2 ) pos[ 2 ] = 1
 							pos = pos.map( d => d / 100 )
-						} else pos = [ 0, 0, 100 ]
+						} else pos = [ 0, 0, 1 ]
 
-						let url = `${ baseURL }/背景/${ name }.jpg`
+						let path = [ basePath, '背景', name ].join( '/' )
 
-						state.BGImages.push( [ url, pos ] ) 
-						return Action.showBGImage( layer, url, pos )
+						state.BGImages.push( [ path, pos ] ) 
+						return Action.showBGImage( layer, path, pos )
 
 					} ) )
 
 				} break
 				case '選択': {
 
-					let newAct = await Action.showChoices( layer, prop.map( c => c.map( textEval ) ) )
+					let newAct = await Action.showChoices( layer, prop.map(
+						c => ( { label: textEval( c[ 0 ] ), value: textEval( c[ 1 ] ) } )  
+					) )
 					$.log( type, newAct )
-					actStack.push( act.next )
+					pushScenarioStack( act.next )
 					return playScnario( newAct )
 
 				} break
@@ -164,7 +173,7 @@ export async function play ( layer, state ) {
 						let [ con, newAct ] = p.map( textEval )
 						$.log( type, con, newAct )
 						if ( ! con && con !== '' ) continue 
-						actStack.push( act.next )
+						pushScenarioStack( act.next )
 						return playScnario( newAct )
 					}
 
@@ -177,7 +186,7 @@ export async function play ( layer, state ) {
 						let [ con, newAct ] = p.map( textEval )
 						$.log( type, con, newAct )
 						if ( ! con && con !== '' ) continue 
-						actStack.push( act )
+						pushScenarioStack( act )
 						return playScnario( newAct )
 					}
 
@@ -188,7 +197,7 @@ export async function play ( layer, state ) {
 
 					let scenarioOrTitle = title || scenario
 					$.log( 'JMP', title, mark, scenario )
-					actStack.push( act.next )
+					pushScenarioStack( act.next )
 					return　playScnario( scenarioOrTitle, mark || undefined )
 
 				} break
@@ -217,10 +226,10 @@ export async function play ( layer, state ) {
 
 					if ( ! name ) Action.stopBGM( )
 					else {
-						let url = `${ baseURL }/BGM/${ name }.ogg`
+						let path = [ basePath, 'BGM', name ].join( '/' )
 
-						state.BGM = url
-						await Action.playBGM( url )
+						state.BGM = path
+						await Action.playBGM( path )
 					}
 
 				} break

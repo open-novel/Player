@@ -26,15 +26,15 @@ export let { target: initSound, register: nextInit } = new $.AwaitRegister( init
 
 
 
-export async function playBGM ( url ) {
+export async function playBGM ( path ) {
 	
-	bgm.src = url
+	bgm.src = path
 	await bgm.play( )
 
 }
 
 
-export function stopBGM ( url ) {
+export function stopBGM ( ) {
 	
 	bgm.pause( )
 

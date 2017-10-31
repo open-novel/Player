@@ -62,10 +62,17 @@ async function main( ) {
 	window.addEventListener( 'contextmenu', e => e.preventDefault( ) )
 
 
-	canvas.addEventListener( `wheel`, e => {
+	canvas.addEventListener( 'wheel', e => {
 		e.preventDefault( )
 		let type = e.deltaY >= 0 ? 'next' : 'back'
 		Player.onKeyEvent( { type } )
+	} )
+
+	canvas.addEventListener( 'dragover', e => e.preventDefault( ) )
+	canvas.addEventListener( 'drop', e => {
+		e.preventDefault( )
+		let files = e.dataTransfer.files
+		if ( files && files[ 0 ] ) Player.onDrop( files[ 0 ] )
 	} )
 
 

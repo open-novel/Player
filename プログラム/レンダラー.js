@@ -273,9 +273,14 @@ function initLayer ( ) {
 		type: 'Group', name: 'root',
 		region: 'opaque',
 		children: [
-			{ 
-				type: 'Image', name: 'backgroundImage',
-				fill: 'rgba( 0, 0, 0, 1 )'
+			{
+				type: 'Group', name: 'backgroundGroup',
+				children: [
+					{ 
+						type: 'Image', name: 'backgroundImage',
+						fill: 'rgba( 0, 0, 0, 1 )'
+					},
+				]
 			},
 			{
 				type: 'Group', name: 'portraitGroup'
@@ -330,7 +335,7 @@ export function drawCanvas ( ) {
 		ctx.clearRect( 0, 0, W, H )
 		draw( layerRoot, { x: 0, y: 0, w: W, h: H, o: 1 } )
 		layerRoot.dirty = false
-		
+
 	}
 
 	function draw ( node, base ) {
@@ -422,9 +427,11 @@ export function onPoint ( { type, x, y } ) {
 
 
 function drawHRCanvas( ) {
-	
-	HRCanvas.width = W, HRCanvas.height = H
 
+	let rect = ctx.canvas.getBoundingClientRect( )
+	HRCanvas.width = W = rect.width
+	HRCanvas.height = H = rect.height
+	
 	HRCtx.clearRect( 0, 0, W, H )
 
 	let regionList = [ ]

@@ -27,26 +27,21 @@ export async function init ( _settings = settings ) {
 }
 
 
-export async function play ( settings ) {
+export async function play ( settings, state ) {
 
 	let { title } = settings
 
-	let scenarioSetting =  $.parseSetting(
-		await $.fetchFile( 'text', `../作品/${ title }/設定.txt` )
-	)
-	
-	let text = await $.fetchFile( 'text', `../作品/${ title }/シナリオ/${ scenarioSetting[ '開始シナリオ' ] }.txt` )
+	let text = await DB.getFile( [ title, 'シナリオ', settings[ '開始シナリオ' ] ].join( '/' ) )
 
-	let scenario = await Scenario.parse( text, `../作品/${ title }` )
+	let scenario = await Scenario.parse( text )
 
 	await init( settings )
 
-	stateList.push( { scenario, baseURL: `../作品/${ title }` }  )
+	if ( ! state ) state = { scenario, title } 
 
-	let state
-	while ( state = stateList.shift( ) ) {
+	do {
 		await Promise.race( [ Scenario.play( nowLayer, state ), nowLayer.on( 'dispose' ) ] )
-	}
+	} while ( state = stateList.shift( ) )
 
 }
 
@@ -112,17 +107,18 @@ async function showMenu ( layer ) {
 
 	layer.on( 'menu' ).then( ( ) => closeMenu( layer ) )
 
-	let choices = [ 'セーブ', 'ロード', 'ダミー' ]
-	switch ( await showChoices( layer, choices, subBox ) ) {
+	let choices = [ 'セーブ', 'ロード' ].map( label => ( { label } ) )
+
+	switch ( await showChoices( layer, choices, subBox, 4 ) ) {
 
 		case 'セーブ': {
 			let index = await showSaveData( )
-			await DB.saveState( settings.title, index, Scenario.getState( layer ) )
+			await DB.saveState( settings.title, index, Scenario.getState( layer ), 4 )
 
 		} break
 		case 'ロード': {
 			let index = await showSaveData( )
-			let state = await DB.loadState( settings.title, index )
+			let state = await DB.loadState( settings.title, index, 4 )
 			stateList.push( state )
 			await init( )
 			return
@@ -132,8 +128,8 @@ async function showMenu ( layer ) {
 
 	async function showSaveData ( ) {
 
-		let choices = [ ...Array( 9 ).keys( ) ].map( i => {
-			return [ 'No.' + i, i ]
+		let choices = [ ...Array( 12 ).keys( ) ].map( i => {
+			return { label: `No.${ i + 1 }`, value: i + 1 }
 		} )
 		return await showChoices( layer, choices, subBox )
 
@@ -159,7 +155,7 @@ export function isOldLayer ( layer ) {
 }
 
 
-export function sysMessage ( text, speed ) {
+export function sysMessage ( text, speed = 1000000 ) {
 	return showMessage ( nowLayer, '', text, speed )
 }
 
@@ -300,45 +296,51 @@ export async function runEffect ( layer, type, sec ) {
 }
 
 
-export function sysBGImage ( url ) {
-	return showBGImage ( nowLayer, url )
+export function sysBGImage ( path ) {
+	return showBGImage ( nowLayer, path, [ 0, 0, 1 ] )
 }
 
 
-export async function showBGImage ( layer, url ) {
-
-	let blob = await $.fetchFile( 'blob', url )
-	let img = await getImage( blob )
-	layer.backgroundImage.prop( 'img', img )
-
+export async function showBGImage ( layer, path, [ x, y, h ] ) {
+	return showImage( layer.backgroundGroup, path, { x, y, w: 1, h } )
 }
 
 
 export async function removeBGImages ( layer ) {
-	layer.backgroundImage.prop( 'img', null )
+	return removeImages( layer.backgroundGroup )
 }
 
 
-export async function showPortrait ( layer, url, [ x, y, h ] ) {
-	
+export function showPortrait ( layer, path, [ x, y, h ] ) {
+	return showImage( layer.portraitGroup, path, { x, y, h } )
+}
+
+
+export async function removePortraits ( layer ) {
+	return removeImages( layer.portraitGroup )
+}
+
+
+
+async function showImage ( targetGroup, path, pos ) {
+
 	let eff = effect.enabled ? effect : new ProgressTimer( 150 )
 	let type = effect.enabled ? await eff.on( 'type' ) : 'フェード'
 
-	
-	let blob = await $.fetchFile( 'blob', url )
+	let blob = await DB.getFile( path )
 	let img = await getImage( blob )
-	let w = 9 / 16 * h * img.naturalWidth / img.naturalHeight
+	let { x, y, h, w = 9 / 16 * h * img.naturalWidth / img.naturalHeight } = pos
 	//$.log( { x, y, w, h, img } )
-	let portrait = new Renderer.ImageNode( { name: 'portrait', x, y, w, h, o: 0, img } )
+	let image = new Renderer.ImageNode( { name: 'image', x, y, w, h, o: 0, img } )
 
 	let old = { }
 
 	switch ( type ) {
 		case 'フェード': {
-			layer.portraitGroup.append( portrait )
+			targetGroup.append( image )
 		} break
 		case 'トランス': {
-			old.port = layer.portraitGroup.searchImg( portrait )
+			old.port = targetGroup.searchImg( image )
 			old.data = Object.assign( { }, old.port )
 				//$.log( 'show', type, old )
 		} break
@@ -349,11 +351,11 @@ export async function showPortrait ( layer, url, [ x, y, h ] ) {
 		switch ( type ) {
 
 			case 'フェード': {
-				portrait.prop( 'o', prog )
+				image.prop( 'o', prog )
 			} break
 			case 'トランス': {
 				[ 'x', 'y', 'w', 'h' ].forEach( p => {
-					old.port[ p ] = old.data[ p ] * ( 1 - prog ) + portrait[ p ] * prog
+					old.port[ p ] = old.data[ p ] * ( 1 - prog ) + image[ p ] * prog
 				} )
 
 			} break
@@ -366,9 +368,9 @@ export async function showPortrait ( layer, url, [ x, y, h ] ) {
 }
 
 
-export async function removePortraits ( layer ) {
+async function removeImages ( targetGroup ) {
 	
-	let children = [ ... layer.portraitGroup.children ]
+	let children = [ ... targetGroup.children ]
 
 	let eff = effect.enabled ? effect : new ProgressTimer( 150 )
 	let type = effect.enabled ? await eff.on( 'type' ) : 'フェード'
@@ -380,7 +382,7 @@ export async function removePortraits ( layer ) {
 		switch ( type ) {
 
 			case 'フェード': {
-				for ( let portrait of children ) { portrait.prop( 'o', 1 - prog ) }
+				for ( let image of children ) { image.prop( 'o', 1 - prog ) }
 			} break
 			case 'トランス': {
 				//
@@ -392,39 +394,44 @@ export async function removePortraits ( layer ) {
 	}
 
 	
-	for ( let portrait of children ) { portrait.remove( ) }
+	for ( let image of children ) { image.remove( ) }
 }
 
 
 export async function sysChoices ( choices ) {
-	return showChoices( nowLayer, choices )
+	return showChoices( nowLayer, choices, undefined, 4 )
 }
 
-export async function showChoices ( layer, choices, inputBox = layer.inputBox ) {
+export async function showChoices ( layer, choices, inputBox = layer.inputBox, rowLen = 3 ) {
 	
 	let m = .05
 
 	let nextClicks = [ ]
 
 	let len = choices.length
-	let colLen = 1 + ( ( len - 1 ) / 3 | 0 )
-	let w = ( ( 1 - m ) - m * colLen ) / colLen
-	let h = ( ( 1 - m ) - m * 3 ) / 3
+	let colLen = 1 + ( ( len - 1 ) / rowLen | 0 )
+	let w = ( ( 1 - m / 2 ) - m / 2 * colLen ) / colLen
+	let h = ( ( 1 - m ) - m * rowLen ) / rowLen
 
 	for ( let i = 0; i < len; i++ ) {
-		let [ key, val ] = Array.isArray( choices[ i ] ) ? choices[ i ] : [ choices[ i ], choices[ i ] ]
-		let row = i % 3, col = i / 3 | 0
-		let [ x, y ] = [ m + ( w + m ) * col, m + ( h + m ) * row ]
+		let cho = choices[ i ]
+		let { label, value = label, disabled = false } = 
+			( typeof cho == 'object' ) ? cho : { label: cho }
+		let row = i % rowLen, col = i / rowLen | 0
+		let [ x, y ] = [ m / 2 + ( w + m / 2 ) * col, m + ( h + m ) * row ]
 
-		let choiceBox = new Renderer.RectangleNode( { name: 'choiceBox', 
+		let choiceBox = new Renderer.RectangleNode( { name: 'choiceBox',
 			x, y, w, h, pos: 'center', region: 'opaque', fill: 'rgba( 100, 100, 255, .8 )' } ) 
 		inputBox.append( choiceBox )
+		if ( disabled ) choiceBox.fill = 'rgba( 200, 200, 255, .5 )'
 
 		let textArea = new Renderer.TextNode( { name: 'textArea',
 			size: .7, y: .05, pos: 'center', fill: 'rgba( 255, 255, 255, .9 )' } )
 		choiceBox.append( textArea )
-		nextClicks.push( choiceBox.on( 'click' ).then( ( ) => val ) )
-		textArea.set( key )
+		if ( disabled ) textArea.fill = 'rgba( 255, 255, 255, .5 )'
+
+		if ( ! disabled ) nextClicks.push( choiceBox.on( 'click' ).then( ( ) => value ) )
+		textArea.set( label )
 	}
 
 	inputBox.show( )
@@ -433,6 +440,11 @@ export async function showChoices ( layer, choices, inputBox = layer.inputBox ) 
 	inputBox.hide( )
 	return val
 
+}
+
+
+export function getDBFile ( path ) {
+	return DB.getFile( path )
 }
 
 export { playBGM, stopBGM } from './サウンド.js'
