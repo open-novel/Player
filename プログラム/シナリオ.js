@@ -7,26 +7,27 @@ import * as $ from './ヘルパー.js'
 import * as Action from './アクション.js'
 
 
-let state = null, isStop = true
+let stateMap = new WeakMap
 
-export function getState ( ) {
-	return state
-}
-
-export function setState ( _state ) {
-	state = _state
-	isStop = 'newState'
+export function getState ( layer ) {
+	return stateMap.get( layer )
 }
 
 
-export async function play ( { scenario, act = scenario[ 0 ], baseURL, varMap = new Map } ) {
+export async function play ( layer, state ) {
 
-	isStop = false
-	$.log( varMap )
+	let { scenario, act = scenario[ 0 ], actStack = [ ], baseURL, varMap = new Map } = state
+	Object.assign( state, { act, actStack, varMap } )
 
-	state = { scenario, baseURL, varMap }
 
-	return await playAct( act, scenario )
+	for ( let [ url, pos ] of state.portraits || [ ] ) Action.showPortrait( layer, url, pos )
+	for ( let [ url, pos ] of state.BGImages  || [ ] ) Action.showBGImage( layer, url, pos )
+	if ( state.BGM ) Action.playBGM( state.BGM )
+
+	do {
+		if ( act ) await playAct( act, scenario )
+		act = actStack.pop( )
+	} while ( act || actStack.length )
 
 
 
@@ -50,6 +51,8 @@ export async function play ( { scenario, act = scenario[ 0 ], baseURL, varMap = 
 
 		async function playScnario( scenario_act_title, jumpMark = '$root' ) {
 
+			$.log( actStack )
+
 			let act, newScenario = scenario
 
 			if ( typeof scenario_act_title != 'object' ) {
@@ -62,16 +65,15 @@ export async function play ( { scenario, act = scenario[ 0 ], baseURL, varMap = 
 			if ( ! act ) act = newScenario.find( act => act.type == 'マーク' && textEval( act.prop ) == jumpMark )
 			if ( ! act ) { $.log( newScenario ) ;throw `"${ jumpMark }" 指定されたマークが見つかりません` }
 
+
+
 			await playAct( act, newScenario )
 
 		}
 
 		do {
 
-			if ( isStop == 'newState' ) return play( state )
-			if ( isStop ) return
-
-			state.act = act
+			if ( Action.isOldLayer( layer ) ) return 
 
 			let { type, prop } = act
 
@@ -79,16 +81,20 @@ export async function play ( { scenario, act = scenario[ 0 ], baseURL, varMap = 
 
 				case '会話': {
 
+					state.act = act
+					stateMap.set( layer, state )
+
 					let [ name, text ] = prop.map( textEval )
 
-					await Action.showMessage( name, text, 20 )
+					await Action.showMessage( layer, name, text, 20 )
 
 					//await $.timeout( 500 )
 
 				} break
 				case '立絵': {
 
-					Action.removePortraits( )
+					Action.removePortraits( layer )
+					state.portraits = [ ] 
 
 					/*await*/ Promise.all( prop.map( p => {
 
@@ -108,7 +114,9 @@ export async function play ( { scenario, act = scenario[ 0 ], baseURL, varMap = 
 						} else throw `立ち絵『${ name }』の位置指定が不正です。`
 
 						let url = `${ baseURL }/立ち絵/${ name }.png`
-						return Action.showPortraits( url, pos )
+
+						state.portraits.push( [ url, pos ] ) 
+						return Action.showPortrait( layer, url, pos )
 
 					} ) )
 
@@ -116,7 +124,8 @@ export async function play ( { scenario, act = scenario[ 0 ], baseURL, varMap = 
 				} break
 				case '背景': {
 
-					Action.removeBGImage( )
+					Action.removeBGImages( layer )
+					state.BGImages = [ ] 
 
 					/*await*/ Promise.all( prop.map( p => {
 
@@ -134,26 +143,42 @@ export async function play ( { scenario, act = scenario[ 0 ], baseURL, varMap = 
 						} else pos = [ 0, 0, 100 ]
 
 						let url = `${ baseURL }/背景/${ name }.jpg`
-						return Action.showBGImage( url, pos )
+
+						state.BGImages.push( [ url, pos ] ) 
+						return Action.showBGImage( layer, url, pos )
 
 					} ) )
 
 				} break
 				case '選択': {
 
-					let act = await Action.showChoices( prop.map( c => c.map( textEval ) ) )
-					$.log( type, act )
-					await playScnario( act )
+					let newAct = await Action.showChoices( layer, prop.map( c => c.map( textEval ) ) )
+					$.log( type, newAct )
+					actStack.push( act.next )
+					return playScnario( newAct )
 
 				} break
 				case '分岐': {
 
 					for ( let p of prop ) {
-						let [ con, act ] = p.map( textEval )
-						$.log( type, con, act )
+						let [ con, newAct ] = p.map( textEval )
+						$.log( type, con, newAct )
 						if ( ! con && con !== '' ) continue 
-						await playScnario( act )
-						break
+						actStack.push( act.next )
+						return playScnario( newAct )
+					}
+
+				} break
+				case '繰返': {
+
+					$.log( type, prop )
+
+					for ( let p of prop ) {
+						let [ con, newAct ] = p.map( textEval )
+						$.log( type, con, newAct )
+						if ( ! con && con !== '' ) continue 
+						actStack.push( act )
+						return playScnario( newAct )
 					}
 
 				} break
@@ -163,10 +188,10 @@ export async function play ( { scenario, act = scenario[ 0 ], baseURL, varMap = 
 
 					let scenarioOrTitle = title || scenario
 					$.log( 'JMP', title, mark, scenario )
-					await playScnario( scenarioOrTitle, mark || undefined )
+					actStack.push( act.next )
+					return　playScnario( scenarioOrTitle, mark || undefined )
 
-
-				}break
+				} break
 				case '変数': {
 
 					prop = prop.forEach( p => {
@@ -193,18 +218,20 @@ export async function play ( { scenario, act = scenario[ 0 ], baseURL, varMap = 
 					if ( ! name ) Action.stopBGM( )
 					else {
 						let url = `${ baseURL }/BGM/${ name }.ogg`
+
+						state.BGM = url
 						await Action.playBGM( url )
 					}
 
 				} break
-				case 'エフェクト': {
+				case '効果': {
 
 					let [ type, value ] = prop[ 0 ].map( textEval )
 
 					value = value.normalize( 'NFKC' )
 					value = + ( value.match( /[\d.]+/ ) || [ 0 ] ) [ 0 ]
 
-					await Action.runEffect( type, value )
+					await Action.runEffect( layer, type, value )
 
 				} break
 				case 'スクリプト': {
@@ -213,7 +240,7 @@ export async function play ( { scenario, act = scenario[ 0 ], baseURL, varMap = 
 
 						case '終わる': case　'おわる': {
 
-							isStop = true
+							layer = null
 
 						} break
 						default : {
@@ -311,7 +338,7 @@ export function parse ( text ) {
 					// もし要素がコマンド郡でなく、リンクなら飛ばす
 					if ( subList.length == 2 && subList[ 1 ].type == '会話' &&
 						subList[ 1 ].prop[ 1 ] == '' ) continue
-					progList = progList.concat( subList )
+					progList = progList.concat( subList.slice( 1 ) )
 					p[ 1 ] = subList[ 1 ] 
 				}
 
@@ -369,19 +396,21 @@ export function parse ( text ) {
 				break; case '立ち絵': type = '立絵'
 				break; case 'ＢＧＭ': type = 'BGM'
 				break; case '選択肢': type = '選択'
+				break; case '繰り返し': case '繰返し': type = '繰返'
+				break; case 'エフェクト': type = '効果'
 			}
 
 			switch ( type ) {
 
 				case 'コメント': /* 何もしない */
 				break
-				case '立絵': case '背景': case '変数': case '入力': case 'エフェクト':
+				case '立絵': case '背景': case '変数': case '入力': case '効果':
 					subParse( type, children )
 				break
 				case '会話':
 					subParse( type, children, { separate: true } )
 				break
-				case '選択':　case '分岐':
+				case '選択':　case '分岐': case '繰返':
 					subParse( type, children, { subjump: true } )
 				break
 				default :
@@ -516,12 +545,12 @@ export function parse ( text ) {
 					prop = prop.map( parseText )
 				
 				} break
-				case '立絵': case '背景': case '選択': case 'エフェクト': {
+				case '立絵': case '背景': case '選択': case '効果': {
 
 					prop = prop.map( p => p.map( parseText ) )
 
 				} break
-				case '分岐': {
+				case '分岐': case '繰返': {
 					
 					prop = prop.map( p => [ subParseText( p[ 0 ] ), parseText( p[ 1 ] ) ] )
 

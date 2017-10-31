@@ -28,15 +28,15 @@ async function init ( { ctx } ) {
 
 async function play ( ) {
 
-	await Action.showMessage( '', 'openノベルプレイヤー v1.0α', 50 )
+	await Action.sysMessage( 'openノベルプレイヤー v1.0α', 1000 )
 
 	while ( true ) {
 
 		let res = await playSystemOpening( ).catch( e => $.error( e ) || 'error' )
 		await Action.initAction( settings )
 
-		if ( res == 'error' ) await Action.showMessage( '', '問題が発生しました', 50 )
-		else await  Action.showMessage( '', '再生が終了しました', 50 )
+		if ( res == 'error' ) await Action.sysMessage( '問題が発生しました', 50 )
+		else await  Action.sysMessage( '再生が終了しました', 50 )
 
 
 	}
@@ -45,15 +45,15 @@ async function play ( ) {
 
 async function playSystemOpening ( ) {
 
-	await Action.showBGImage( './画像/背景.png' )
+	await Action.sysBGImage( './画像/背景.png' )
 
-	Action.showMessage( '', '開始する作品を選んで下さい', 50 )
+	Action.sysMessage( '開始する作品を選んで下さい', 50 )
 
 	let titleList = $.parseSetting(
 		await $.fetchFile( 'text', '../作品/設定.txt' )
 	) [ '作品' ]
 
-	let title = await Action.showChoices( titleList.map( title => [ title, title ] ) )
+	let title = await Action.sysChoices( titleList.map( title => [ title, title ] ) )
 
 	await Action.play( Object.assign( settings, { title } ) )
 

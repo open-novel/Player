@@ -45,6 +45,13 @@ class Node {
 			}
 		}
 
+		if ( layerRoot ) layerRoot.dirty = true
+
+	}
+
+	prop ( key, val ) { 
+		this[ key ] = val
+		layerRoot.dirty = true
 	}
 
 	draw ( ) { }
@@ -101,9 +108,9 @@ class Node {
 
 	}
 
-	show ( ) { this.o = 1 }
+	show ( ) { this.prop( 'o', 1 ) }
 
-	hide ( ) { this.o = 0 }
+	hide ( ) { this.prop( 'o', 0 ) }
 
 	searchImg ( target ) {
 
@@ -147,7 +154,7 @@ export class TextNode extends Node {
 		super ( opt )
 	}
 
-	set( text ) { this.text = text }
+	set( text ) { this.prop( 'text', text ) }
 
 	draw ( { x, y, w, h } ) { 
 		let { fill, shadow, text, size, pos } = this
@@ -180,9 +187,9 @@ export class DecoTextNode extends Node {
 		super ( opt )
 	}
 
-	add ( deco ) { this.decoList.push( deco ) }
+	add ( deco ) { this.decoList.push( deco ); layerRoot.dirty = true }
 
-	clear ( ) { this.decoList.length = 0 }
+	clear ( ) { this.decoList.length = 0; layerRoot.dirty = true }
 
 	draw ( { x, y, w, h } ) { 
 
@@ -314,13 +321,17 @@ export function drawCanvas ( ) {
 
 	if ( ! ctx ) return
 
-	let rect = ctx.canvas.getBoundingClientRect( )
-	ctx.canvas.width = W = rect.width
-	ctx.canvas.height = H = rect.height
+	if ( layerRoot.dirty ) {
 
-	ctx.clearRect( 0, 0, W, H )
+		let rect = ctx.canvas.getBoundingClientRect( )
+		ctx.canvas.width = W = rect.width
+		ctx.canvas.height = H = rect.height
 
-	draw( layerRoot, { x: 0, y: 0, w: W, h: H, o: 1 } )
+		ctx.clearRect( 0, 0, W, H )
+		draw( layerRoot, { x: 0, y: 0, w: W, h: H, o: 1 } )
+		layerRoot.dirty = false
+		
+	}
 
 	function draw ( node, base ) {
 
@@ -414,7 +425,7 @@ function drawHRCanvas( ) {
 	
 	HRCanvas.width = W, HRCanvas.height = H
 
-	ctx.clearRect( 0, 0, W, H )
+	HRCtx.clearRect( 0, 0, W, H )
 
 	let regionList = [ ]
 

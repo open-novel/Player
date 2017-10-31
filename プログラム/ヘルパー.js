@@ -80,6 +80,9 @@ export function parseSetting ( text ) {
 }
 
 
+export function neverRun ( ) { 
+	return new Deferred( ).promise
+}
 
 
 export class Awaiter {

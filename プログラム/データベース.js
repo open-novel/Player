@@ -48,7 +48,7 @@ export async function saveState ( title, index, state ) {
 	$.log( 'SAVE', state )
 	let data = Object.assign( { title, index }, state )
 	let os = DB.transaction( [ 'State' ], 'readwrite' ).objectStore( 'State' )
-	await on( os.add( data ) )
+	await on( os.put( data ) )
 
 }
 

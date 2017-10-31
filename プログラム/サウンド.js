@@ -11,6 +11,7 @@ let ctx, out, bgm
 async function init ( opt ) {
 
 	if ( ctx ) ctx.close( )
+	if ( bgm ) stopBGM( )
 	ctx = new AudioContext
 	out = ctx.destination
 	bgm = new Audio

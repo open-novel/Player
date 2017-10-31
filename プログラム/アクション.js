@@ -11,14 +11,17 @@ import * as DB from './データベース.js'
 
 
 
-let layer, settings
+let nowLayer, settings, trigger, stateList = [ ]
 
 
-export async function init ( _settings ) {
+export async function init ( _settings = settings ) {
 
 	settings = _settings
-	layer = await Renderer.initRanderer( settings )
-	layer.on( 'menu' ).then( showMenu )
+	let oldLayer = nowLayer
+	let layer = nowLayer = await Renderer.initRanderer( settings )
+	if ( oldLayer ) oldLayer.fire( 'dispose' )
+	trigger =　new Trigger
+	layer.on( 'menu' ).then( ( ) => showMenu( layer ) )
 	await Sound.initSound( settings )
 
 }
@@ -37,10 +40,17 @@ export async function play ( settings ) {
 	let scenario = await Scenario.parse( text, `../作品/${ title }` )
 
 	await init( settings )
-	let state = { scenario, baseURL: `../作品/${ title }` } 
-	await Scenario.play( state )
+
+	stateList.push( { scenario, baseURL: `../作品/${ title }` }  )
+
+	let state
+	while ( state = stateList.shift( ) ) {
+		await Promise.race( [ Scenario.play( nowLayer, state ), nowLayer.on( 'dispose' ) ] )
+	}
 
 }
+
+
 
 
 export let { target: initAction, register: nextInit } = new $.AwaitRegister( init )
@@ -71,71 +81,90 @@ export async function onPoint ( { type, button, x, y } ) {
 
 	if ( button == 'middle' ) return
 	if ( button == 'right' ) {
-		if ( type == 'up' ) layer.fire( 'menu' )
+		if ( type == 'up' ) nowLayer.fire( 'menu' )
 		return
 	}
 	Renderer.onPoint( { type, x, y } )
 }
 
 
-const trigger =　new class Trigger {
+class Trigger {
 	
+	constructor ( ) { this.layer = nowLayer }
 	step ( ) { return this.stepOr( ) }
 	stepOr ( ...awaiters ) {
+		if ( isOldLayer( this.layer ) ) return $.neverRun( )
 		return Promise.race( 
-			[ layer.on( 'click' ), action.on( 'next' ), ...awaiters ] )
+			[ this.layer.on( 'click' ), action.on( 'next' ), ...awaiters ] )
 	}
 	stepOrFrameupdate ( ) { return this.stepOr( frame.on( 'update' ) ) }
 	stepOrTimeout ( ms ) { return this.stepOr( $.timeout( ms ) ) }
+
 }
 
 
 
-async function showMenu ( ) {
-	
+async function showMenu ( layer ) {
+
+
 	let { menuBox, menuSubBox: subBox } = layer
 	menuBox.show( )
 
-	layer.on( 'menu' ).then( closeMenu )
+	layer.on( 'menu' ).then( ( ) => closeMenu( layer ) )
 
 	let choices = [ 'セーブ', 'ロード', 'ダミー' ]
-	switch ( await showChoices( choices, subBox ) ) {
+	switch ( await showChoices( layer, choices, subBox ) ) {
 
 		case 'セーブ': {
 			let index = await showSaveData( )
-			await DB.saveState( settings.title, index, Scenario.getState( ) )
+			await DB.saveState( settings.title, index, Scenario.getState( layer ) )
 
 		} break
 		case 'ロード': {
 			let index = await showSaveData( )
-			Scenario.setState( await DB.loadState( settings.title, index ) )
+			let state = await DB.loadState( settings.title, index )
+			stateList.push( state )
+			await init( )
+			return
 		} break
 		default: $.error( 'UnEx' )
 	}
 
 	async function showSaveData ( ) {
 
-		let choices = [ ...Array( 12 ).keys( ) ].map( i => {
+		let choices = [ ...Array( 9 ).keys( ) ].map( i => {
 			return [ 'No.' + i, i ]
 		} )
-		return await showChoices( choices, subBox )
+		return await showChoices( layer, choices, subBox )
 
 	}
 
-
+	layer.fire( 'menu' )	
 
 }
 
 
-async function closeMenu ( ) {
+async function closeMenu ( layer ) {
 	
 	layer.menuBox.hide( )
+	layer.menuSubBox.removeChildren( )
 
-	layer.on( 'menu' ).then( showMenu )
+	layer.on( 'menu' ).then( ( ) => showMenu( layer ) )
 }
 
 
-export async function showMessage ( name, text, speed ) {
+
+export function isOldLayer ( layer ) {
+	return layer != nowLayer
+}
+
+
+export function sysMessage ( text, speed ) {
+	return showMessage ( nowLayer, '', text, speed )
+}
+
+
+export async function showMessage ( layer, name, text, speed ) {
 		
 
 	layer.nameArea.clear( ), layer.messageArea.clear( )
@@ -253,7 +282,7 @@ class ProgressTimer　extends $.Awaiter {
 
 let effect = new ProgressTimer( -1 )
 
-export async function runEffect ( type, sec ) {
+export async function runEffect ( layer, type, sec ) {
 
 	$.log( 'EF', type, sec )
 	let ms = sec * 1000
@@ -271,22 +300,26 @@ export async function runEffect ( type, sec ) {
 }
 
 
+export function sysBGImage ( url ) {
+	return showBGImage ( nowLayer, url )
+}
 
-export async function showBGImage ( url ) {
+
+export async function showBGImage ( layer, url ) {
 
 	let blob = await $.fetchFile( 'blob', url )
 	let img = await getImage( blob )
-	layer.backgroundImage.img = img
+	layer.backgroundImage.prop( 'img', img )
 
 }
 
 
-export async function removeBGImage ( ) {
-	layer.backgroundImage.img = null
+export async function removeBGImages ( layer ) {
+	layer.backgroundImage.prop( 'img', null )
 }
 
 
-export async function showPortraits ( url, [ x, y, h ] ) {
+export async function showPortrait ( layer, url, [ x, y, h ] ) {
 	
 	let eff = effect.enabled ? effect : new ProgressTimer( 150 )
 	let type = effect.enabled ? await eff.on( 'type' ) : 'フェード'
@@ -316,7 +349,7 @@ export async function showPortraits ( url, [ x, y, h ] ) {
 		switch ( type ) {
 
 			case 'フェード': {
-				portrait.o = prog
+				portrait.prop( 'o', prog )
 			} break
 			case 'トランス': {
 				[ 'x', 'y', 'w', 'h' ].forEach( p => {
@@ -333,7 +366,7 @@ export async function showPortraits ( url, [ x, y, h ] ) {
 }
 
 
-export async function removePortraits ( ) {
+export async function removePortraits ( layer ) {
 	
 	let children = [ ... layer.portraitGroup.children ]
 
@@ -347,7 +380,7 @@ export async function removePortraits ( ) {
 		switch ( type ) {
 
 			case 'フェード': {
-				for ( let portrait of children ) { portrait.o = 1 - prog }
+				for ( let portrait of children ) { portrait.prop( 'o', 1 - prog ) }
 			} break
 			case 'トランス': {
 				//
@@ -363,7 +396,11 @@ export async function removePortraits ( ) {
 }
 
 
-export async function showChoices ( choices, inputBox = layer.inputBox ) {
+export async function sysChoices ( choices ) {
+	return showChoices( nowLayer, choices )
+}
+
+export async function showChoices ( layer, choices, inputBox = layer.inputBox ) {
 	
 	let m = .05
 
@@ -386,7 +423,7 @@ export async function showChoices ( choices, inputBox = layer.inputBox ) {
 		let textArea = new Renderer.TextNode( { name: 'textArea',
 			size: .7, y: .05, pos: 'center', fill: 'rgba( 255, 255, 255, .9 )' } )
 		choiceBox.append( textArea )
-		nextClicks.push( choiceBox.on( 'click' ).then( _ => val ) )
+		nextClicks.push( choiceBox.on( 'click' ).then( ( ) => val ) )
 		textArea.set( key )
 	}
 
