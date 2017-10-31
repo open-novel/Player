@@ -103,41 +103,46 @@ async function showMenu ( layer ) {
 
 
 	let { menuBox, menuSubBox: subBox } = layer
+	let title = settings.title
 	menuBox.show( )
 
 	layer.on( 'menu' ).then( ( ) => closeMenu( layer ) )
 
-	let choices = [ 'セーブ', 'ロード' ].map( label => ( { label } ) )
+	let choices = [ 'セーブ', 'ロード', '終了する' ].map( label => ( { label } ) )
+
+	if ( ! title ) $.disableChoiceList( [ 'セーブ', 'ロード', '終了する' ], choices )
 
 	switch ( await showChoices( layer, choices, subBox, 4 ) ) {
 
 		case 'セーブ': {
-			let index = await showSaveData( )
-			await DB.saveState( settings.title, index, Scenario.getState( layer ), 4 )
+		
+			let choices = await $.getSaveChoices( title, 20 )
+			let index = await showChoices( layer, choices, subBox, 5 )
+			await DB.saveState( title, index, Scenario.getState( layer ), 4 )
 
 		} break
 		case 'ロード': {
-			let index = await showSaveData( )
-			let state = await DB.loadState( settings.title, index, 4 )
+		
+			let choices = await $.getSaveChoices( title, 20, true )
+			let index = await showChoices( layer, choices, subBox, 5 )
+			let state = await DB.loadState( title, index, 4 )
 			stateList.push( state )
-			await init( )
-			return
+			return init( )
+		
+		} break
+		case '終了する': {
+
+			stateList.length = 0
+			return init( )
+
 		} break
 		default: $.error( 'UnEx' )
-	}
-
-	async function showSaveData ( ) {
-
-		let choices = [ ...Array( 12 ).keys( ) ].map( i => {
-			return { label: `No.${ i + 1 }`, value: i + 1 }
-		} )
-		return await showChoices( layer, choices, subBox )
-
 	}
 
 	layer.fire( 'menu' )	
 
 }
+
 
 
 async function closeMenu ( layer ) {

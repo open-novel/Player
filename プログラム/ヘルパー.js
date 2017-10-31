@@ -4,6 +4,9 @@ http://creativecommons.org/publicdomain/zero/1.0
 */
 
 
+import * as DB from './データベース.js'
+
+
 export const log	= console.log.bind( console )
 export const info	= console.info.bind( console )
 export const warn	= console.warn.bind( console )
@@ -44,6 +47,28 @@ export function AwaitRegister ( fn ) {
 		}
 	}
 
+}
+
+
+export function disableChoiceList ( disables, choiceList ) {
+	for ( let choice of choiceList ) {
+		if ( disables.includes( choice.label ) ) choice.disabled = true
+	}
+}
+
+
+export async function getSaveChoices ( title, num, isLoad = false ) {
+
+	let stateList = await DB.getStateList( title )
+	let choices = [ ...Array( num ).keys( ) ].map( i => {
+		let index = i + 1, state = stateList[ index ]
+		let mark = state ? state.mark || '???' : '--------'
+		if ( mark == '$root' ) mark = '(冒頭)'
+		let disabled　= ( isLoad && ! state ) || index >= 13
+		return { label: mark, value: index, disabled }
+	} )
+	return choices
+	
 }
 
 

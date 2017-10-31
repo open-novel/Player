@@ -334,7 +334,8 @@ export function drawCanvas ( ) {
 		ctx.canvas.width = W = rect.width
 		ctx.canvas.height = H = rect.height
 
-		ctx.clearRect( 0, 0, W, H )
+		ctx.fillColor = 'rgba( 0, 0, 0, 1 )'
+		ctx.fillRect( 0, 0, W, H )
 		draw( layerRoot, { x: 0, y: 0, w: W, h: H, o: 1 } )
 		layerRoot.dirty = false
 

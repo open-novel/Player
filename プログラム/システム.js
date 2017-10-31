@@ -58,7 +58,7 @@ async function playSystemOpening ( ctx ) {
 	titleList = [ ...Array( 12 ).keys( ) ].map( i => {
 		let index = i + 1, settings = titleList[ index ] || { }, { title } = settings
 		return {
-			label: title ? title : '------', value: { settings, index }
+			label: title ? title : '--------', value: { settings, index }
 		}
 	} )
 
@@ -75,9 +75,9 @@ async function playSystemOpening ( ctx ) {
 	let menuList = [ '初めから', '続きから', '途中から', 'インストール' ].map( label => ( { label } ) )
 
 	if ( ! title ) {
-		disableChoiceList( [ '初めから', '続きから', '途中から' ], menuList )
+		$.disableChoiceList( [ '初めから', '続きから', '途中から' ], menuList )
 	} else {
-		disableChoiceList( [ '途中から' ], menuList )
+		$.disableChoiceList( [ '途中から' ], menuList )
 	}
 
 	let sel = await Action.sysChoices( menuList )
@@ -93,9 +93,8 @@ async function playSystemOpening ( ctx ) {
 		} break
 		case '続きから': {
 
-			let choices = [ ...Array( 12 ).keys( ) ].map( i => {
-				return { label: `No.${ i + 1 }`, value: i + 1 }
-			} )
+			let stateList = await DB.getStateList( title )
+			let choices = await $.getSaveChoices( title, 12 )
 			let index = await Action.sysChoices( choices )
 			let state = await DB.loadState( settings.title, index )
 			return Action.play( settings, state )
@@ -115,19 +114,13 @@ async function playSystemOpening ( ctx ) {
 } 
 
 
-function disableChoiceList ( disables, choiceList ) {
-	for ( let choice of choiceList ) {
-		if ( disables.includes( choice.label ) ) choice.disabled = true
-	}
-}
-
 
 async function installScenario ( index ) {
 
 	Action.sysMessage( 'インストール方法を選んで下さい', 100 )
 
 	let menuList = [ 'Webから', 'フォルダから' ].map( label => ( { label } ) )
-	disableChoiceList( [ 'Webから' ], menuList )
+	$.disableChoiceList( [ 'Webから' ], menuList )
 
 	let sel = await Action.sysChoices( menuList )
 	$.log( sel )
