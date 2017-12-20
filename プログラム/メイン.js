@@ -78,7 +78,7 @@ async function main( ) {
 	} )
 
 
-	const onp = Player.initPlayer( { ctx, type: window.opener ? 'install': 'nomal' } )
+	const onp = Player.initPlayer( { ctx, mode: location.hash } )
 	onp.then( ( ) => window.close( ), ( ) => window.close( ) )
 
 

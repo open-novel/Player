@@ -11,12 +11,12 @@ const script_baseurl = document.querySelector( 'script[type="module"]' ).src.mat
 const Archive = $.importWorker( `${ script_baseurl }アーカイブ.js` )
 
 
-async function init ( { ctx, type } ) {
-	await play( ctx, type )
+async function init ( { ctx, mode } ) {
+	await play( ctx, mode )
 }
 
 
-async function play ( ctx, type ) {
+async function play ( ctx, mode ) {
 
 	//let settings = await $.fetchFile( 'json', './プログラム/設定.json' )
 	let settings = { }
@@ -31,8 +31,8 @@ async function play ( ctx, type ) {
 
 	while ( true ) {
 
-		let res = await playSystemOpening( type ).catch( e => $.error( e ) || 'error' )
-		if ( type == 'install' ) return
+		let res = await playSystemOpening( mode ).catch( e => $.error( e ) || 'error' )
+		if ( mode == 'install' ) return
 
 		await Action.initAction( settings )
 		if ( res == 'error' ) await Action.sysMessage( '問題が発生しました', 50 )
@@ -43,12 +43,12 @@ async function play ( ctx, type ) {
 }
 
 
-async function playSystemOpening ( type ) {
+async function playSystemOpening ( mode ) {
 
 	//await Action.sysBGImage( './画像/背景.png' )
 
 	// インストール済み作品リストをロード
-	if ( type == 'install' )  Action.sysMessage( 'インストール先を選んで下さい', 50 )
+	if ( mode == 'install' )  Action.sysMessage( 'インストール先を選んで下さい', 50 )
 	else Action.sysMessage( '開始する作品を選んで下さい', 50 )
 
 	//let titleList = $.parseSetting(
@@ -73,7 +73,7 @@ async function playSystemOpening ( type ) {
 	$.log( index, settings )
 
 
-	if ( type == 'install' ) {
+	if ( mode == 'install' ) {
 		let success = await installScenario( index, 'Webから' )
 		if ( success ) await Action.sysMessage( 'インストールが完了しました', 100 )
 		else await Action.sysMessage( 'インストールできませんでした', 100 )
@@ -116,7 +116,7 @@ async function playSystemOpening ( type ) {
 			let success = await installScenario( index )
 			if ( success ) await Action.sysMessage( 'インストールが完了しました', 100 )
 			else await Action.sysMessage( 'インストールできませんでした', 100 )
-			return playSystemOpening( type )
+			return playSystemOpening( mode )
 
 		} break
 
