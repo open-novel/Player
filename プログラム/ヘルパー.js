@@ -99,21 +99,34 @@ export function neverRun ( ) {
 
 
 export class Awaiter {
-	
+
 	fire ( key, value ) {
 
-		if ( ! this[ key ] ) return
-		this[ key ].resolve( value )
-		this[ key ] = null
+		if ( ! this[ key ] ) {
+			this[ key ] = { lateValue: value }
+			return
+		}
+		if ( this[ key ].lateValue ) {
+			this[ key ].lateValue = value
+		}
+		if ( this[ key ].promise ) {
+			this[ key ].resolve( value )
+			delete this[ key ].promise
+		}
 
 	}
 
-	on ( key ) {
+	on ( key, late = false ) {
 
-		let { promise, resolve } = this[ key ] || { }
+		let { promise, resolve, lateValue } = this[ key ] || { }
 		if ( ! promise ) {
 			( { promise, resolve } = new Deferred )
 			this[ key ] = { promise, resolve }
+		}
+		if ( late && lateValue ) {
+			delete this[ key ].lateValue
+			resolve( lateValue )
+			console.log( 'late', key, lateValue )
 		}
 		return promise
 
@@ -143,4 +156,28 @@ export class Time {
 	}
 
 }
+
+
+export function importWorker ( url ) {
+
+	let w =	new Worker( url )
+
+	return new Proxy( { }, {
+		get ( tar, key ) {
+			return async ( ...args ) => {
+				w.postMessage( { fn: key, args }, 
+					args.reduce( ( a, v ) => {
+						if ( v instanceof ArrayBuffer ) a.push( v )
+						else if ( ArrayBuffer.isView( v ) ) a.push( v.buffer )
+						return a
+					}, [ ] ) )
+				return new Promise ( ( ok, ng ) => { 
+					w.onmessage = ok, w.onerror = ng
+				} )
+			}
+		}
+	} )
+
+}
+
 

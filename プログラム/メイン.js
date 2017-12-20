@@ -45,9 +45,6 @@ async function main( ) {
 
 	let ctx = canvas.getContext( '2d' )
 
-	const onp = Player.initPlayer( { ctx } )
-
-
 	let captureEventTypes = [ 'down', 'up', 'move' ]
 
 	for ( let type of captureEventTypes ) {
@@ -76,6 +73,13 @@ async function main( ) {
 	} )
 
 
+	window.addEventListener( 'message', e => {
+		Player.onMessage( e.data ) 
+	} )
+
+
+	const onp = Player.initPlayer( { ctx, type: window.opener ? 'install': 'nomal' } )
+	onp.then( ( ) => window.close( ), ( ) => window.close( ) )
 
 
 }

@@ -6,14 +6,15 @@ http://creativecommons.org/publicdomain/zero/1.0
 import * as $ from './ヘルパー.js'
 import * as Action from './アクション.js'
 import * as DB from './データベース.js'
+const Archive = $.importWorker( './プログラム/アーカイブ.js' )
 
 
-async function init ( { ctx } ) {
-	await play( ctx )
+async function init ( { ctx, type } ) {
+	await play( ctx, type )
 }
 
 
-async function play ( ctx ) {
+async function play ( ctx, type ) {
 
 	//let settings = await $.fetchFile( 'json', './プログラム/設定.json' )
 	let settings = { }
@@ -24,13 +25,14 @@ async function play ( ctx ) {
 	await DB.init( )
 	await Action.initAction( settings )
 
-	await Action.sysMessage( 'openノベルプレイヤー v1.0α   17/10/31' )
+	await Action.sysMessage( 'openノベルプレイヤー v1.0α   17/12/20' )
 
 	while ( true ) {
 
-		let res = await playSystemOpening( settings ).catch( e => $.error( e ) || 'error' )
-		await Action.initAction( settings )
+		let res = await playSystemOpening( type ).catch( e => $.error( e ) || 'error' )
+		if ( type == 'install' ) return
 
+		await Action.initAction( settings )
 		if ( res == 'error' ) await Action.sysMessage( '問題が発生しました', 50 )
 		else await Action.sysMessage( '再生が終了しました', 50 )
 
@@ -39,13 +41,13 @@ async function play ( ctx ) {
 }
 
 
-async function playSystemOpening ( ctx ) {
+async function playSystemOpening ( type ) {
 
 	//await Action.sysBGImage( './画像/背景.png' )
 
 	// インストール済み作品リストをロード
-
-	Action.sysMessage( '開始する作品を選んで下さい', 50 )
+	if ( type == 'install' )  Action.sysMessage( 'インストール先を選んで下さい', 50 )
+	else Action.sysMessage( '開始する作品を選んで下さい', 50 )
 
 	//let titleList = $.parseSetting(
 	//	await $.fetchFile( 'text', '../作品/設定.txt' )
@@ -69,6 +71,13 @@ async function playSystemOpening ( ctx ) {
 	$.log( index, settings )
 
 
+	if ( type == 'install' ) {
+		let success = await installScenario( index, 'Webから' )
+		if ( success ) await Action.sysMessage( 'インストールが完了しました', 100 )
+		else await Action.sysMessage( 'インストールできませんでした', 100 )
+		return
+
+	}
 	// シナリオ開始メニュー表示
 	Action.sysMessage( '開始メニュー', 100 )
 
@@ -94,7 +103,7 @@ async function playSystemOpening ( ctx ) {
 		case '続きから': {
 
 			let stateList = await DB.getStateList( title )
-			let choices = await $.getSaveChoices( title, 12 )
+			let choices = await $.getSaveChoices( title, 12, { isLoad: true } )
 			let index = await Action.sysChoices( choices )
 			let state = await DB.loadState( settings.title, index )
 			return Action.play( settings, state )
@@ -102,9 +111,10 @@ async function playSystemOpening ( ctx ) {
 		}　break
 		case 'インストール': {
 
-			await installScenario( index )
-			await Action.sysMessage( 'インストールが完了しました', 100 )
-			return playSystemOpening( ctx )
+			let success = await installScenario( index )
+			if ( success ) await Action.sysMessage( 'インストールが完了しました', 100 )
+			else await Action.sysMessage( 'インストールできませんでした', 100 )
+			return playSystemOpening( type )
 
 		} break
 
@@ -115,14 +125,17 @@ async function playSystemOpening ( ctx ) {
 
 
 
-async function installScenario ( index ) {
+async function installScenario ( index, sel ) {
 
-	Action.sysMessage( 'インストール方法を選んで下さい', 100 )
 
-	let menuList = [ 'Webから', 'フォルダから' ].map( label => ( { label } ) )
-	$.disableChoiceList( [ 'Webから' ], menuList )
+	if ( ! sel ) {
+		Action.sysMessage( 'インストール方法を選んで下さい', 100 )
 
-	let sel = await Action.sysChoices( menuList )
+		let menuList = [ 'フォルダから', 'Zipファイルから' ].map( label => ( { label } ) )
+		$.disableChoiceList( [ 'Webから' ], menuList )
+
+		sel = await Action.sysChoices( menuList )
+	}
 	$.log( sel )
 
 	let files
@@ -132,17 +145,48 @@ async function installScenario ( index ) {
 		case 'フォルダから': {
 
 			Action.sysMessage( 'フォルダを選んで下さい' )
-			let input = document.createElement( 'input' )
-			input.type = 'file'
-			input.webkitdirectory = true
-			input.onchange = ( ) => { if ( input.files ) player.fire( 'file', input.files ) }
+			files = await fileSelect( { folder: true } )
 
-			input.click( )
-			files = Array.from( await player.on( 'file' ) )
+		} break
+		case 'Zipファイルから': {
 
-	} break
+			Action.sysMessage( 'Zipファイルを選んで下さい' )
+			files = await fileSelect( )
+			if ( ! files ) return false
+			files = await unpackFile( files[ 0 ] )
+
+		} break
+		case 'Webから': {
+
+			Action.sysMessage( 'ダウンロード中……' )
+			files = ( await player.on( 'install', true ) ).file
+			files = await unpackFile( files )
+
+		} break
 		default : throw 'UnEx'
-	} 
+	}
+
+	if ( ! files ) return false
+
+
+	async function unpackFile ( zip ) {
+		if ( ! zip ) return null
+		let data = ( await Archive.unpackFile( zip ) ).data
+		if ( ! data ) return null
+		return data.map( f => new File( [ f.data ], f.name, { type: f.type } ) )
+	}
+
+
+	async function fileSelect ( { folder = false } = { } ) {
+		let input = document.createElement( 'input' )
+		input.type = 'file'
+		input.webkitdirectory = folder
+		input.onchange = ( ) => player.fire( 'file', input.files )
+		input.click( )
+		let files = await Promise.race( [ player.on( 'file' ), player.on( 'pointer' ) ] )
+		if ( files ) files = Array.from( files )
+		return files
+	}
 
 	Action.sysMessage( 'インストールしています……' )
 
@@ -150,12 +194,13 @@ async function installScenario ( index ) {
 
 	let settingFile
 	let data = files.map( file => {
-		if ( file.name == '設定.txt' ) {	settingFile = file }
-		let relpath = file.webkitRelativePath.match( /(.+)\./ )[ 1 ]
-		return [ file, relpath ]
+		if ( file.name.includes( '設定.txt' ) ) { settingFile = file }
+		let relpath = file.webkitRelativePath || file.name
+		let path = relpath.match( /(.+)\./ )[ 1 ]
+		return [ file, path ]
 	} )
 
-	let title = settingFile.webkitRelativePath.match( /[^/]+/ )[ 0 ]
+	let title = ( settingFile.webkitRelativePath || settingFile.name ).match( /[^/]+/ )[ 0 ]
 
 	let setting = $.parseSetting( await new Response( settingFile ).text( ) )
 	setting.title = title
@@ -167,6 +212,8 @@ async function installScenario ( index ) {
 	//let firstScnario = scenarioSetting[ '開始シナリオ' ][ 0 ]
 	
 	//$.log( firstScnario )
+
+	return true
 
 }
 
@@ -193,4 +240,13 @@ export function onDrop( file ) {
 }
 
 let player = new $.Awaiter
+
+
+export async function onMessage ( data ) {
+	
+	player.fire( 'install', data )
+
+}
+
+
 
