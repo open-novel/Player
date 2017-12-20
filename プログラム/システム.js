@@ -6,7 +6,9 @@ http://creativecommons.org/publicdomain/zero/1.0
 import * as $ from './ヘルパー.js'
 import * as Action from './アクション.js'
 import * as DB from './データベース.js'
-const Archive = $.importWorker( './プログラム/アーカイブ.js' )
+
+const script_baseurl = document.querySelector( 'script[type="module"]' ).src.match( /.+\// )
+const Archive = $.importWorker( `${ script_baseurl }アーカイブ.js` )
 
 
 async function init ( { ctx, type } ) {
