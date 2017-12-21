@@ -30,7 +30,7 @@ export let { target: initSound, register: nextInit } = new $.AwaitRegister( init
 export async function playBGM ( path ) {
 	
 	bgm.src = URL.createObjectURL( await DB.getFile( path ) )
-	await bgm.play( )
+	await bgm.play( ).catch( e => true )
 
 }
 
