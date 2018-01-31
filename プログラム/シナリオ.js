@@ -15,11 +15,11 @@ export function getState ( layer ) {
 }
 
 
-export async function play ( layer, state ) {
+export async function play ( layer, state, others ) {
 
 	let { scenario, act = scenario[ 0 ], scenarioStack = [ ], title: basePath, varMap = new Map } = state
+	let { saveGlobalVarMap, globalVarMap = new Map } = others
 	Object.assign( state, { act, scenarioStack, varMap } )
-
 
 	for ( let [ url, pos ] of state.portraits || [ ] ) Action.showPortrait( layer, url, pos )
 	for ( let [ url, pos ] of state.BGImages  || [ ] ) Action.showBGImage( layer, url, pos )
@@ -42,12 +42,25 @@ export async function play ( layer, state ) {
 			if ( typeof text != 'string' ) return text
 			// $.log( 'E', text )
 			function $Get( key ) {
-				if ( ! varMap.has( key ) ) {
-					varMap.set( key, 0 ) 
+				let map = varMap
+				if ( key[ 0 ] == '$' ) {
+					key = key.slice( 1 )
+					map = globalVarMap
+				}
+				if ( ! map.has( key ) ) {
+					map.set( key, 0 )
 					return 0
-				} else return varMap.get( key )
+				} else return map.get( key )
 			}
 			return eval( text )
+		}
+
+		async function $Set( key, value ) {
+			if ( key[ 0 ] == '$' ) {
+				key = key.slice( 1 )
+				globalVarMap.set( key, value )
+				await saveGlobalVarMap( globalVarMap )
+			} else varMap.set( key, value )
 		}
 
 
@@ -81,7 +94,7 @@ export async function play ( layer, state ) {
 
 		do {
 
-			if ( Action.isOldLayer( layer ) ) return 
+			if ( Action.isOldLayer( layer ) ) return
 
 			let { type, prop } = act
 
@@ -102,7 +115,7 @@ export async function play ( layer, state ) {
 				case '立絵': {
 
 					Action.removePortraits( layer )
-					state.portraits = [ ] 
+					state.portraits = [ ]
 
 					/*await*/ Promise.all( prop.map( p => {
 
@@ -114,7 +127,7 @@ export async function play ( layer, state ) {
 
 						if ( pos == '左' ) pos = [ 0, 0, 1 ]
 						else if ( pos == '右' ) pos = [ -0, 0, 1 ]
-						else if ( pos ) { 
+						else if ( pos ) {
 							pos = pos.match( /-?\d+(?=%|％)/g )
 							if ( pos.length == 1 ) pos[ 1 ] = 0
 							if ( pos.length == 2 ) pos[ 2 ] = 1
@@ -123,7 +136,7 @@ export async function play ( layer, state ) {
 
 						let path = [ basePath, '立ち絵', name ].join( '/' )
 
-						state.portraits.push( [ path, pos ] ) 
+						state.portraits.push( [ path, pos ] )
 						return Action.showPortrait( layer, path, pos )
 
 					} ) )
@@ -133,7 +146,7 @@ export async function play ( layer, state ) {
 				case '背景': {
 
 					Action.removeBGImages( layer )
-					state.BGImages = [ ] 
+					state.BGImages = [ ]
 
 					/*await*/ Promise.all( prop.map( p => {
 
@@ -143,7 +156,7 @@ export async function play ( layer, state ) {
 						if ( ! name ) return
 						pos = pos.normalize('NFKC')
 
-						if ( pos ) { 
+						if ( pos ) {
 							pos = pos.match( /-?\d+(?=%|％)/g )
 							if ( pos.length == 1 ) pos[ 1 ] = 0
 							if ( pos.length == 2 ) pos[ 2 ] = 1
@@ -152,7 +165,7 @@ export async function play ( layer, state ) {
 
 						let path = [ basePath, '背景', name ].join( '/' )
 
-						state.BGImages.push( [ path, pos ] ) 
+						state.BGImages.push( [ path, pos ] )
 						return Action.showBGImage( layer, path, pos )
 
 					} ) )
@@ -161,7 +174,7 @@ export async function play ( layer, state ) {
 				case '選択': {
 
 					let newAct = await Action.showChoices( layer, prop.map(
-						c => ( { label: textEval( c[ 0 ] ), value: textEval( c[ 1 ] ) } )  
+						c => ( { label: textEval( c[ 0 ] ), value: textEval( c[ 1 ] ) } )
 					) )
 					$.log( type, newAct )
 					pushScenarioStack( act.next )
@@ -173,7 +186,7 @@ export async function play ( layer, state ) {
 					for ( let p of prop ) {
 						let [ con, newAct ] = p.map( textEval )
 						$.log( type, con, newAct )
-						if ( ! con && con !== '' ) continue 
+						if ( ! con && con !== '' ) continue
 						pushScenarioStack( act.next )
 						return playScnario( newAct )
 					}
@@ -186,7 +199,7 @@ export async function play ( layer, state ) {
 					for ( let p of prop ) {
 						let [ con, newAct ] = p.map( textEval )
 						$.log( type, con, newAct )
-						if ( ! con && con !== '' ) continue 
+						if ( ! con && con !== '' ) continue
 						pushScenarioStack( act )
 						return playScnario( newAct )
 					}
@@ -204,20 +217,20 @@ export async function play ( layer, state ) {
 				} break
 				case '変数': {
 
-					prop = prop.forEach( p => {
+					await Promise.all( prop.map( async p => {
 						let [ key, value ] = p.map( textEval )
-						varMap.set( key, value )
-					} )
+						await $Set( key, value )
+					} ) )
 
 
 				} break
 				case '入力': {
 
-					prop = prop.forEach( p => {
+					await Promise.all( prop.map( async p => {
 						let [ key, value ] = p.map( textEval )
 						value = prompt( '', value ) || value
-						varMap.set( key, value )
-					} )
+						await $Set( key, value )
+					} ) )
 
 
 				} break
@@ -310,7 +323,7 @@ export function parse ( text ) {
 			} else {
 				if ( sta.slice( 0, 2 ) == '//' ) continue
 				else if ( sta[ 0 ].match( /#|＃/ ) ) {
-					addAct( 'マーク' )			
+					addAct( 'マーク' )
 					sta = sta.slice( 1 )
 				} else if ( sta[ 0 ] != '\t' ) {
 					addAct( '会話' )
@@ -327,7 +340,7 @@ export function parse ( text ) {
 
 
 	// アクション種に応じた配下の処理と、一次元配列への展開
-	function secondParse ( actList ) { 
+	function secondParse ( actList ) {
 
 		let actRoot = { type: 'マーク', prop: '$root' }
 		let progList = [ actRoot ]
@@ -336,8 +349,8 @@ export function parse ( text ) {
 
 		function addAct ( type, prop, { separate = false, subjump = false } = { } ) {
 
-			let act = { type, prop } 
-
+			let act = { type, prop }
+			//if ( type == '分岐' ) debugger
 			if ( subjump ) {
 
 				// [k,v]を[[k,v],[k,v],...]パターンと同様に扱えるように加工
@@ -349,10 +362,10 @@ export function parse ( text ) {
 					if ( subList.length == 2 && subList[ 1 ].type == '会話' &&
 						subList[ 1 ].prop[ 1 ] == '' ) continue
 					progList = progList.concat( subList.slice( 1 ) )
-					p[ 1 ] = subList[ 1 ] 
+					p[ 1 ] = subList[ 0 ].next
 				}
 
-			} 
+			}
 
 			let index = progList.push( act )
 			prev.next = act
@@ -420,7 +433,8 @@ export function parse ( text ) {
 				case '会話':
 					subParse( type, children, { separate: true } )
 				break
-				case '選択':　case '分岐': case '繰返':
+				case '選択': case '分岐': case '繰返':
+					//if ( type == '分岐' ) debugger
 					subParse( type, children, { subjump: true } )
 				break
 				default :
@@ -430,14 +444,14 @@ export function parse ( text ) {
 
 		}
 
-		return progList 
+		return progList
 	}
 
 
 
 	//実行時に最小限の処理で済むよう式などをできるだけパースする
 	function thirdParse ( progList ) {
-		//$.log( 'PL', progList )
+		//$.log( 'PL', Object.assign( { }, progList ) )
 
 
 		function parseText ( text ) {
@@ -445,7 +459,7 @@ export function parse ( text ) {
 			if ( typeof text != 'string' ) return text
 
 			text = text.trim( )
-	
+
 			if ( ! text || text == '無し' || text == 'なし' ) text = ''
 
 			text = text.replace( /\\{(.*?)}/g, ( _, t ) => `'+(${ subParseText( t, true ) })+'` )
@@ -457,7 +471,7 @@ export function parse ( text ) {
 
 
 		function subParseText ( str, subuse = false ) {
-			
+
 			//console.log( '式→', str )
 
 			if ( ! subuse ) if ( ! str || str == '無し' || str == 'なし' ) return `''`
@@ -517,7 +531,7 @@ export function parse ( text ) {
 							else if ( c == 'ー' ) { now = '-' } // 変数名中以外の「ー」はマイナス
 							else { mode = 'var'; now = '$Get(`' + ( c == '＄' ? '$' : c ) }
 						}
-						else { 
+						else {
 							if ( c == 'ー' && ! /[ァ-ヴ]/.test( prev ) ) { now = '-' } // カタカナに続かない「ー」はマイナス
 							else { mode = 'var'; now = c }
 						}
@@ -529,7 +543,7 @@ export function parse ( text ) {
 				if ( mode == 'var_op' ) { mode = 'any'; now = '`)' + now }
 				if ( mode == 'var' ) mode = 'var_op'
 
-				
+
 				res += now
 
 			}
@@ -553,7 +567,7 @@ export function parse ( text ) {
 				case '会話': {
 
 					prop = prop.map( parseText )
-				
+
 				} break
 				case '立絵': case '背景': case '選択': case '効果': {
 
@@ -561,7 +575,7 @@ export function parse ( text ) {
 
 				} break
 				case '分岐': case '繰返': {
-					
+
 					prop = prop.map( p => [ subParseText( p[ 0 ] ), parseText( p[ 1 ] ) ] )
 
 				} break
@@ -603,6 +617,3 @@ export function parse ( text ) {
 	}
 
 }
-
-
-

@@ -16,7 +16,7 @@ let HRCanvas = //new OffscreenCanvas( W, H, { alpha: false } )
 
 let HRCtx = HRCanvas.getContext( '2d', { alpha: false } )
 
-async function init ( opt ) { 
+async function init ( opt ) {
 
 	ctx = opt.ctx || ctx
 	return await initLayer( )
@@ -51,19 +51,19 @@ class Node {
 
 	}
 
-	prop ( key, val ) { 
+	prop ( key, val ) {
 		this[ key ] = val
 		layerRoot.dirty = true
 	}
 
 	draw ( ) { }
 
-	
+
 	drawHR ( { x, y, w, h }, style ) {
 
 		HRCtx.fillStyle = style
 		HRCtx.fillRect( x, y, w, h )
-	
+
 	}
 
 	append ( node ) {
@@ -73,15 +73,15 @@ class Node {
 
 		let that = this
 		do {
-			that[ node.name ] = that[ node.name ] === undefined ? 
+			that[ node.name ] = that[ node.name ] === undefined ?
 				node : /*$.info( `"${ node.name }"　同名のノードが同時に定義されています` ) ||*/ null
 			that = that.parent
-		} while ( that ) 
+		} while ( that )
 
 	}
 
 	removeChildren ( ) {
-		
+
 		for ( let node of this.children ) { node.remove( ) }
 
 	}
@@ -105,7 +105,7 @@ class Node {
 	}
 
 	on ( type ) {
-		
+
 		return this.awaiter.on( type )
 
 	}
@@ -114,19 +114,28 @@ class Node {
 
 	hide ( ) { this.prop( 'o', 0 ) }
 
-	searchImg ( target ) {
+	searchImg ( src ) {
 
 		for ( let node of this.children ) {
-			if ( node.img.src == target.img.src ) return node
+			if ( node.img.src == src ) return node
 		}
+		return null
 
+	}
+
+	hasOtherChildren ( targets ) {
+
+		for ( let node of this.children ) {
+			if ( ! targets.includes( node ) ) return true
+		}
+		return false
 	}
 
 }
 
 
 export class GroupNode extends Node {
-	
+
 }
 
 
@@ -158,13 +167,13 @@ export class TextNode extends Node {
 
 	set( text ) { this.prop( 'text', text ) }
 
-	draw ( { x, y, w, h } ) { 
+	draw ( { x, y, w, h } ) {
 		let { fill, shadow, text, size, pos } = this
 
 		ctx.font = `${ h * size }px "Hiragino Kaku Gothic ProN", Meiryo`
 		ctx.textBaseline = 'top'
 		ctx.textAlign = pos
-		if ( pos == 'center' ) x += w / 2 
+		if ( pos == 'center' ) x += w / 2
 
 		let b = h * size * .075
 
@@ -172,7 +181,7 @@ export class TextNode extends Node {
 			if( shadow ) shadowOn( { offset: b } )
 			ctx.fillStyle = fill
 			ctx.fillText( text, x, y, w - b )
-			shadowOff( ) 
+			shadowOff( )
 		}
 
 
@@ -193,7 +202,7 @@ export class DecoTextNode extends Node {
 
 	clear ( ) { this.decoList.length = 0; layerRoot.dirty = true }
 
-	draw ( { x, y, w, h } ) { 
+	draw ( { x, y, w, h } ) {
 
 		let preRow = 0, xBuf = 0
 
@@ -211,7 +220,7 @@ export class DecoTextNode extends Node {
 			ctx.fillText( text, x + xBuf, y + ( row * h * size * 1.4 ) )
 			let metrics = ctx.measureText( text )
 			xBuf += metrics.width
-			shadowOff( ) 
+			shadowOff( )
 
 		}
 
@@ -230,7 +239,7 @@ export class ImageNode extends Node {
 		//$.log( { x:this.x, y:this.y, w:this.w, h:this.h } )
 	}
 
-	draw ( { x, y, w, h } ) { 
+	draw ( { x, y, w, h } ) {
 		let { img, fill } = this
 		if ( img ) ctx.drawImage( img, x, y, w, h )
 		else if ( fill ) {
@@ -278,7 +287,7 @@ function initLayer ( ) {
 			{
 				type: 'Group', name: 'backgroundGroup',
 				children: [
-					{ 
+					{
 						type: 'Image', name: 'backgroundImage',
 						fill: 'rgba( 0, 0, 0, 1 )'
 					},
@@ -344,7 +353,7 @@ export function drawCanvas ( ) {
 	function draw ( node, base ) {
 
 		if ( node.o == 0 ) return
-		
+
 		let prop = {
 			x: base.x + node.x * base.w,
 			y: base.y + node.y * base.h,
@@ -368,7 +377,7 @@ let pointers = { }, timers = new WeakMap
 export function onPoint ( { type, x, y } ) {
 
 	if ( ! ctx ) return
-	
+
 	//$.log( 'event', type, x, y )
 
 	let list = drawHRCanvas( )
@@ -410,9 +419,9 @@ export function onPoint ( { type, x, y } ) {
 				$.error( '期待されていない値' )
 			}
 		}
-		
+
 		if ( node.region == 'opaque' ) break
-		
+
 	} while ( node = node.parent )
 
 	switch ( type ) {
@@ -422,7 +431,7 @@ export function onPoint ( { type, x, y } ) {
 		case 'up': {
 			for ( let p of pointer ) p.fire( 'up' )
 		} break
-	}		
+	}
 
 	pointers[ type == 'move' ? 'move' : 'click' ]　= newPointer
 
@@ -434,7 +443,7 @@ function drawHRCanvas( ) {
 	let rect = ctx.canvas.getBoundingClientRect( )
 	HRCanvas.width = W = rect.width
 	HRCanvas.height = H = rect.height
-	
+
 	HRCtx.clearRect( 0, 0, W, H )
 
 	let regionList = [ ]
@@ -481,4 +490,3 @@ function shadowOff ( ) {
 	ctx.globalCompositeOperation = 'source-over'
 
 }
-

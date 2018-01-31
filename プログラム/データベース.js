@@ -33,7 +33,7 @@ export async function init ( ) {
 
 
 function on ( req, option ) {
-	
+
 	let ok
 	if ( option ) {
 		req[ Object.keys( option )[ 0 ] ] = e => {
@@ -54,7 +54,7 @@ function on ( req, option ) {
 
 
 export async function getStateList ( title ) {
-	
+
 	let type = 'State'
 	let os = DB.transaction( [ type ], 'readonly' ).objectStore( type )
 	let { promise, resolve } = new $.Deferred, list = [ ]
@@ -74,14 +74,14 @@ export async function saveState ( title, index, data ) {
 
 	let type = 'State'
 	$.log( `Save${ type }`, title, index, data )
-	data = Object.assign( { title, index }, data )
+	data = Object.assign( data, { title, index } )
 	let os = DB.transaction( [ type ], 'readwrite' ).objectStore( type )
 	await on( os.put( data ) )
 
 }
 
 export async function loadState ( title, index ) {
-	
+
 	let type = 'State'
 	let os = DB.transaction( [ type ], 'readonly' ).objectStore( type )
 	let data = await on( os.get( [ title, index ] ) )
@@ -104,7 +104,7 @@ export async function saveFiles ( data ) {
 }
 
 export async function loadFile ( path ) {
-	
+
 	let type = 'File'
 	let os = DB.transaction( [ type ], 'readonly' ).objectStore( type )
 	let data = await on( os.get( path ) )
@@ -117,7 +117,7 @@ export async function loadFile ( path ) {
 //const　cacheMap = new Map
 
 export async function getFile ( path ) {
-	//let file = cacheMap.get( url ) 
+	//let file = cacheMap.get( url )
 	//if ( file ) return file
 	$.log( path )
 	let file = await loadFile( path )
@@ -129,7 +129,7 @@ export async function getFile ( path ) {
 
 
 export async function getTitleList ( ) {
-	
+
 	let type = 'TitleList'
 	let os = DB.transaction( [ type ], 'readonly' ).objectStore( type )
 	let { promise, resolve } = new $.Deferred, list = [ ]
@@ -145,7 +145,7 @@ export async function getTitleList ( ) {
 
 
 export async function saveTitle ( index, data ) {
-	
+
 	let type = 'TitleList'
 	data = Object.assign( { index }, data )
 	let os = DB.transaction( [ type ], 'readwrite' ).objectStore( type )
@@ -154,12 +154,9 @@ export async function saveTitle ( index, data ) {
 }
 
 export async function loadTitle ( index ) {
-	
+
 	let type = 'TitleList'
 	let os = DB.transaction( [ type ], 'readonly' ).objectStore( type )
 	return on( os.get( index ) )
 
 }
-
-
-

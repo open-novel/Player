@@ -27,7 +27,7 @@ async function play ( ctx, mode ) {
 	await DB.init( )
 	await Action.initAction( settings )
 
-	await Action.sysMessage( 'openノベルプレイヤー v1.0α   17/12/20' )
+	await Action.sysMessage( 'openノベルプレイヤー v1.0α   18/01/31' )
 
 	while ( true ) {
 
@@ -72,6 +72,14 @@ async function playSystemOpening ( mode ) {
 
 	$.log( index, settings )
 
+	let others = {
+		globalVarMap: settings.globalVarMap,
+		saveGlobalVarMap: async map => {
+			settings.globalVarMap = map
+			await DB.saveTitle( index, settings )
+		}
+	}
+
 
 	if ( mode == 'install' ) {
 		let success = await installScenario( index, 'Webから' )
@@ -99,7 +107,7 @@ async function playSystemOpening ( mode ) {
 
 		case '初めから': {
 
-			return Action.play( settings )
+			return Action.play( settings, null, others )
 
 		} break
 		case '続きから': {
@@ -108,7 +116,7 @@ async function playSystemOpening ( mode ) {
 			let choices = await $.getSaveChoices( title, 12, { isLoad: true } )
 			let index = await Action.sysChoices( choices )
 			let state = await DB.loadState( settings.title, index )
-			return Action.play( settings, state )
+			return Action.play( settings, state, others )
 
 		}　break
 		case 'インストール': {
@@ -123,7 +131,7 @@ async function playSystemOpening ( mode ) {
 		default: throw 'UnEx'
 	}
 
-} 
+}
 
 
 
@@ -212,7 +220,7 @@ async function installScenario ( index, sel ) {
 	DB.saveTitle( index, setting )
 
 	//let firstScnario = scenarioSetting[ '開始シナリオ' ][ 0 ]
-	
+
 	//$.log( firstScnario )
 
 	return true
@@ -236,7 +244,7 @@ export function onKeyEvent ( { type } ) {
 }
 
 export function onDrop( file ) {
-	
+
 	player.fire( 'drop', file )
 
 }
@@ -245,10 +253,7 @@ let player = new $.Awaiter
 
 
 export async function onMessage ( data ) {
-	
+
 	player.fire( 'install', data )
 
 }
-
-
-

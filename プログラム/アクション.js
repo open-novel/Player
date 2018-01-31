@@ -17,6 +17,7 @@ let nowLayer, settings, trigger, stateList = [ ]
 export async function init ( _settings = settings ) {
 
 	settings = _settings
+	Object.values( cache ).forEach( map => { if ( map.clear ) map.clear( ) } )
 	let oldLayer = nowLayer
 	let layer = nowLayer = await Renderer.initRanderer( settings )
 	if ( oldLayer ) oldLayer.fire( 'dispose' )
@@ -27,7 +28,7 @@ export async function init ( _settings = settings ) {
 }
 
 
-export async function play ( settings, state ) {
+export async function play ( settings, state, others ) {
 
 	let { title } = settings
 
@@ -37,10 +38,10 @@ export async function play ( settings, state ) {
 
 	await init( settings )
 
-	if ( ! state ) state = { scenario, title } 
+	if ( ! state ) state = { scenario, title }
 
 	do {
-		await Promise.race( [ Scenario.play( nowLayer, state ), nowLayer.on( 'dispose' ) ] )
+		await Promise.race( [ Scenario.play( nowLayer, state, others ), nowLayer.on( 'dispose' ) ] )
 	} while ( state = stateList.shift( ) )
 
 }
@@ -54,7 +55,7 @@ export let { target: initAction, register: nextInit } = new $.AwaitRegister( ini
 
 
 const frame = new $.Awaiter
-;( ( ) => { 
+;( ( ) => {
 	loop( )
 	function loop ( ) {
 		Renderer.drawCanvas( )
@@ -66,7 +67,7 @@ const frame = new $.Awaiter
 
 const action = new $.Awaiter
 export function onAction ( type ) {
-	
+
 	$.log( type )
 	action.fire( type, true )
 }
@@ -84,12 +85,12 @@ export async function onPoint ( { type, button, x, y } ) {
 
 
 class Trigger {
-	
+
 	constructor ( ) { this.layer = nowLayer }
 	step ( ) { return this.stepOr( ) }
 	stepOr ( ...awaiters ) {
 		if ( isOldLayer( this.layer ) ) return $.neverRun( )
-		return Promise.race( 
+		return Promise.race(
 			[ this.layer.on( 'click' ), action.on( 'next' ), ...awaiters ] )
 	}
 	stepOrFrameupdate ( ) { return this.stepOr( frame.on( 'update' ) ) }
@@ -114,20 +115,20 @@ async function showMenu ( layer ) {
 	switch ( await showChoices( layer, choices, subBox, 4 ) ) {
 
 		case 'セーブ': {
-		
+
 			let choices = await $.getSaveChoices( title, 20 )
 			let index = await showChoices( layer, choices, subBox, 5 )
 			await DB.saveState( title, index, Scenario.getState( layer ), 4 )
 
 		} break
 		case 'ロード': {
-		
+
 			let choices = await $.getSaveChoices( title, 20, { isLoad: true } )
 			let index = await showChoices( layer, choices, subBox, 5 )
 			let state = await DB.loadState( title, index, 4 )
 			stateList.push( state )
 			return init( )
-		
+
 		} break
 		case '終了する': {
 
@@ -138,14 +139,14 @@ async function showMenu ( layer ) {
 		default: $.error( 'UnEx' )
 	}
 
-	layer.fire( 'menu' )	
+	layer.fire( 'menu' )
 
 }
 
 
 
 async function closeMenu ( layer ) {
-	
+
 	layer.menuBox.hide( )
 	layer.menuSubBox.removeChildren( )
 
@@ -165,7 +166,7 @@ export function sysMessage ( text, speed = 1000000 ) {
 
 
 export async function showMessage ( layer, name, text, speed ) {
-		
+
 
 	layer.nameArea.clear( ), layer.messageArea.clear( )
 
@@ -190,7 +191,7 @@ export async function showMessage ( layer, name, text, speed ) {
 		let to = interrupt ? len : speed * time.get( ) / 1000 | 0
 
 		for ( ; index < to && index < len; index ++ ) {
-			let deco = decoList[ index ], wait = deco.wait || 0 
+			let deco = decoList[ index ], wait = deco.wait || 0
 			if ( wait ) {
 				index ++
 				time.pause( )
@@ -221,11 +222,11 @@ function decoText ( text ) {
 			let [ , type, val ] = magic
 			switch ( type ) {
 						case 'w': decoList.push( { wait: val || Infinity } )
-				break;	case 'n': row ++	
+				break;	case 'n': row ++
 				break;	case 'b': bold = true
 				break;	case 'B': bold = false
 				break;	case 'c': color = val
-				break;	case 's': mag = val	
+				break;	case 's': mag = val
 				break;	default : $.warn( `"${ type }" このメタ文字は未実装です`　)
 			}
 		} else {
@@ -235,34 +236,47 @@ function decoText ( text ) {
 	}
 
 	return decoList
-	
+
 }
 
 
-const　cacheMap = new WeakMap
+const cache = {
+	file: new Map,
+	blob: new WeakMap,
+}
+
+async function getFile ( path ) {
+	let blob = cache.file.get( path )
+	if ( ! blob ) {
+		blob = await DB.getFile( path )
+		cache.file.set( path, blob )
+	}
+	return blob
+}
 
 async function getImage ( blob ) {
 	let img = new Image
 	let { promise, resolve } = new $.Deferred
 	img.onload = resolve
-	let url = cacheMap.get( blob )
+	let url = cache.blob.get( blob )
 	if ( ! url ) {
 		url = URL.createObjectURL( blob )
-		cacheMap.set( blob, url )
+		cache.blob.set( blob, url )
 	}
 	img.src = url
 	await promise
+	if ( img.decode ) img.decode( )
 	return img
 }
 
 
 
-class ProgressTimer　extends $.Awaiter {
+class ProgressTimer extends $.Awaiter {
 
 	constructor ( ms = 0 ) {
 		super( )
 		this.enabled = !! ( ms >= 0 )
-		if ( ms > 0 ) this.start( ms )	
+		if ( ms > 0 ) this.start( ms )
 	}
 
 	async start ( ms ) {
@@ -331,35 +345,38 @@ async function showImage ( targetGroup, path, pos ) {
 	let eff = effect.enabled ? effect : new ProgressTimer( 150 )
 	let type = effect.enabled ? await eff.on( 'type' ) : 'フェード'
 
-	let blob = await DB.getFile( path )
+	let blob = await getFile( path )
 	let img = await getImage( blob )
 	let { x, y, h, w = 9 / 16 * h * img.naturalWidth / img.naturalHeight } = pos
-	//$.log( { x, y, w, h, img } )
-	let image = new Renderer.ImageNode( { name: 'image', x, y, w, h, o: 0, img } )
+	pos.w = w
 
-	let old = { }
+	let image, oldPos
 
 	switch ( type ) {
 		case 'フェード': {
+			image = new Renderer.ImageNode( { name: 'image', x, y, w, h, o: 0, img } )
 			targetGroup.append( image )
 		} break
 		case 'トランス': {
-			old.port = targetGroup.searchImg( image )
-			old.data = Object.assign( { }, old.port )
-				//$.log( 'show', type, old )
+			image = targetGroup.searchImg( img.src )
+			oldPos = Object.assign( { }, image )
 		} break
 	}
+
+	$.log( { x, y, w, h, pos, oldPos, image } )
 
 	while ( true ) {
 		let prog = await eff.on( 'step' )
 		switch ( type ) {
 
 			case 'フェード': {
-				image.prop( 'o', prog )
+				image.prop( 'o', 1 - ( 1 - prog ) ** 2 )
 			} break
 			case 'トランス': {
 				[ 'x', 'y', 'w', 'h' ].forEach( p => {
-					old.port[ p ] = old.data[ p ] * ( 1 - prog ) + image[ p ] * prog
+					let val = oldPos[ p ] * prog + pos[ p ] * ( 1- prog )
+					//$.log( p, val )
+					image.prop( p, val )
 				} )
 
 			} break
@@ -367,38 +384,35 @@ async function showImage ( targetGroup, path, pos ) {
 		}
 		if ( prog == 1 ) break
 	}
-	
+
 
 }
 
 
 async function removeImages ( targetGroup ) {
-	
+
 	let children = [ ... targetGroup.children ]
 
 	let eff = effect.enabled ? effect : new ProgressTimer( 150 )
 	let type = effect.enabled ? await eff.on( 'type' ) : 'フェード'
 
-	//$.log( 'remv', type, effect )
+	$.log( 'remv', type, effect )
 
-	while ( true ) {
-		let prog = await eff.on( 'step' )
-		switch ( type ) {
+	switch ( type ) {
+		case 'フェード': {
 
-			case 'フェード': {
-				for ( let image of children ) { image.prop( 'o', 1 - prog ) }
-			} break
-			case 'トランス': {
-				//
-
-			} break
-
-		}
-		if ( prog == 1 ) break
+			//for ( let image of children ) {
+			//	image.fadeout = ! image.hasOtherChildren( )
+			//}
+			while ( true ) {
+				let prog = await eff.on( 'step' )
+				for ( let image of children ) { image.prop( 'o', 1 - prog ** 2 ) }
+				if ( prog == 1 ) break
+			}
+			for ( let image of children ) { image.remove( ) }
+		} break
 	}
 
-	
-	for ( let image of children ) { image.remove( ) }
 }
 
 
@@ -407,7 +421,7 @@ export async function sysChoices ( choices ) {
 }
 
 export async function showChoices ( layer, choices, inputBox = layer.inputBox, rowLen = 3 ) {
-	
+
 	let m = .05
 
 	let nextClicks = [ ]
@@ -419,13 +433,13 @@ export async function showChoices ( layer, choices, inputBox = layer.inputBox, r
 
 	for ( let i = 0; i < len; i++ ) {
 		let cho = choices[ i ]
-		let { label, value = label, disabled = false } = 
+		let { label, value = label, disabled = false } =
 			( typeof cho == 'object' ) ? cho : { label: cho }
 		let row = i % rowLen, col = i / rowLen | 0
 		let [ x, y ] = [ m / 2 + ( w + m / 2 ) * col, m + ( h + m ) * row ]
 
 		let choiceBox = new Renderer.RectangleNode( { name: 'choiceBox',
-			x, y, w, h, pos: 'center', region: 'opaque', fill: 'rgba( 100, 100, 255, .8 )' } ) 
+			x, y, w, h, pos: 'center', region: 'opaque', fill: 'rgba( 100, 100, 255, .8 )' } )
 		inputBox.append( choiceBox )
 		if ( disabled ) choiceBox.fill = 'rgba( 200, 200, 255, .5 )'
 
@@ -449,5 +463,3 @@ export async function showChoices ( layer, choices, inputBox = layer.inputBox, r
 
 
 export { playBGM, stopBGM } from './サウンド.js'
-
-
