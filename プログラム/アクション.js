@@ -118,14 +118,14 @@ async function showMenu ( layer ) {
 
 			let choices = await $.getSaveChoices( title, 20 )
 			let index = await showChoices( layer, choices, subBox, 5 )
-			await DB.saveState( title, index, Scenario.getState( layer ), 4 )
+			await DB.saveState( title, index, Scenario.getState( layer )  )
 
 		} break
 		case 'ロード': {
 
 			let choices = await $.getSaveChoices( title, 20, { isLoad: true } )
 			let index = await showChoices( layer, choices, subBox, 5 )
-			let state = await DB.loadState( title, index, 4 )
+			let state = await DB.loadState( title, index )
 			stateList.push( state )
 			return init( )
 
@@ -216,8 +216,8 @@ function decoText ( text ) {
 
 	let mag = 1, bold = false, color = undefined, row = 0
 
-	for ( let unit of ( text.match( /\\\w(\[\w+\])?|./g ) || [ ] ) ) {
-		let magic = unit.match( /\\(\w)\[?(\w+)?\]?/ )
+	for ( let unit of ( text.match( /\\\w(\[[\w.]+\])?|./g ) || [ ] ) ) {
+		let magic = unit.match( /\\(\w)\[?([\w.]+)?\]?/ )
 		if ( magic ) {
 			let [ , type, val ] = magic
 			switch ( type ) {
@@ -416,11 +416,11 @@ async function removeImages ( targetGroup ) {
 }
 
 
-export async function sysChoices ( choices ) {
-	return showChoices( nowLayer, choices, undefined, 4 )
+export async function sysChoices ( choices, rowLen = 4 ) {
+	return showChoices( nowLayer, choices, undefined, rowLen )
 }
 
-export async function showChoices ( layer, choices, inputBox = layer.inputBox, rowLen = 3 ) {
+export async function showChoices ( layer, choices, inputBox = layer.inputBox, rowLen = 4 ) {
 
 	let m = .05
 

@@ -17,6 +17,8 @@ export function getState ( layer ) {
 
 export async function play ( layer, state, others ) {
 
+	stateMap.set( layer, state )
+
 	let { scenario, act = scenario[ 0 ], scenarioStack = [ ], title: basePath, varMap = new Map } = state
 	let { saveGlobalVarMap, globalVarMap = new Map } = others
 	Object.assign( state, { act, scenarioStack, varMap } )
@@ -36,6 +38,7 @@ export async function play ( layer, state, others ) {
 	async function playAct( act, scenario ) {
 
 		$.log( 'ACT', scenario )
+		state.scenario = scenario
 
 		function textEval ( text ) {
 
@@ -48,6 +51,7 @@ export async function play ( layer, state, others ) {
 					map = globalVarMap
 				}
 				if ( ! map.has( key ) ) {
+					$.log( `変数名【${ key }】が見つかりません` )
 					map.set( key, 0 )
 					return 0
 				} else return map.get( key )
@@ -103,7 +107,7 @@ export async function play ( layer, state, others ) {
 				case '会話': {
 
 					state.act = act
-					stateMap.set( layer, state )
+					//stateMap.set( layer, state )
 
 					let [ name, text ] = prop.map( textEval )
 
