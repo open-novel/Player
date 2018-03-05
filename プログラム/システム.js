@@ -99,11 +99,17 @@ async function playSystemOpening ( mode ) {
 		$.disableChoiceList( [ '途中から' ], menuList )
 	}
 
-	let sel = await Action.sysChoices( menuList )
+	let sel = await Action.sysChoices( menuList, { cancelable: true } )
 
 	$.log( sel )
 
 	switch ( sel ) {
+
+		case null: {
+
+			return playSystemOpening( mode )
+
+		} break
 
 		case '初めから': {
 

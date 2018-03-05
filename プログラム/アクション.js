@@ -112,19 +112,26 @@ async function showMenu ( layer ) {
 
 	let choices = [ 'セーブ', 'ロード', '終了する' ].map( label => ( { label } ) )
 
-	switch ( await showChoices( layer, choices, subBox, 4 ) ) {
+	SWITCH: switch ( await sysChoices( choices, { inputBox: subBox, rowLen: 4, cancelable: true } ) ) {
 
+		case null: {
+
+			break SWITCH
+
+		} break
 		case 'セーブ': {
 
 			let choices = await $.getSaveChoices( title, 20 )
-			let index = await showChoices( layer, choices, subBox, 5 )
+			let index = await sysChoices( choices, { inputBox: subBox, rowLen: 4, cancelable: true } )
+			if ( index === null ) break SWITCH
 			await DB.saveState( title, index, Scenario.getState( layer )  )
 
 		} break
 		case 'ロード': {
 
 			let choices = await $.getSaveChoices( title, 20, { isLoad: true } )
-			let index = await showChoices( layer, choices, subBox, 5 )
+			let index = await sysChoices( choices, { inputBox: subBox, rowLen: 4, cancelable: true } )
+			if ( index === null ) break SWITCH
 			let state = await DB.loadState( title, index )
 			stateList.push( state )
 			return init( )
@@ -416,11 +423,11 @@ async function removeImages ( targetGroup ) {
 }
 
 
-export async function sysChoices ( choices, rowLen = 4 ) {
-	return showChoices( nowLayer, choices, undefined, rowLen )
+export async function sysChoices ( choices, opt ) {
+	return showChoices(  Object.assign( { layer: nowLayer, choices }, opt ) )
 }
 
-export async function showChoices ( layer, choices, inputBox = layer.inputBox, rowLen = 4 ) {
+export async function showChoices ( { layer, choices, inputBox = layer.inputBox, rowLen = 4, cancelable = false } ) {
 
 	let m = .05
 
@@ -438,18 +445,35 @@ export async function showChoices ( layer, choices, inputBox = layer.inputBox, r
 		let row = i % rowLen, col = i / rowLen | 0
 		let [ x, y ] = [ m / 2 + ( w + m / 2 ) * col, m + ( h + m ) * row ]
 
-		let choiceBox = new Renderer.RectangleNode( { name: 'choiceBox',
-			x, y, w, h, pos: 'center', region: 'opaque', fill: 'rgba( 100, 100, 255, .8 )' } )
+		let choiceBox = new Renderer.RectangleNode( {
+			name: 'choiceBox',
+			x, y, w, h, region: 'opaque', fill: 'rgba( 100, 100, 255, .8 )'
+		} )
 		inputBox.append( choiceBox )
 		if ( disabled ) choiceBox.fill = 'rgba( 200, 200, 255, .5 )'
 
-		let textArea = new Renderer.TextNode( { name: 'textArea',
-			size: .7, y: .05, pos: 'center', fill: 'rgba( 255, 255, 255, .9 )' } )
+		let textArea = new Renderer.TextNode( {
+			name: 'choiceText',
+			size: .7, y: .05, pos: 'center', fill: 'rgba( 255, 255, 255, .9 )'
+		} )
 		choiceBox.append( textArea )
 		if ( disabled ) textArea.fill = 'rgba( 255, 255, 255, .5 )'
 
 		if ( ! disabled ) nextClicks.push( choiceBox.on( 'click' ).then( ( ) => value ) )
 		textArea.set( label )
+	}
+
+	if ( cancelable ) {
+
+		let backBotton = new Renderer.PolygonNode( {
+			name: 'backBotton',
+			x: 0, y: .2, w: .1, h: .6,
+			region: 'opaque', fill: 'rgba( 100, 100, 255, .8 )',
+			path: [ [ -0.1, 0 ], [ -1.1, .5 ], [ -0.1, 1 ] ],
+		} )
+		inputBox.append( backBotton )
+		nextClicks.push( backBotton.on( 'click' ).then( ( ) => null ) )
+
 	}
 
 	inputBox.show( )

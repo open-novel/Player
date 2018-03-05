@@ -147,7 +147,7 @@ export class RectangleNode extends Node {
 
 		if ( fill ) {
 			if ( shadow ) shadowOn( { offset: H * .01, alpha: .5 } )
-			ctx.fillStyle = this.fill
+			ctx.fillStyle = fill
 			ctx.fillRect( x, y, w, h )
 			shadowOff( )
 		}
@@ -156,6 +156,37 @@ export class RectangleNode extends Node {
 	}
 
 }
+
+
+export class PolygonNode extends Node {
+
+	draw ( { x, y, w, h } ) {
+
+		let { fill, shadow, path } = this
+
+		if ( fill ) {
+			if ( shadow ) shadowOn( { offset: H * .01, alpha: .5 } )
+			ctx.beginPath( )
+			for ( let [ l, t ] of path ) ctx.lineTo( x + w * l, y + h * t )
+			ctx.fillStyle = fill
+			ctx.fill( )
+			shadowOff( )
+		}
+
+
+	}
+
+	drawHR ( { x, y, w, h }, style ) {
+
+		HRCtx.fillStyle = style
+		HRCtx.beginPath( )
+		for ( let [ l, t ] of this.path ) HRCtx.lineTo( x + w * l, y + h * t )
+		HRCtx.fill( )
+
+	}
+
+}
+
 
 export class TextNode extends Node {
 
@@ -312,7 +343,7 @@ function initLayer ( ) {
 			},
 			{
 				type: 'Rectangle', name: 'inputBox',
-				o: 0, x: .05, y: .05, w: .9, h: .65, fill: 'rgba( 200, 200, 255, .25 )'
+				o: 0, x: .1, y: .05, w: .8, h: .65, fill: 'rgba( 200, 200, 255, .25 )'
 			},
 			{
 				type: 'Rectangle', name: 'menuBox',

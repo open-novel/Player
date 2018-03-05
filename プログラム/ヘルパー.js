@@ -20,7 +20,7 @@ export function Deferred ( ) {
 }
 
 export function timeout ( ms ) {
-	
+
 	let { promise, resolve } = new Deferred
 	if ( ms != Infinity ) setTimeout( resolve, ms )
 	return promise
@@ -28,7 +28,7 @@ export function timeout ( ms ) {
 
 
 export function AwaitRegister ( fn ) {
-		
+
 	let registrants = new Set
 
 	return {
@@ -68,12 +68,12 @@ export async function getSaveChoices ( title, num, { isLoad = false } = { } ) {
 		return { label: mark, value: index, disabled }
 	} )
 	return choices
-	
+
 }
 
 
 export function parseSetting ( text ) {
-	
+
 	let setting = { }
 	let key = ''
 
@@ -93,7 +93,7 @@ export function parseSetting ( text ) {
 }
 
 
-export function neverRun ( ) { 
+export function neverRun ( ) {
 	return new Deferred( ).promise
 }
 
@@ -138,7 +138,7 @@ export class Awaiter {
 
 export class Time {
 
-	constructor ( ) { 
+	constructor ( ) {
 		this.origin = performance.now( )
 		this.pauseStart = 0
 	}
@@ -147,7 +147,7 @@ export class Time {
 		return performance.now( ) - this.origin
 	}
 
-	pause ( ) { 
+	pause ( ) {
 		this.pauseStart = performance.now( )
 	}
 
@@ -165,13 +165,13 @@ export function importWorker ( url ) {
 	return new Proxy( { }, {
 		get ( tar, key ) {
 			return async ( ...args ) => {
-				w.postMessage( { fn: key, args }, 
+				w.postMessage( { fn: key, args },
 					args.reduce( ( a, v ) => {
 						if ( v instanceof ArrayBuffer ) a.push( v )
 						else if ( ArrayBuffer.isView( v ) ) a.push( v.buffer )
 						return a
 					}, [ ] ) )
-				return new Promise ( ( ok, ng ) => { 
+				return new Promise ( ( ok, ng ) => {
 					w.onmessage = ok, w.onerror = ng
 				} )
 			}
@@ -179,5 +179,3 @@ export function importWorker ( url ) {
 	} )
 
 }
-
-
