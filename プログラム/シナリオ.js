@@ -177,7 +177,7 @@ export async function play ( layer, state, others ) {
 				} break
 				case '選択': {
 
-					let newAct = await Action.showChoices( layer, prop.map(
+					let newAct = await Action.scenarioChoices( layer, prop.map(
 						c => ( { label: textEval( c[ 0 ] ), value: textEval( c[ 1 ] ) } )
 					) )
 					$.log( type, newAct )

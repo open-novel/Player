@@ -46,7 +46,7 @@ async function play ( ctx, mode ) {
 async function playSystemOpening ( mode ) {
 
 	//await Action.sysBGImage( './画像/背景.png' )
-
+	Action.setMenuVisible( true )
 	// インストール済み作品リストをロード
 	if ( mode == 'install' )  Action.sysMessage( 'インストール先を選んで下さい', 50 )
 	else Action.sysMessage( '開始する作品を選んで下さい', 50 )
@@ -119,8 +119,9 @@ async function playSystemOpening ( mode ) {
 		case '続きから': {
 
 			let stateList = await DB.getStateList( title )
-			let choices = await $.getSaveChoices( title, 12, { isLoad: true } )
-			let index = await Action.sysChoices( choices )
+			let choices = await $.getSaveChoices( title, 20, { isLoad: true } )
+			let index = await Action.sysChoices( choices, { cancelable: true } )
+			if ( index === null ) return playSystemOpening( mode )
 			let state = await DB.loadState( settings.title, index )
 			return Action.play( settings, state, others )
 

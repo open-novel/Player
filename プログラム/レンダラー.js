@@ -299,6 +299,7 @@ function initLayer ( ) {
 			Image: ImageNode,
 			Rectangle: RectangleNode,
 			DecoText: DecoTextNode,
+			Polygon: PolygonNode,
 		} [ type ] ( obj )
 
 		if ( parent ) parent.append( node )
@@ -339,19 +340,38 @@ function initLayer ( ) {
 						type: 'DecoText', name: 'messageArea',
 						x: .2, w: .75, y: .2, size: .175, fill: 'rgba( 255, 255, 200, .9 )'
 					},
+					{
+						type: 'Group', name: 'iconGroup',
+						children: [
+							{
+
+							}
+						]
+					}
 				]
 			},
 			{
 				type: 'Rectangle', name: 'inputBox',
-				o: 0, x: .1, y: .05, w: .8, h: .65, fill: 'rgba( 200, 200, 255, .25 )'
+				o: 1, fill: 'rgba( 255, 255, 255, 0 )',
+				children: [
+					{
+						type: 'Rectangle', name: 'inputSubBox', region: 'opaque',
+						o: 0, x: .1, y: .05, w: .8, h: .65, fill: 'rgba( 75, 75, 100, .5 )'
+					}
+				]
 			},
 			{
-				type: 'Rectangle', name: 'menuBox',
-				region: 'opaque', o: 0, fill: 'rgba( 255, 255, 255, .9 )',
+				type: 'Rectangle', name: 'menuBox', region: 'opaque',
+				o: 0, fill: 'rgba( 255, 255, 255, 0 )',
 				children: [
 					{
 						type: 'Rectangle', name: 'menuSubBox',
-
+						o: 0, x: .1, y: .05, w: .8, h: .65, fill: 'rgba( 75, 75, 100, .5 )'
+					},
+					{
+						type: 'Polygon', name: 'backBotton', region: 'opaque',
+						x: 0, y: .05, w: .1, h: .65, o: 0, fill: 'rgba( 100, 100, 255, .8 )',
+						path: [ [ .9, .2 ], [ .1, .5 ], [ .9, .8 ] ]
 					}
 				]
 			},
@@ -483,8 +503,6 @@ function drawHRCanvas( ) {
 
 	function drawHR ( node, base, id ) {
 
-		++id
-
 		let prop = {
 			x: base.x + node.x * base.w,
 			y: base.y + node.y * base.h,
@@ -492,9 +510,10 @@ function drawHRCanvas( ) {
 			h: base.h * node.h,
 		}
 
-		if ( node.region && node.o ) {
+		if (  ! node.o ) return id
+		if ( node.region ) {
 
-			regionList[ id ] = node
+			regionList[ ++id ] = node
 			node.drawHR( prop, `rgb(${ id/256**2|0 }, ${ (id/256|0)%256 }, ${ id%256 })` )
 			//$.log( 'draw', id, node, regionList )
 		}

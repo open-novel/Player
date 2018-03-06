@@ -21,8 +21,9 @@ export async function init ( _settings = settings ) {
 	let oldLayer = nowLayer
 	let layer = nowLayer = await Renderer.initRanderer( settings )
 	if ( oldLayer ) oldLayer.fire( 'dispose' )
-	trigger =　new Trigger
+	trigger = new Trigger
 	layer.on( 'menu' ).then( ( ) => showMenu( layer ) )
+	setMenuVisible( false, layer )
 	await Sound.initSound( settings )
 
 }
@@ -99,20 +100,27 @@ class Trigger {
 }
 
 
+export function setMenuVisible ( flag, layer = nowLayer ) {
+
+	layer.menuSubBox.removeChildren( )
+	if ( flag ) layer.menuBox.show( )
+	else layer.menuBox.hide( )
+
+}
+
 
 async function showMenu ( layer ) {
 
 	let title = settings.title
-	if ( ! title ) return closeMenu( )
+	if ( ! title ) return //closeMenu( )
 
-	let { menuBox, menuSubBox: subBox } = layer
-	menuBox.show( )
+	setMenuVisible( true, layer )
 
 	layer.on( 'menu' ).then( ( ) => closeMenu( layer ) )
 
 	let choices = [ 'セーブ', 'ロード', '終了する' ].map( label => ( { label } ) )
 
-	SWITCH: switch ( await sysChoices( choices, { inputBox: subBox, rowLen: 4, cancelable: true } ) ) {
+	SWITCH: switch ( await sysChoices( choices, { rowLen: 4, cancelable: true } ) ) {
 
 		case null: {
 
@@ -122,7 +130,7 @@ async function showMenu ( layer ) {
 		case 'セーブ': {
 
 			let choices = await $.getSaveChoices( title, 20 )
-			let index = await sysChoices( choices, { inputBox: subBox, rowLen: 4, cancelable: true } )
+			let index = await sysChoices( choices, { cancelable: true } )
 			if ( index === null ) break SWITCH
 			await DB.saveState( title, index, Scenario.getState( layer )  )
 
@@ -130,7 +138,7 @@ async function showMenu ( layer ) {
 		case 'ロード': {
 
 			let choices = await $.getSaveChoices( title, 20, { isLoad: true } )
-			let index = await sysChoices( choices, { inputBox: subBox, rowLen: 4, cancelable: true } )
+			let index = await sysChoices( choices, { cancelable: true } )
 			if ( index === null ) break SWITCH
 			let state = await DB.loadState( title, index )
 			stateList.push( state )
@@ -154,8 +162,7 @@ async function showMenu ( layer ) {
 
 async function closeMenu ( layer ) {
 
-	layer.menuBox.hide( )
-	layer.menuSubBox.removeChildren( )
+	setMenuVisible( false, layer )
 
 	layer.on( 'menu' ).then( ( ) => showMenu( layer ) )
 }
@@ -427,7 +434,11 @@ export async function sysChoices ( choices, opt ) {
 	return showChoices(  Object.assign( { layer: nowLayer, choices }, opt ) )
 }
 
-export async function showChoices ( { layer, choices, inputBox = layer.inputBox, rowLen = 4, cancelable = false } ) {
+export async function scenarioChoices ( layer, choices ) {
+	return showChoices( { layer, choices, inputBox: layer.inputSubBox } )
+}
+
+export async function showChoices ( { layer, choices, inputBox = layer.menuSubBox, rowLen = 4, cancelable = false } ) {
 
 	let m = .05
 
@@ -463,15 +474,10 @@ export async function showChoices ( { layer, choices, inputBox = layer.inputBox,
 		textArea.set( label )
 	}
 
+	let backBotton = layer.backBotton
 	if ( cancelable ) {
 
-		let backBotton = new Renderer.PolygonNode( {
-			name: 'backBotton',
-			x: 0, y: .2, w: .1, h: .6,
-			region: 'opaque', fill: 'rgba( 100, 100, 255, .8 )',
-			path: [ [ -0.1, 0 ], [ -1.1, .5 ], [ -0.1, 1 ] ],
-		} )
-		inputBox.append( backBotton )
+		backBotton.show( )
 		nextClicks.push( backBotton.on( 'click' ).then( ( ) => null ) )
 
 	}
@@ -480,6 +486,7 @@ export async function showChoices ( { layer, choices, inputBox = layer.inputBox,
 	let val = await Promise.race( nextClicks )
 	inputBox.removeChildren( )
 	inputBox.hide( )
+	backBotton.hide( )
 	return val
 
 }
