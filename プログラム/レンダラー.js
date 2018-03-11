@@ -47,7 +47,10 @@ class Node {
 			}
 		}
 
-		if ( layerRoot ) layerRoot.dirty = true
+		let on, off
+		off = ( ) => { this.forcused = false; this.on( 'enter' ).then( on ) }
+		on = ( ) => { this.forcused = true;  this.on( 'leave' ).then( off ) }
+		off( )
 
 	}
 
@@ -78,6 +81,8 @@ class Node {
 			that = that.parent
 		} while ( that )
 
+		layerRoot.dirty = true
+
 	}
 
 	removeChildren ( ) {
@@ -95,11 +100,14 @@ class Node {
 			that = that.parent
 		}
 
+		layerRoot.dirty = true
+
 	}
 
 	fire ( type ) {
 
 		//$.log( 'fire', type )
+		if ( type == 'click' && this.event ) layerRoot.fire( this.event )
 		this.awaiter.fire( type, true )
 
 	}
@@ -191,7 +199,7 @@ export class PolygonNode extends Node {
 export class TextNode extends Node {
 
 	constructor ( opt ) {
-		const def = { size: 0, text: '', pos: 'start' }
+		const def = { size: 0, text: '', pos: 'start', rotate: 0 }
 		opt = Object.assign( def, opt )
 		super ( opt )
 	}
@@ -199,14 +207,21 @@ export class TextNode extends Node {
 	set( text ) { this.prop( 'text', text ) }
 
 	draw ( { x, y, w, h } ) {
-		let { fill, shadow, text, size, pos } = this
+		let { fill, shadow, text, size, pos, rotate } = this
 
 		ctx.font = `${ h * size }px "Hiragino Kaku Gothic ProN", Meiryo`
 		ctx.textBaseline = 'top'
 		ctx.textAlign = pos
-		if ( pos == 'center' ) x += w / 2
 
 		let b = h * size * .075
+
+		if ( rotate ) {
+			ctx.translate( x, y )
+			x = 0, y = 0
+			ctx.rotate( rotate * Math.PI / 180 )
+		}
+
+		if ( pos == 'center' ) x += w / 2
 
 		if ( fill ) {
 			if( shadow ) shadowOn( { offset: b } )
@@ -214,7 +229,6 @@ export class TextNode extends Node {
 			ctx.fillText( text, x, y, w - b )
 			shadowOff( )
 		}
-
 
 	}
 
@@ -287,20 +301,15 @@ export class ImageNode extends Node {
 function initLayer ( ) {
 
 
-	layerRoot　= function generateNode ( obj, parent ) {
+	layerRoot = new GroupNode( { type: 'Group', name: 'root', region: 'opaque' } )
+	;( function generateNode ( obj, parent ) {
 
 		let type = obj.type, children = obj.children
 		delete obj.type, delete obj.children
 
 		if ( ! type ) return $.warn( 'タイプが不明です。' )
 
-		let node = new {
-			Group: GroupNode,
-			Image: ImageNode,
-			Rectangle: RectangleNode,
-			DecoText: DecoTextNode,
-			Polygon: PolygonNode,
-		} [ type ] ( obj )
+		let node = new type( obj )
 
 		if ( parent ) parent.append( node )
 
@@ -312,71 +321,77 @@ function initLayer ( ) {
 
 		return node
 
-	} ( {
-		type: 'Group', name: 'root',
-		region: 'opaque',
+	} )( {
+		type: GroupNode, name: 'rootSub',
 		children: [
 			{
-				type: 'Group', name: 'backgroundGroup',
+				type: GroupNode, name: 'backgroundGroup',
 				children: [
 					{
-						type: 'Image', name: 'backgroundImage',
+						type: ImageNode, name: 'backgroundImage',
 						fill: 'rgba( 0, 0, 0, 1 )'
 					},
 				]
 			},
 			{
-				type: 'Group', name: 'portraitGroup'
+				type: GroupNode, name: 'portraitGroup'
 			},
 			{
-				type: 'Rectangle',  name: 'conversationBox',
+				type: RectangleNode,  name: 'conversationBox',
 				y: .75, h: .25, shadow: false, fill: 'rgba( 0, 0, 100, .5 )',
 				children: [
 					{
-						type: 'DecoText', name: 'nameArea',
+						type: DecoTextNode, name: 'nameArea',
 						x: .05, w: .1, y: .2, size: .175, fill: 'rgba( 255, 255, 200, .9 )'
 					},
 					{
-						type: 'DecoText', name: 'messageArea',
+						type: DecoTextNode, name: 'messageArea',
 						x: .2, w: .75, y: .2, size: .175, fill: 'rgba( 255, 255, 200, .9 )'
 					},
 					{
-						type: 'Group', name: 'iconGroup',
+						type: GroupNode, name: 'iconGroup',
 						children: [
 							{
-
+								type: PolygonNode, name: 'menuBotton', region: 'opaque',
+								fill: 'rgba( 255, 200, 200, .25 )', event: 'menu',
+								path: [ [ .005, .25 ], [ .005, .96 ], [ .14, .96 ] ]
+							},
+							{
+								type: TextNode, name: 'openMenuText',
+								y: .2, w: .165, fill: 'rgba( 255, 255, 255, .5 )', text: 'open menu',
+								pos: 'center', size: .15, rotate: 35
 							}
 						]
 					}
 				]
 			},
 			{
-				type: 'Rectangle', name: 'inputBox',
-				o: 1, fill: 'rgba( 255, 255, 255, 0 )',
+				type: RectangleNode, name: 'inputBox',
+				fill: 'rgba( 255, 255, 255, 0 )',
 				children: [
 					{
-						type: 'Rectangle', name: 'inputSubBox', region: 'opaque',
+						type: RectangleNode, name: 'inputSubBox', region: 'opaque',
 						o: 0, x: .1, y: .05, w: .8, h: .65, fill: 'rgba( 75, 75, 100, .5 )'
 					}
 				]
 			},
 			{
-				type: 'Rectangle', name: 'menuBox', region: 'opaque',
+				type: RectangleNode, name: 'menuBox', region: 'opaque',
 				o: 0, fill: 'rgba( 255, 255, 255, 0 )',
 				children: [
 					{
-						type: 'Rectangle', name: 'menuSubBox',
+						type: RectangleNode, name: 'menuSubBox',
 						o: 0, x: .1, y: .05, w: .8, h: .65, fill: 'rgba( 75, 75, 100, .5 )'
 					},
 					{
-						type: 'Polygon', name: 'backBotton', region: 'opaque',
+						type: PolygonNode, name: 'backBotton', region: 'opaque',
 						x: 0, y: .05, w: .1, h: .65, o: 0, fill: 'rgba( 100, 100, 255, .8 )',
 						path: [ [ .9, .2 ], [ .1, .5 ], [ .9, .8 ] ]
-					}
+					},
 				]
 			},
 		]
-	} )
+	}, layerRoot )
 
 	$.log( layerRoot )
 
@@ -417,7 +432,9 @@ export function drawCanvas ( ) {
 
 		ctx.globalAlpha = prop.o
 
+		ctx.save( )
 		node.draw( prop )
+		ctx.restore( )
 		for ( let childnode of node.children ) { draw( childnode, prop ) }
 	}
 
@@ -452,7 +469,7 @@ export function onPoint ( { type, x, y } ) {
 
 		switch ( type ) {
 			case 'move': {
-				if( ! pointer.delete( node ) ) node.fire( 'over' )
+				if( ! pointer.delete( node ) ) node.fire( 'enter' )
 			} break
 			case 'down': {
 				node.fire( 'down' )
@@ -477,7 +494,7 @@ export function onPoint ( { type, x, y } ) {
 
 	switch ( type ) {
 		case 'move': {
-			for ( let p of pointer ) p.fire( 'out' )
+			for ( let p of pointer ) p.fire( 'leave' )
 		} break
 		case 'up': {
 			for ( let p of pointer ) p.fire( 'up' )
@@ -514,7 +531,9 @@ function drawHRCanvas( ) {
 		if ( node.region ) {
 
 			regionList[ ++id ] = node
+			ctx.save( )
 			node.drawHR( prop, `rgb(${ id/256**2|0 }, ${ (id/256|0)%256 }, ${ id%256 })` )
+			ctx.restore( )
 			//$.log( 'draw', id, node, regionList )
 		}
 
@@ -532,11 +551,11 @@ function shadowOn ( { offset, alpha = .9, blur = 5 } ) {
 	ctx.shadowOffsetX = ctx.shadowOffsetY = offset
 	ctx.shadowColor = `rgba( 0, 0, 0, ${ alpha } )`
 	ctx.shadowBlur = blur
-	ctx.globalCompositeOperation = 'source-atop'
+	//ctx.globalCompositeOperation = 'source-atop'
 }
 
 function shadowOff ( ) {
 	ctx.shadowColor = 'rgba( 0, 0, 0, 0 )'
-	ctx.globalCompositeOperation = 'source-over'
+	//ctx.globalCompositeOperation = 'source-over'
 
 }
