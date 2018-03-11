@@ -354,7 +354,7 @@ function initLayer ( ) {
 							{
 								type: PolygonNode, name: 'menuBotton', region: 'opaque',
 								fill: 'rgba( 255, 200, 200, .25 )', event: 'menu',
-								path: [ [ .005, .25 ], [ .005, .96 ], [ .14, .96 ] ]
+								path: [ [ .005, .25 ], [ .005, .96 ], [ .145, .96 ] ]
 							},
 							{
 								type: TextNode, name: 'openMenuText',
