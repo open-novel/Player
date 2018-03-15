@@ -151,15 +151,22 @@ export class RectangleNode extends Node {
 
 	draw ( { x, y, w, h } ) {
 
-		let { fill, shadow } = this
+		let { fill, shadow, forcused, pushed } = this
+
+		let offset = H * .01
 
 		if ( fill ) {
-			if ( shadow ) shadowOn( { offset: H * .01, alpha: .5 } )
+			if ( pushed ) {
+				ctx.filter = 'brightness(50%)'
+				x += offset, y += offset
+			} else {
+				if ( shadow ) setShadow( { offset, alpha: .5 } )
+				if ( forcused ) ctx.filter = 'brightness(150%)'
+			}
 			ctx.fillStyle = fill
 			ctx.fillRect( x, y, w, h )
-			shadowOff( )
-		}
 
+		}
 
 	}
 
@@ -170,15 +177,23 @@ export class PolygonNode extends Node {
 
 	draw ( { x, y, w, h } ) {
 
-		let { fill, shadow, path } = this
+		let { fill, shadow, path, forcused, pushed } = this
+
+		let offset = H * .01
 
 		if ( fill ) {
-			if ( shadow ) shadowOn( { offset: H * .01, alpha: .5 } )
+			if ( pushed ) {
+				ctx.filter = 'brightness(50%)'
+				x += offset, y += offset
+			} else {
+				if ( shadow ) setShadow( { offset, alpha: .5 } )
+				if ( forcused ) ctx.filter = 'brightness(150%)'
+			}
 			ctx.beginPath( )
 			for ( let [ l, t ] of path ) ctx.lineTo( x + w * l, y + h * t )
 			ctx.fillStyle = fill
 			ctx.fill( )
-			shadowOff( )
+
 		}
 
 
@@ -224,10 +239,10 @@ export class TextNode extends Node {
 		if ( pos == 'center' ) x += w / 2
 
 		if ( fill ) {
-			if( shadow ) shadowOn( { offset: b } )
+			if( shadow ) setShadow( { offset: b } )
 			ctx.fillStyle = fill
 			ctx.fillText( text, x, y, w - b )
-			shadowOff( )
+
 		}
 
 	}
@@ -260,12 +275,12 @@ export class DecoTextNode extends Node {
 
 			let b = h * size * .075
 
-			shadowOn( { offset: b } )
+			setShadow( { offset: b } )
 			ctx.fillStyle = color
 			ctx.fillText( text, x + xBuf, y + ( row * h * size * 1.4 ) )
 			let metrics = ctx.measureText( text )
 			xBuf += metrics.width
-			shadowOff( )
+
 
 		}
 
@@ -446,6 +461,7 @@ export function onPoint ( { type, x, y } ) {
 
 	if ( ! ctx ) return
 
+	layerRoot.dirty = true
 	//$.log( 'event', type, x, y )
 
 	let list = drawHRCanvas( )
@@ -501,7 +517,7 @@ export function onPoint ( { type, x, y } ) {
 		} break
 	}
 
-	pointers[ type == 'move' ? 'move' : 'click' ]　= newPointer
+	pointers[ type == 'move' ? 'move' : 'click' ] = newPointer
 
 }
 
@@ -547,15 +563,9 @@ function drawHRCanvas( ) {
 }
 
 
-function shadowOn ( { offset, alpha = .9, blur = 5 } ) {
+function setShadow ( { offset, alpha = .9, blur = 5 } ) {
 	ctx.shadowOffsetX = ctx.shadowOffsetY = offset
 	ctx.shadowColor = `rgba( 0, 0, 0, ${ alpha } )`
 	ctx.shadowBlur = blur
 	//ctx.globalCompositeOperation = 'source-atop'
-}
-
-function shadowOff ( ) {
-	ctx.shadowColor = 'rgba( 0, 0, 0, 0 )'
-	//ctx.globalCompositeOperation = 'source-over'
-
 }
