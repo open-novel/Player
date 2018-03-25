@@ -126,7 +126,7 @@ export class Awaiter {
 			this[ key ] = { promise, resolve }
 		}
 		if ( late && lateValue ) {
-			delete this[ key ].lateValue
+			//delete this[ key ].lateValue
 			resolve( lateValue )
 			console.log( 'late', key, lateValue )
 		}

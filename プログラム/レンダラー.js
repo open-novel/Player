@@ -32,7 +32,7 @@ class Node {
 	constructor ( opt ) {
 
 		const def = { name: 'undefined', x: 0, y: 0, w: 1, h: 1, o: 1,
-			fill: '', stroke: '', shadow: true, region: '', children: new Set,
+			fill: '', stroke: '', shadow: true, listenerMode: '', children: new Set,
 			awaiter: new $.Awaiter }
 
 		Object.assign( this, def, opt )
@@ -99,6 +99,7 @@ class Node {
 			that.children.delete( this )
 			that = that.parent
 		}
+		this.parent = null
 
 		layerRoot.dirty = true
 
@@ -151,7 +152,7 @@ export class RectangleNode extends Node {
 
 	draw ( { x, y, w, h } ) {
 
-		let { fill, shadow, forcused, pushed } = this
+		let { fill, shadow, forcused, pushed, listenerMode } = this
 
 		let offset = H * .01
 
@@ -161,7 +162,7 @@ export class RectangleNode extends Node {
 				x += offset, y += offset
 			} else {
 				if ( shadow ) setShadow( { offset, alpha: .5 } )
-				if ( forcused ) ctx.filter = 'brightness(150%)'
+				if ( forcused && listenerMode == 'opaque' ) ctx.filter = 'brightness(150%)'
 			}
 			ctx.fillStyle = fill
 			ctx.fillRect( x, y, w, h )
@@ -177,7 +178,7 @@ export class PolygonNode extends Node {
 
 	draw ( { x, y, w, h } ) {
 
-		let { fill, shadow, path, forcused, pushed } = this
+		let { fill, shadow, path, forcused, pushed, listenerMode } = this
 
 		let offset = H * .01
 
@@ -187,7 +188,7 @@ export class PolygonNode extends Node {
 				x += offset, y += offset
 			} else {
 				if ( shadow ) setShadow( { offset, alpha: .5 } )
-				if ( forcused ) ctx.filter = 'brightness(150%)'
+				if ( forcused && listenerMode == 'opaque' ) ctx.filter = 'brightness(150%)'
 			}
 			ctx.beginPath( )
 			for ( let [ l, t ] of path ) ctx.lineTo( x + w * l, y + h * t )
@@ -315,8 +316,12 @@ export class ImageNode extends Node {
 
 function initLayer ( ) {
 
+	if ( layerRoot ) {
+		$.log( 'レイヤールートが更新されました' )
+		layerRoot.isDestroyed = true
+	}
 
-	layerRoot = new GroupNode( { type: 'Group', name: 'root', region: 'opaque' } )
+	layerRoot = new GroupNode( { type: 'Group', name: 'root', listenerMode: 'opaque' } )
 	;( function generateNode ( obj, parent ) {
 
 		let type = obj.type, children = obj.children
@@ -343,7 +348,7 @@ function initLayer ( ) {
 				type: GroupNode, name: 'backgroundGroup',
 				children: [
 					{
-						type: ImageNode, name: 'backgroundImage',
+						type: ImageNode, name: 'backgroundColor',
 						fill: 'rgba( 0, 0, 0, 1 )'
 					},
 				]
@@ -352,7 +357,7 @@ function initLayer ( ) {
 				type: GroupNode, name: 'portraitGroup'
 			},
 			{
-				type: RectangleNode,  name: 'conversationBox',
+				type: RectangleNode, name: 'conversationBox',
 				y: .75, h: .25, shadow: false, fill: 'rgba( 0, 0, 100, .5 )',
 				children: [
 					{
@@ -367,7 +372,7 @@ function initLayer ( ) {
 						type: GroupNode, name: 'iconGroup',
 						children: [
 							{
-								type: PolygonNode, name: 'menuBotton', region: 'opaque',
+								type: PolygonNode, name: 'menuBotton', listenerMode: 'opaque',
 								fill: 'rgba( 255, 200, 200, .25 )', event: 'menu',
 								path: [ [ .005, .25 ], [ .005, .96 ], [ .145, .96 ] ]
 							},
@@ -385,13 +390,13 @@ function initLayer ( ) {
 				fill: 'rgba( 255, 255, 255, 0 )',
 				children: [
 					{
-						type: RectangleNode, name: 'inputSubBox', region: 'opaque',
+						type: RectangleNode, name: 'inputSubBox', listenerMode: 'block',
 						o: 0, x: .1, y: .05, w: .8, h: .65, fill: 'rgba( 75, 75, 100, .5 )'
 					}
 				]
 			},
 			{
-				type: RectangleNode, name: 'menuBox', region: 'opaque',
+				type: RectangleNode, name: 'menuBox', listenerMode: 'block',
 				o: 0, fill: 'rgba( 255, 255, 255, 0 )',
 				children: [
 					{
@@ -399,7 +404,7 @@ function initLayer ( ) {
 						o: 0, x: .1, y: .05, w: .8, h: .65, fill: 'rgba( 75, 75, 100, .5 )'
 					},
 					{
-						type: PolygonNode, name: 'backBotton', region: 'opaque',
+						type: PolygonNode, name: 'backBotton', listenerMode: 'opaque',
 						x: 0, y: .05, w: .1, h: .65, o: 0, fill: 'rgba( 100, 100, 255, .8 )',
 						path: [ [ .9, .2 ], [ .1, .5 ], [ .9, .8 ] ]
 					},
@@ -479,7 +484,8 @@ export function onPoint ( { type, x, y } ) {
 
 	W: do {
 
-		if ( ! node.region ) continue
+		if ( ! node.listenerMode ) continue
+		if ( node.listenerMode == 'block' ) break
 
 		newPointer.add( node )
 
@@ -504,7 +510,7 @@ export function onPoint ( { type, x, y } ) {
 			}
 		}
 
-		if ( node.region == 'opaque' ) break
+		if ( node.listenerMode == 'opaque' ) break
 
 	} while ( node = node.parent )
 
@@ -530,7 +536,7 @@ function drawHRCanvas( ) {
 
 	HRCtx.clearRect( 0, 0, W, H )
 
-	let regionList = [ ]
+	let listenerModeList = [ ]
 
 	drawHR( layerRoot, { x: 0, y: 0, w: W, h: H }, 0 )
 
@@ -544,13 +550,13 @@ function drawHRCanvas( ) {
 		}
 
 		if (  ! node.o ) return id
-		if ( node.region ) {
+		if ( node.listenerMode ) {
 
-			regionList[ ++id ] = node
+			listenerModeList[ ++id ] = node
 			ctx.save( )
 			node.drawHR( prop, `rgb(${ id/256**2|0 }, ${ (id/256|0)%256 }, ${ id%256 })` )
 			ctx.restore( )
-			//$.log( 'draw', id, node, regionList )
+			//$.log( 'draw', id, node, listenerModeList )
 		}
 
 		for ( let childnode of node.children ) { id = drawHR( childnode, prop, id ) }
@@ -558,7 +564,7 @@ function drawHRCanvas( ) {
 		return id
 	}
 
-	return regionList
+	return listenerModeList
 
 }
 

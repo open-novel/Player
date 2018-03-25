@@ -181,11 +181,17 @@ export function sysMessage ( text, speed = 1000000 ) {
 
 export async function showMessage ( layer, name, text, speed ) {
 
-
 	layer.nameArea.clear( ), layer.messageArea.clear( )
 
+	if ( name.length == 0 && text.length == 0 ) {
+		layer.conversationBox.hide( )
+		return
+	}
+	layer.conversationBox.show( )
 
-	for ( let deco of decoText( name ) ) { layer.nameArea.add( deco ) }
+
+
+	for ( let deco of decoText( name ) ) layer.nameArea.add( deco )
 
 	let decoList = decoText( text )
 
@@ -270,16 +276,13 @@ async function getFile ( path ) {
 
 async function getImage ( blob ) {
 	let img = new Image
-	let { promise, resolve } = new $.Deferred
-	img.onload = resolve
 	let url = cache.blob.get( blob )
 	if ( ! url ) {
 		url = URL.createObjectURL( blob )
 		cache.blob.set( blob, url )
 	}
 	img.src = url
-	await promise
-	if ( img.decode ) img.decode( )
+	await img.decode( )
 	return img
 }
 
@@ -333,12 +336,12 @@ export function sysBGImage ( path ) {
 }
 
 
-export async function showBGImage ( layer, path, [ x, y, h ] ) {
+export function showBGImage ( layer, path, [ x, y, h ] ) {
 	return showImage( layer.backgroundGroup, path, { x, y, w: 1, h } )
 }
 
 
-export async function removeBGImages ( layer ) {
+export function removeBGImages ( layer ) {
 	return removeImages( layer.backgroundGroup )
 }
 
@@ -348,7 +351,7 @@ export function showPortrait ( layer, path, [ x, y, h ] ) {
 }
 
 
-export async function removePortraits ( layer ) {
+export function removePortraits ( layer ) {
 	return removeImages( layer.portraitGroup )
 }
 
@@ -356,11 +359,15 @@ export async function removePortraits ( layer ) {
 
 async function showImage ( targetGroup, path, pos ) {
 
-	let eff = effect.enabled ? effect : new ProgressTimer( 150 )
-	let type = effect.enabled ? await eff.on( 'type' ) : 'フェード'
-
 	let blob = await getFile( path )
 	let img = await getImage( blob )
+
+	let eff = effect.enabled ? effect : new ProgressTimer( 150 )
+	$.log( 'show???', effect.enabled )
+	let type = effect.enabled ? await eff.on( 'type', true ) : 'フェード'
+
+	$.log( 'show', type, effect, targetGroup.name )
+
 	let { x, y, h, w = 9 / 16 * h * img.naturalWidth / img.naturalHeight } = pos
 	pos.w = w
 
@@ -381,6 +388,7 @@ async function showImage ( targetGroup, path, pos ) {
 
 	while ( true ) {
 		let prog = await eff.on( 'step' )
+		$.log( 'step', prog )
 		switch ( type ) {
 
 			case 'フェード': {
@@ -408,9 +416,9 @@ async function removeImages ( targetGroup ) {
 	let children = [ ... targetGroup.children ]
 
 	let eff = effect.enabled ? effect : new ProgressTimer( 150 )
-	let type = effect.enabled ? await eff.on( 'type' ) : 'フェード'
+	let type = effect.enabled ? await eff.on( 'type', true ) : 'フェード'
 
-	$.log( 'remv', type, effect )
+	$.log( 'remv', type, effect, targetGroup.name )
 
 	switch ( type ) {
 		case 'フェード': {
@@ -458,7 +466,7 @@ export async function showChoices ( { layer, choices, inputBox = layer.menuSubBo
 
 		let choiceBox = new Renderer.RectangleNode( {
 			name: 'choiceBox',
-			x, y, w, h, region: 'opaque', fill: 'rgba( 100, 100, 255, .8 )'
+			x, y, w, h, listenerMode: 'opaque', fill: 'rgba( 100, 100, 255, .8 )'
 		} )
 		inputBox.append( choiceBox )
 		if ( disabled ) choiceBox.fill = 'rgba( 200, 200, 255, .5 )'
