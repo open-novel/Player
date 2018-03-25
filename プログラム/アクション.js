@@ -359,12 +359,12 @@ export function removePortraits ( layer ) {
 
 async function showImage ( targetGroup, path, pos ) {
 
-	let blob = await getFile( path )
-	let img = await getImage( blob )
-
 	let eff = effect.enabled ? effect : new ProgressTimer( 150 )
 	$.log( 'show???', effect.enabled )
 	let type = effect.enabled ? await eff.on( 'type', true ) : 'フェード'
+
+	let blob = await getFile( path )
+	let img = await getImage( blob )
 
 	$.log( 'show', type, effect, targetGroup.name )
 

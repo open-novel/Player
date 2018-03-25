@@ -345,13 +345,11 @@ function initLayer ( ) {
 		type: GroupNode, name: 'rootSub',
 		children: [
 			{
+				type: ImageNode, name: 'backgroundColor',
+				fill: 'rgba( 0, 0, 0, 1 )'
+			},
+			{
 				type: GroupNode, name: 'backgroundGroup',
-				children: [
-					{
-						type: ImageNode, name: 'backgroundColor',
-						fill: 'rgba( 0, 0, 0, 1 )'
-					},
-				]
 			},
 			{
 				type: GroupNode, name: 'portraitGroup'

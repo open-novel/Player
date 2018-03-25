@@ -125,7 +125,7 @@ export class Awaiter {
 			( { promise, resolve } = new Deferred )
 			this[ key ] = { promise, resolve }
 		}
-		if ( late && lateValue ) {
+		if ( late && lateValue !== undefined ) {
 			//delete this[ key ].lateValue
 			resolve( lateValue )
 			console.log( 'late', key, lateValue )
