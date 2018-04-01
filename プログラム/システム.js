@@ -7,9 +7,9 @@ import * as $ from './ヘルパー.js'
 import * as Action from './アクション.js'
 import * as DB from './データベース.js'
 
-const script_baseurl = document.querySelector( 'script[type="module"]' ).src.match( /.+\// )
-const Archive = $.importWorker( `${ script_baseurl }アーカイブ.js` )
 
+const script_baseurl = new URL( './', import.meta.url ).href  // eslint-disable-line-parsing
+const Archive = $.importWorker( `${ script_baseurl }アーカイブ.js` ) // eslint-disable-line
 
 async function init ( { ctx, mode } ) {
 	await play( ctx, mode )
@@ -27,12 +27,15 @@ async function play ( ctx, mode ) {
 	await DB.init( )
 	await Action.initAction( settings )
 
-	await Action.sysMessage( 'openノベルプレイヤー v1.0β_004   18/03/25' )
+	await Action.sysMessage( 'openノベルプレイヤー v1.0β_005   18/04/01' )
 
 	while ( true ) {
 
 		let res = await playSystemOpening( mode ).catch( e => $.error( e ) || 'error' )
-		if ( mode == 'install' ) return
+		if ( mode == 'install' ) {
+			location.href = new URL( '', location.href ).href
+			return
+		}
 
 		await Action.initAction( settings )
 		if ( res == 'error' ) await Action.sysMessage( '問題が発生しました', 50 )
