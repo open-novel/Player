@@ -25,10 +25,23 @@ export let { target: initSound, register: nextInit } = new $.AwaitRegister( init
 
 
 
+export async function playSysEffect ( name ) {
+
+	$.log( 'SysEffect', name )
+	// TODO cache
+	let ab = await ( await fetch( `効果音/${ name }` ) ).arrayBuffer( )
+	let source = ctx. createBufferSource( )
+	source.buffer = await ctx.decodeAudioData( ab )
+	source.connect( out )
+	source.start( )
+
+}
+
 
 
 export async function playBGM ( path ) {
-	
+
+	// TODO cache
 	bgm.src = URL.createObjectURL( await DB.getFile( path ) )
 	// TODO
 	await bgm.play( ).catch( e => true )
@@ -37,11 +50,7 @@ export async function playBGM ( path ) {
 
 
 export function stopBGM ( ) {
-	
+
 	bgm.pause( )
 
 }
-
-
-
-

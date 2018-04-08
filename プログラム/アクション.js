@@ -470,6 +470,13 @@ export async function showChoices ( { layer, choices, inputBox = layer.menuSubBo
 		} )
 		inputBox.append( choiceBox )
 		if ( disabled ) choiceBox.fill = 'rgba( 200, 200, 255, .5 )'
+		else setSoundEffect( choiceBox )
+
+		async function setSoundEffect ( node ) {
+			await node.on( 'enter' )
+			Sound.playSysEffect( '選択.ogg' )
+			setSoundEffect ( node )
+		}
 
 		let textArea = new Renderer.TextNode( {
 			name: 'choiceText',
