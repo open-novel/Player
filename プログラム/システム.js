@@ -27,7 +27,7 @@ async function play ( ctx, mode ) {
 	await DB.init( )
 	await Action.initAction( settings )
 
-	Action.sysMessage( 'openノベルプレイヤー v1.0β_017   18/04/07' )
+	Action.sysMessage( 'openノベルプレイヤー v1.0β_018   18/04/07' )
 
 	Action.setMenuVisible( true )
 	let list = [ { label: '🔊', value: 'on' }, { label: '🔇', value: 'off' } ]
@@ -139,6 +139,7 @@ async function playSystemOpening ( mode ) {
 		case 'インストール': {
 
 			let success = await installScenario( index )
+			if ( success === null ) return playSystemOpening( mode )
 			if ( success ) await Action.sysMessage( 'インストールが完了しました', 100 )
 			else await Action.sysMessage( 'インストールできませんでした', 100 )
 			return playSystemOpening( mode )
@@ -161,7 +162,7 @@ async function installScenario ( index, sel ) {
 		let menuList = [ 'フォルダから', 'Zipファイルから' ].map( label => ( { label } ) )
 		$.disableChoiceList( [ 'Webから' ], menuList )
 
-		sel = await Action.sysChoices( menuList )
+		sel = await Action.sysChoices( menuList, { cancelable: true } )
 	}
 	$.log( sel )
 
@@ -169,6 +170,11 @@ async function installScenario ( index, sel ) {
 
 	switch ( sel ) {
 
+		case null: {
+
+			return null
+
+		} break
 		case 'フォルダから': {
 
 			Action.sysMessage( 'フォルダを選んで下さい' )
