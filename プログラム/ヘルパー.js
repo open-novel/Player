@@ -3,6 +3,8 @@ These codes are licensed under CC0.
 http://creativecommons.org/publicdomain/zero/1.0
 */
 
+const metaurl = import.meta.url  // eslint-disable-line-parsing
+const baseurl = new URL( '../', metaurl ).href  // eslint-disable-line
 
 import * as DB from './データベース.js'
 
@@ -13,6 +15,12 @@ export const warn	= console.warn.bind( console )
 export const error = console.error.bind( console )
 
 export const Token = [ 'back' ].reduce( ( obj, key ) => { obj[ key ] = Symbol( ); return obj }, { } )
+
+
+export async function fetchFile ( name, type = 'blob' ) {
+	return ( await fetch( new URL( name, baseurl ) ) )[ type ]( )
+}
+
 
 
 export function Deferred ( ) {

@@ -27,7 +27,7 @@ async function play ( ctx, mode ) {
 	await DB.init( )
 	await Action.initAction( settings )
 
-	Action.sysMessage( 'openノベルプレイヤー v1.0β_006   18/04/07' )
+	Action.sysMessage( 'openノベルプレイヤー v1.0β_017   18/04/07' )
 
 	Action.setMenuVisible( true )
 	let list = [ { label: '🔊', value: 'on' }, { label: '🔇', value: 'off' } ]

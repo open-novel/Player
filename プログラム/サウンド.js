@@ -44,7 +44,7 @@ export async function playSysEffect ( name ) {
 	}
 
 	async function addBuffer ( ) {
-		let ab = await ( await fetch( `効果音/${ name }` ) ).arrayBuffer( )
+		let ab = await $.fetchFile( `効果音/${ name }`, 'arrayBuffer' )
 		let source = ctx. createBufferSource( )
 		source.buffer = await ctx.decodeAudioData( ab )
 		ary.push( source )
