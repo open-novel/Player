@@ -4,6 +4,7 @@ http://creativecommons.org/publicdomain/zero/1.0
 */
 
 import * as $ from './ヘルパー.js'
+import * as Sound from './サウンド.js'
 
 let ctx = null
 
@@ -33,7 +34,7 @@ class Node {
 
 		const def = { name: 'undefined', x: 0, y: 0, w: 1, h: 1, o: 1,
 			fill: '', stroke: '', shadow: true, listenerMode: '', children: new Set,
-			awaiter: new $.Awaiter }
+			awaiter: new $.Awaiter, sound: false }
 
 		Object.assign( this, def, opt )
 
@@ -44,6 +45,16 @@ class Node {
 				this[ key ] = val = 1 - this[ look ] + val
 				if ( val < 0 || Object.is( val, -0 ) || 1 < val )
 					$.warn( `"${ val }" 不正な範囲の数値です` )
+			}
+		}
+
+		if ( this.sound ) {
+			setSound( { node: this, type: 'enter', name: 'フォーカス.ogg' } )
+			setSound( { node: this, type: 'click', name: 'クリック.ogg' } )
+			async function setSound ( { node, type, name } ) {
+				await node.on( type )
+				Sound.playSysEffect( name )
+				setSound ( { node, type, name } )
 			}
 		}
 
@@ -118,6 +129,7 @@ class Node {
 		return this.awaiter.on( type )
 
 	}
+
 
 	show ( ) { this.prop( 'o', 1 ) }
 
@@ -372,7 +384,7 @@ function initLayer ( ) {
 							{
 								type: PolygonNode, name: 'menuBotton', listenerMode: 'opaque',
 								fill: 'rgba( 255, 200, 200, .25 )', event: 'menu',
-								path: [ [ .005, .25 ], [ .005, .96 ], [ .145, .96 ] ]
+								path: [ [ .005, .25 ], [ .005, .96 ], [ .145, .96 ] ], sound: true
 							},
 							{
 								type: TextNode, name: 'openMenuText',
@@ -404,7 +416,7 @@ function initLayer ( ) {
 					{
 						type: PolygonNode, name: 'backBotton', listenerMode: 'opaque',
 						x: 0, y: .05, w: .1, h: .65, o: 0, fill: 'rgba( 100, 100, 255, .8 )',
-						path: [ [ .9, .2 ], [ .1, .5 ], [ .9, .8 ] ]
+						path: [ [ .9, .2 ], [ .1, .5 ], [ .9, .8 ] ], sound: true
 					},
 				]
 			},

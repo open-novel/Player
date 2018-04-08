@@ -8,13 +8,13 @@ import * as DB from './データベース.js'
 
 
 let ctx, out, bgm
+ctx = new AudioContext
+out = ctx.destination
 
-async function init ( opt ) {
+async function init ( ) {
 
-	if ( ctx ) ctx.close( )
+	//if ( ctx ) ctx.close( )
 	if ( bgm ) stopBGM( )
-	ctx = new AudioContext
-	out = ctx.destination
 	bgm = new Audio
 	bgm.loop = true
 	ctx.createMediaElementSource( bgm ).connect( out )
@@ -24,16 +24,33 @@ async function init ( opt ) {
 export let { target: initSound, register: nextInit } = new $.AwaitRegister( init )
 
 
+const sysEffectMap = new Map
 
 export async function playSysEffect ( name ) {
 
 	$.log( 'SysEffect', name )
 	// TODO cache
-	let ab = await ( await fetch( `効果音/${ name }` ) ).arrayBuffer( )
-	let source = ctx. createBufferSource( )
-	source.buffer = await ctx.decodeAudioData( ab )
+	let ary = sysEffectMap.get( name )
+	if ( ! ary ) {
+		ary = [ ]
+		sysEffectMap.set( name, ary )
+		await addBuffer( )
+	}
+
+	async function addBuffer ( ) {
+		let ab = await ( await fetch( `効果音/${ name }` ) ).arrayBuffer( )
+		let source = ctx. createBufferSource( )
+		source.buffer = await ctx.decodeAudioData( ab )
+		ary.push( source )
+	}
+
+
+	let source = ary.shift( )
+	if ( ! source ) return $.warn( `サウンドソースバッファ「${ name }」を使い切りました` )
 	source.connect( out )
 	source.start( )
+
+	for ( let i = ary.length; i < 5; i ++ ) addBuffer( )
 
 }
 
