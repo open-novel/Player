@@ -27,7 +27,14 @@ async function play ( ctx, mode ) {
 	await DB.init( )
 	await Action.initAction( settings )
 
-	await Action.sysMessage( 'openノベルプレイヤー v1.0β_006   18/04/07' )
+	Action.sysMessage( 'openノベルプレイヤー v1.0β_006   18/04/07' )
+
+	Action.setMenuVisible( true )
+	let list = [ { label: '🔊', value: 'on' }, { label: '🔇', value: 'off' } ]
+	let sound = await Action.sysChoices( list, { rowLen: 1 } )
+	if ( sound == 'on' ) Action.setMainVolume( 1 )
+	else Action.setMainVolume( 0 )
+	Action.setMenuVisible( false )
 
 	while ( true ) {
 

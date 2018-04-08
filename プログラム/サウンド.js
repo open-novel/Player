@@ -7,9 +7,11 @@ import * as $ from './ヘルパー.js'
 import * as DB from './データベース.js'
 
 
-let ctx, out, bgm
+let ctx, out, bgm, gain
 ctx = new AudioContext
-out = ctx.destination
+out = ctx.createGain( )
+setMainVolume( 0 )
+out.connect( ctx.destination )
 
 async function init ( ) {
 
@@ -24,11 +26,15 @@ async function init ( ) {
 export let { target: initSound, register: nextInit } = new $.AwaitRegister( init )
 
 
+export function setMainVolume ( value ) {
+	out.gain.value = value
+}
+
 const sysEffectMap = new Map
 
 export async function playSysEffect ( name ) {
 
-	$.log( 'SysEffect', name )
+	//$.log( 'SysEffect', name )
 	// TODO cache
 	let ary = sysEffectMap.get( name )
 	if ( ! ary ) {

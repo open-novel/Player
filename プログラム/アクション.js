@@ -502,4 +502,4 @@ export async function showChoices ( { layer, choices, inputBox = layer.menuSubBo
 
 
 
-export { playBGM, stopBGM } from './サウンド.js'
+export { playBGM, stopBGM, setMainVolume } from './サウンド.js'

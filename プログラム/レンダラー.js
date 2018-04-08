@@ -241,7 +241,8 @@ export class TextNode extends Node {
 		ctx.textBaseline = 'top'
 		ctx.textAlign = pos
 
-		let b = h * size * .075
+		//let b = h * size * .075
+		let b = ( h *  size )  * .025 + 2.5
 
 		if ( rotate ) {
 			ctx.translate( x, y )
@@ -286,7 +287,7 @@ export class DecoTextNode extends Node {
 			ctx.font = `${ bold ? 'bold' : '' } ${ h * size }px "Hiragino Kaku Gothic ProN", Meiryo`
 			ctx.textBaseline = 'top'
 
-			let b = h * size * .075
+			let b = ( h *  size )  * .025 + 2.5
 
 			setShadow( { offset: b } )
 			ctx.fillStyle = color
