@@ -7,7 +7,7 @@ import * as $ from './ヘルパー.js'
 import * as DB from './データベース.js'
 
 
-let ctx, out, bgm, gain
+let ctx, out, bgmSource, gain
 ctx = new AudioContext
 out = ctx.createGain( )
 setMainVolume( 0 )
@@ -16,10 +16,7 @@ out.connect( ctx.destination )
 async function init ( ) {
 
 	//if ( ctx ) ctx.close( )
-	if ( bgm ) stopBGM( )
-	bgm = new Audio
-	bgm.loop = true
-	ctx.createMediaElementSource( bgm ).connect( out )
+	stopBGM( )
 
 }
 
@@ -45,7 +42,7 @@ export async function playSysEffect ( name ) {
 
 	async function addBuffer ( ) {
 		let ab = await $.fetchFile( `効果音/${ name }`, 'arrayBuffer' )
-		let source = ctx. createBufferSource( )
+		let source = ctx.createBufferSource( )
 		source.buffer = await ctx.decodeAudioData( ab )
 		ary.push( source )
 	}
@@ -65,15 +62,27 @@ export async function playSysEffect ( name ) {
 export async function playBGM ( path ) {
 
 	// TODO cache
-	bgm.src = URL.createObjectURL( await DB.getFile( path ) )
-	// TODO
-	await bgm.play( ).catch( $.warn )
+	let blob = await DB.getFile( path )
+	let fr = new FileReader
+	let promise = new Promise( ( ok, ng ) => {
+		fr.onload = ( ) => ok( fr.result ), fr.onerror = ng
+	} )
+	fr.readAsArrayBuffer( blob )
+	let ab = await promise
+	let source = ctx.createBufferSource( )
+	source.loop = true
+	source.buffer = await ctx.decodeAudioData( ab )
+	source.connect( out )
+
+	stopBGM( )
+	bgmSource = source
+	bgmSource.start( )
 
 }
 
 
 export function stopBGM ( ) {
 
-	bgm.pause( )
+	if ( bgmSource ) bgmSource.disconnect( )
 
 }

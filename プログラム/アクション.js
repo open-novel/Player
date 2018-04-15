@@ -388,7 +388,7 @@ async function showImage ( targetGroup, path, pos ) {
 
 	while ( true ) {
 		let prog = await eff.on( 'step' )
-		$.log( 'step', prog )
+		//$.log( 'step', prog )
 		switch ( type ) {
 
 			case 'フェード': {
