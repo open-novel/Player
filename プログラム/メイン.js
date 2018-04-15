@@ -19,8 +19,8 @@ async function main( ) {
 
 	Object.assign( player.style, {
 		maxWidth: 'calc( 100% - 10px )',
-		width: '970px',
-		height: '550px',
+		width: '960px',
+		height: '540px',
 		margin: '5px auto',
 		padding: '5px',
 		borderRadius: '10px 10px 0px 10px',

@@ -17,6 +17,7 @@ let HRCanvas = //new OffscreenCanvas( W, H, { alpha: false } )
 	document.createElement( 'canvas' )
 
 let HRCtx = HRCanvas.getContext( '2d', { alpha: false } )
+HRCtx.translate( 0.5, 0.5 )
 
 async function init ( opt ) {
 
@@ -77,6 +78,7 @@ class Node {
 
 	drawHR ( { x, y, w, h }, style ) {
 
+		//$.warn( 'drawHRデフォルト動作が呼ばれました' )
 		HRCtx.fillStyle = style
 		HRCtx.fillRect( x, y, w, h )
 
@@ -185,6 +187,21 @@ export class RectangleNode extends Node {
 
 	}
 
+	drawHR ( { x, y, w, h }, style ) {
+
+		let { pushed } = this
+
+		let offset = H * .01
+
+		if ( pushed ) {
+			x += offset, y += offset
+		}
+
+		HRCtx.fillStyle = style
+		HRCtx.fillRect( x|0, y|0, w|0, h|0 )
+
+	}
+
 }
 
 
@@ -216,9 +233,17 @@ export class PolygonNode extends Node {
 
 	drawHR ( { x, y, w, h }, style ) {
 
-		HRCtx.fillStyle = style
+		let { pushed } = this
+		let offset = H * .01
+
+		if ( pushed ) {
+			ctx.filter = 'brightness(50%)'
+			x += offset, y += offset
+		}
+
 		HRCtx.beginPath( )
-		for ( let [ l, t ] of this.path ) HRCtx.lineTo( x + w * l, y + h * t )
+		for ( let [ l, t ] of this.path ) HRCtx.lineTo( x + w * l |0, y + h * t |0 )
+		HRCtx.fillStyle = style
 		HRCtx.fill( )
 
 	}
@@ -540,11 +565,11 @@ export function onPoint ( { type, x, y } ) {
 
 function refreshCanvasSize( ) {
 
-	let width = DPCanvas.parentNode.getBoundingClientRect( ).width - 10
+	let width = DPCanvas.getBoundingClientRect( ).width
 	if ( W != width ) {
 		DPCanvas.width = HRCanvas.width = W = width
-		DPCanvas.height = HRCanvas.height = H = W * 9 / 16 | 0
-		DPCanvas.parentNode.style.height = `${ H + 10 }px`
+		DPCanvas.height = HRCanvas.height = H = W * 9 / 16 + .5 | 0
+		DPCanvas.parentNode.style.height = `${ H }px`
 	}
 
 }
@@ -571,9 +596,9 @@ function drawHRCanvas( ) {
 		if ( node.listenerMode ) {
 
 			listenerModeList[ ++id ] = node
-			ctx.save( )
+			//HRCtx.save( )
 			node.drawHR( prop, `rgb(${ id/256**2|0 }, ${ (id/256|0)%256 }, ${ id%256 })` )
-			ctx.restore( )
+			//HRCtx.restore( )
 			//$.log( 'draw', id, node, listenerModeList )
 		}
 

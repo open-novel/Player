@@ -26,7 +26,7 @@ async function play ( ctx, mode ) {
 	await DB.init( )
 	await Action.initAction( settings )
 
-	Action.sysMessage( 'openノベルプレイヤー v1.0β_022   18/04/15' )
+	Action.sysMessage( 'openノベルプレイヤー v1.0β_023   18/04/15' )
 
 	Action.setMenuVisible( true )
 	let list = [ { label: '🔊', value: 'on' }, { label: '🔇', value: 'off' } ]
@@ -256,6 +256,7 @@ export let { target: initPlayer, register: nextInit } = new $.AwaitRegister( ini
 
 export function onPointerEvent ( { type, button, x, y } ) {
 
+	//$.log( { x, y } )
 	player.fire( 'pointer' )
 	Action.onPoint( { type, button, x, y } )
 }
