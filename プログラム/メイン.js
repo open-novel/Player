@@ -18,14 +18,15 @@ async function main( ) {
 	const player = document.createElement( 'div' )
 
 	Object.assign( player.style, {
+		maxWidth: 'calc( 100% - 10px )',
 		width: '970px',
 		height: '550px',
-		margin: '10px auto',
+		margin: '5px auto',
 		padding: '5px',
 		borderRadius: '10px 10px 0px 10px',
 		boxShadow: '0px 0px 10px 1px blue inset',
 		overflow: 'hidden',
-		resize: 'both',
+		resize: 'horizontal',
 	} )
 	wrapper.appendChild( player )
 
@@ -74,7 +75,7 @@ async function main( ) {
 
 
 	window.addEventListener( 'message', e => {
-		Player.onMessage( e.data ) 
+		Player.onMessage( e.data )
 	} )
 
 
@@ -83,8 +84,3 @@ async function main( ) {
 
 
 }
-
-
-
-
-

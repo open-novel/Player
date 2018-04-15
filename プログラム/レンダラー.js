@@ -7,6 +7,7 @@ import * as $ from './ヘルパー.js'
 import * as Sound from './サウンド.js'
 
 let ctx = null
+let DPCanvas = null
 
 let [ W, H ] = [ 1, 1 ]
 
@@ -20,6 +21,7 @@ let HRCtx = HRCanvas.getContext( '2d', { alpha: false } )
 async function init ( opt ) {
 
 	ctx = opt.ctx || ctx
+	DPCanvas = ctx.canvas
 	return await initLayer( )
 }
 
@@ -436,9 +438,7 @@ export function drawCanvas ( ) {
 
 	if ( layerRoot.dirty ) {
 
-		let rect = ctx.canvas.getBoundingClientRect( )
-		ctx.canvas.width = W = rect.width
-		ctx.canvas.height = H = rect.height
+		refreshCanvasSize( )
 
 		ctx.fillColor = 'rgba( 0, 0, 0, 1 )'
 		ctx.fillRect( 0, 0, W, H )
@@ -538,12 +538,19 @@ export function onPoint ( { type, x, y } ) {
 
 }
 
+function refreshCanvasSize( ) {
 
+	let width = DPCanvas.parentNode.getBoundingClientRect( ).width - 10
+	if ( W != width ) {
+		DPCanvas.width = HRCanvas.width = W = width
+		DPCanvas.height = HRCanvas.height = H = W * 9 / 16 | 0
+		DPCanvas.parentNode.style.height = `${ H + 10 }px`
+	}
+
+}
 function drawHRCanvas( ) {
 
-	let rect = ctx.canvas.getBoundingClientRect( )
-	HRCanvas.width = W = rect.width
-	HRCanvas.height = H = rect.height
+	refreshCanvasSize( )
 
 	HRCtx.clearRect( 0, 0, W, H )
 
