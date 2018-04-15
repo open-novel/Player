@@ -67,7 +67,7 @@ export async function playBGM ( path ) {
 	// TODO cache
 	bgm.src = URL.createObjectURL( await DB.getFile( path ) )
 	// TODO
-	await bgm.play( ).catch( e => true )
+	await bgm.play( ).catch( $.warn )
 
 }
 
