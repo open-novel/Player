@@ -26,7 +26,7 @@ async function play ( ctx, mode ) {
 	await DB.init( )
 	await Action.initAction( settings )
 
-	Action.sysMessage( 'openノベルプレイヤー v1.0β_023   18/04/15' )
+	Action.sysMessage( 'openノベルプレイヤー v1.0β_024   18/04/22' )
 
 	Action.setMenuVisible( true )
 	let list = [ { label: '🔊', value: 'on' }, { label: '🔇', value: 'off' } ]
@@ -104,8 +104,6 @@ async function playSystemOpening ( mode ) {
 
 	if ( ! title ) {
 		$.disableChoiceList( [ '初めから', '続きから', '途中から' ], menuList )
-	} else {
-		$.disableChoiceList( [ '途中から' ], menuList )
 	}
 
 	let sel = await Action.sysChoices( menuList, { cancelable: true } )
@@ -119,7 +117,6 @@ async function playSystemOpening ( mode ) {
 			return playSystemOpening( mode )
 
 		} break
-
 		case '初めから': {
 
 			return Action.play( settings, null, others )
@@ -134,7 +131,15 @@ async function playSystemOpening ( mode ) {
 			let state = await DB.loadState( settings.title, index )
 			return Action.play( settings, state, others )
 
-		}　break
+		} break
+		case '途中から': {
+
+			let jump = prompt( '開始先を次の形式で入力してください\nシナリオ名#マーク名', '#' )
+			if ( jump === null ) return playSystemOpening( mode )
+			others.jump = jump.split( '#' )
+			return Action.play( settings, null, others )
+
+		} break
 		case 'インストール': {
 
 			let success = await installScenario( index )

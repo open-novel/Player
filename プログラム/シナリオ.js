@@ -20,7 +20,7 @@ export async function play ( layer, state, others ) {
 	stateMap.set( layer, state )
 
 	let { scenario, act = scenario[ 0 ], scenarioStack = [ ], title: basePath, varMap = new Map } = state
-	let { saveGlobalVarMap, globalVarMap = new Map } = others
+	let { saveGlobalVarMap, globalVarMap = new Map, jump = null } = others
 	Object.assign( state, { act, scenarioStack, varMap } )
 
 	for ( let [ url, pos ] of state.portraits || [ ] ) Action.showPortrait( layer, url, pos )
@@ -28,17 +28,25 @@ export async function play ( layer, state, others ) {
 	if ( state.BGM ) Action.playBGM( state.BGM )
 
 	while ( act || scenarioStack.length ) {
-		if ( act ) await playAct( act, scenario )
+		if ( act ) await playAct( act, scenario, jump )
+		jump = null
 		;( { act, scenario } = scenarioStack.pop( ) || { } )
 	}
 
 
 
 
-	async function playAct( act, scenario ) {
+	async function playAct( act, scenario, jump ) {
 
 		$.log( 'ACT', scenario )
 		state.scenario = scenario
+
+		if ( jump ) {
+			let [ title, mark ] = jump
+			let scenarioOrTitle = title || scenario
+			$.log( 'JMP', title, mark, scenario )
+			return playScnario( scenarioOrTitle, mark || undefined )
+		}
 
 		function textEval ( text ) {
 
@@ -216,7 +224,7 @@ export async function play ( layer, state, others ) {
 					let scenarioOrTitle = title || scenario
 					$.log( 'JMP', title, mark, scenario )
 					pushScenarioStack( act.next )
-					return　playScnario( scenarioOrTitle, mark || undefined )
+					return playScnario( scenarioOrTitle, mark || undefined )
 
 				} break
 				case '変数': {
