@@ -33,7 +33,7 @@ export async function play ( settings, state, others ) {
 
 	let { title } = settings
 
-	let text = await DB.getFile( [ title, 'シナリオ', settings[ '開始シナリオ' ] ].join( '/' ) )
+	let text = await DB.getFile( [ title, 'シナリオ', settings[ '開始シナリオ' ] || title ].join( '/' ) )
 
 	let scenario = await Scenario.parse( text )
 

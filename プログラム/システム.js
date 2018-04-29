@@ -26,7 +26,7 @@ async function play ( ctx, mode ) {
 	await DB.init( )
 	await Action.initAction( settings )
 
-	Action.sysMessage( 'openノベルプレイヤー v1.0β_024   18/04/22' )
+	Action.sysMessage( 'openノベルプレイヤー v1.0β_025   18/04/29' )
 
 	Action.setMenuVisible( true )
 	let list = [ { label: '🔊', value: 'on' }, { label: '🔇', value: 'off' } ]
@@ -237,9 +237,9 @@ async function installScenario ( index, sel ) {
 		return [ file, path ]
 	} )
 
-	let title = ( settingFile.webkitRelativePath || settingFile.name ).match( /[^/]+/ )[ 0 ]
+	let title = ( files[ 0 ].webkitRelativePath || files[ 0 ].name ).match( /[^/]+/ )[ 0 ]
 
-	let setting = $.parseSetting( await new Response( settingFile ).text( ) )
+	let setting = settingFile ?  $.parseSetting( await new Response( settingFile ).text( ) ) : { }
 	setting.title = title
 
 	await DB.saveFiles( data )
