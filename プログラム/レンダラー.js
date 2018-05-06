@@ -61,10 +61,8 @@ class Node {
 			}
 		}
 
-		let on, off
-		off = ( ) => { this.forcused = false; this.on( 'enter' ).then( on ) }
-		on = ( ) => { this.forcused = true;  this.on( 'leave' ).then( off ) }
-		off( )
+		this.forcused = false
+		this.pushed = false
 
 	}
 
@@ -175,7 +173,7 @@ export class RectangleNode extends Node {
 		if ( fill ) {
 			if ( pushed ) {
 				ctx.filter = 'brightness(50%)'
-				x += offset, y += offset
+				x += offset / 2, y += offset / 2
 			} else {
 				if ( shadow ) setShadow( { offset, alpha: .5 } )
 				if ( forcused && listenerMode == 'opaque' ) ctx.filter = 'brightness(150%)'
@@ -194,7 +192,7 @@ export class RectangleNode extends Node {
 		let offset = H * .01
 
 		if ( pushed ) {
-			x += offset, y += offset
+			x += offset / 2, y += offset / 2
 		}
 
 		HRCtx.fillStyle = style
@@ -216,7 +214,7 @@ export class PolygonNode extends Node {
 		if ( fill ) {
 			if ( pushed ) {
 				ctx.filter = 'brightness(50%)'
-				x += offset, y += offset
+				x += offset / 2, y += offset / 2
 			} else {
 				if ( shadow ) setShadow( { offset, alpha: .5 } )
 				if ( forcused && listenerMode == 'opaque' ) ctx.filter = 'brightness(150%)'
@@ -237,8 +235,7 @@ export class PolygonNode extends Node {
 		let offset = H * .01
 
 		if ( pushed ) {
-			ctx.filter = 'brightness(50%)'
-			x += offset, y += offset
+			x += offset / 2, y += offset / 2
 		}
 
 		HRCtx.beginPath( )
@@ -527,14 +524,22 @@ export function onPoint ( { type, x, y } ) {
 
 		switch ( type ) {
 			case 'move': {
-				if( ! pointer.delete( node ) ) node.fire( 'enter' )
+				if( pointer.delete( node ) ) break
+				node.fire( 'enter' )
+				node.forcused = true
+
 			} break
 			case 'down': {
 				node.fire( 'down' )
+				if ( node.forcused ) {
+					node.pushed = true
+					$.log( node )
+				}
 				timers.set( node, new $.Time )
 			} break
 			case 'up': {
 				node.fire( 'up' )
+				node.pushed = false
 				if( pointer.delete( node ) ) {
 					let time = timers.get( node ).get( )
 					if ( time < 500 ) node.fire( 'click' )
@@ -552,10 +557,17 @@ export function onPoint ( { type, x, y } ) {
 
 	switch ( type ) {
 		case 'move': {
-			for ( let p of pointer ) p.fire( 'leave' )
+			for ( let node of pointer ) {
+				node.fire( 'leave' )
+				node.pushed = false
+				node.forcused = false
+			}
 		} break
 		case 'up': {
-			for ( let p of pointer ) p.fire( 'up' )
+			for ( let node of pointer ) {
+				node.fire( 'up' )
+				node.pushed = false
+			}
 		} break
 	}
 
