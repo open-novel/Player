@@ -129,7 +129,7 @@ export async function play ( layer, state, others ) {
 					Action.removePortraits( layer )
 					state.portraits = [ ]
 
-					/*await*/ Promise.all( prop.map( p => {
+					await Promise.all( prop.map( p => {
 
 						let [ pos, name ] = p.map( textEval )
 
@@ -153,6 +153,11 @@ export async function play ( layer, state, others ) {
 
 					} ) )
 
+					/*Promise.race( [
+						$.timeout( 3000 ).then( ()=>'timeover!' ),
+						Promise.all(p).then( ()=>'resolved!' )
+					] ).then(s=>{$.log(s);$.log(prop)})*/
+
 
 				} break
 				case '背景': {
@@ -160,7 +165,7 @@ export async function play ( layer, state, others ) {
 					Action.removeBGImages( layer )
 					state.BGImages = [ ]
 
-					/*await*/ Promise.all( prop.map( p => {
+					await Promise.all( prop.map( p => {
 
 						let [ pos, name ] = p.map( textEval )
 

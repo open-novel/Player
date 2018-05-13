@@ -293,10 +293,12 @@ class ProgressTimer extends $.Awaiter {
 	constructor ( ms = 0 ) {
 		super( )
 		this.enabled = !! ( ms >= 0 )
+		this.started = false
 		if ( ms > 0 ) this.start( ms )
 	}
 
 	async start ( ms ) {
+		this.started = true
 		if ( ! this.enabled ) return $.error( '完了したタイマーの再利用がありました' )
 		let time = new $.Time
 		while ( true ) {
@@ -306,12 +308,16 @@ class ProgressTimer extends $.Awaiter {
 			this.fire( 'step', prog )
 			if ( prog == 1 ) break
 		}
+		this.started = false
 		this.enabled = false
 	}
 }
 
 
-let effect = new ProgressTimer( -1 )
+let effects = {
+	portraits: new ProgressTimer( -1 ),
+	background: new ProgressTimer( -1 ),
+}
 
 export async function runEffect ( layer, type, sec ) {
 
@@ -321,11 +327,16 @@ export async function runEffect ( layer, type, sec ) {
 	if ( type == 'フラッシュ' ) return
 
 	if ( type == '準備' ) {
-		effect = new ProgressTimer
+		for ( let [ key, eff ] of Object.entries( effects ) ) {
+			$.log( eff )
+			effects[ key ] = new ProgressTimer
+		}
 		return
 	} else {
-		effect.fire( 'type', type )
-		await effect.start( ms )
+		await Promise.all( Object.values( effects ).map( eff => {
+			eff.fire( 'type', type )
+			return eff.start( ms )
+		} ) )
 	}
 
 }
@@ -337,36 +348,50 @@ export function sysBGImage ( path ) {
 
 
 export function showBGImage ( layer, path, [ x, y, h ] ) {
-	return showImage( layer.backgroundGroup, path, { x, y, w: 1, h } )
+	let kind = 'background'
+	let p = showImage( layer.backgroundGroup, path, { x, y, w: 1, h }, kind )
+	if ( effects[ kind ].started ) return p
 }
 
 
 export function removeBGImages ( layer ) {
-	return removeImages( layer.backgroundGroup )
+	let kind = 'background'
+	let p = removeImages( layer.backgroundGroup, kind )
+	if ( effects[ kind ].started ) return p
 }
 
 
 export function showPortrait ( layer, path, [ x, y, h ] ) {
-	return showImage( layer.portraitGroup, path, { x, y, h } )
+	let kind = 'portraits'
+	let p = showImage( layer.portraitGroup, path, { x, y, h }, kind )
+	if ( effects[ kind ].started ) return p
 }
 
 
 export function removePortraits ( layer ) {
-	return removeImages( layer.portraitGroup )
+	let kind = 'portraits'
+	let p = removeImages( layer.portraitGroup, kind )
+	if ( effects[ kind ].started ) return p
 }
 
 
 
-async function showImage ( targetGroup, path, pos ) {
+async function showImage ( targetGroup, path, pos, kind ) {
 
-	let eff = effect.enabled ? effect : new ProgressTimer( 150 )
-	$.log( 'show???', effect.enabled )
-	let type = effect.enabled ? await eff.on( 'type', true ) : 'フェード'
+	let eff = effects[ kind ]
+	if ( ! eff.enabled ) {
+		eff = new ProgressTimer( 150 )
+		effects[ kind ] = eff
+		eff.fire( 'type', 'フェード' )
+	}
+
+	$.log( 'show???', eff.enabled )
+	let type = await eff.on( 'type', true )
 
 	let blob = await getFile( path )
 	let img = await getImage( blob )
 
-	$.log( 'show', type, effect, targetGroup.name )
+	$.log( 'show', type, eff, targetGroup.name )
 
 	let { x, y, h, w = 9 / 16 * h * img.naturalWidth / img.naturalHeight } = pos
 	pos.w = w
@@ -386,9 +411,17 @@ async function showImage ( targetGroup, path, pos ) {
 
 	$.log( { x, y, w, h, pos, oldPos, image } )
 
+	let before = -1
 	while ( true ) {
-		let prog = await eff.on( 'step' )
-		//$.log( 'step', prog )
+
+		let prog = eff.started ? await eff.on( 'step', true ) : 1
+		$.log( 'show', 'step', prog )
+		if ( prog == before ) {
+			$.error( 'stepの変化が停止' )
+			prog = 1
+		}
+		before = prog
+
 		switch ( type ) {
 
 			case 'フェード': {
@@ -411,14 +444,22 @@ async function showImage ( targetGroup, path, pos ) {
 }
 
 
-async function removeImages ( targetGroup ) {
+async function removeImages ( targetGroup, kind ) {
 
 	let children = [ ... targetGroup.children ]
 
-	let eff = effect.enabled ? effect : new ProgressTimer( 150 )
-	let type = effect.enabled ? await eff.on( 'type', true ) : 'フェード'
+	let eff = effects[ kind ]
+	if ( ! eff.enabled ) {
+		eff = new ProgressTimer( 150 )
+		effects[ kind ] = eff
+		eff.fire( 'type', 'フェード' )
+	}
 
-	$.log( 'remv', type, effect, targetGroup.name )
+	$.log( 'remv???', eff.enabled )
+	let type = await eff.on( 'type', true )
+
+
+	$.log( 'remv', type, eff, targetGroup.name )
 
 	switch ( type ) {
 		case 'フェード': {
@@ -426,8 +467,14 @@ async function removeImages ( targetGroup ) {
 			//for ( let image of children ) {
 			//	image.fadeout = ! image.hasOtherChildren( )
 			//}
+			let before = -1
 			while ( true ) {
-				let prog = await eff.on( 'step' )
+				let prog = eff.started ? await eff.on( 'step', true ) : 1
+				if ( prog == before ) {
+					$.error( 'stepの変化が停止' )
+					prog = 1
+				}
+				before = prog
 				for ( let image of children ) { image.prop( 'o', 1 - prog ** 2 ) }
 				if ( prog == 1 ) break
 			}
