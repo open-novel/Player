@@ -443,6 +443,11 @@ function initLayer ( ) {
 						x: 0, y: .05, w: .1, h: .65, o: 0, fill: 'rgba( 100, 100, 255, .8 )',
 						path: [ [ .9, .2 ], [ .1, .5 ], [ .9, .8 ] ], sound: true
 					},
+					{
+						type: PolygonNode, name: 'nextBotton', listenerMode: 'opaque',
+						x: -0, y: .05, w: .1, h: .65, o: 0, fill: 'rgba( 100, 100, 255, .8 )',
+						path: [ [ .1, .2 ], [ .9, .5 ], [ .1, .8 ] ], sound: true
+					},
 				]
 			},
 		]

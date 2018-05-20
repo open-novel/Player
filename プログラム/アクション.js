@@ -120,38 +120,51 @@ async function showMenu ( layer ) {
 
 	let choices = [ 'セーブ', 'ロード', '終了する' ].map( label => ( { label } ) )
 
-	SWITCH: switch ( await sysChoices( choices, { rowLen: 4, cancelable: true } ) ) {
+	let type = await sysChoices( choices, { rowLen: 4, cancelable: true } )
 
-		case null: {
+	let page = 1
 
-			break SWITCH
+	let visibleTileNo = 12, getTileNo = 24
 
-		} break
-		case 'セーブ': {
+	if ( type !== null )  while ( page > 0 ) {
 
-			let choices = await $.getSaveChoices( title, 20 )
-			let index = await sysChoices( choices, { cancelable: true } )
-			if ( index === null ) break SWITCH
-			await DB.saveState( title, index, Scenario.getState( layer )  )
+		let startTile = ( page - 1 ) * visibleTileNo, endTile = page * visibleTileNo
+		switch ( type ) {
 
-		} break
-		case 'ロード': {
+			case 'セーブ': {
 
-			let choices = await $.getSaveChoices( title, 20, { isLoad: true } )
-			let index = await sysChoices( choices, { cancelable: true } )
-			if ( index === null ) break SWITCH
-			let state = await DB.loadState( title, index )
-			stateList.push( state )
-			return init( )
+				let choices = ( await $.getSaveChoices( title, getTileNo ) ).slice( startTile, endTile )
+				let index = await sysChoices( choices, { cancelable: true, proceedable: endTile < getTileNo } )
+				if ( index === null ) page --
+				else if ( index == $.Token.next ) page ++
+				else {
+					await DB.saveState( title, index, Scenario.getState( layer )  )
+					page = 0
+				}
 
-		} break
-		case '終了する': {
+			} break
+			case 'ロード': {
 
-			stateList.length = 0
-			return init( )
+				let choices = ( await $.getSaveChoices( title, getTileNo, { isLoad: true } ) ).slice( startTile, endTile )
+				let index = await sysChoices( choices, { cancelable: true, proceedable: endTile < getTileNo } )
+				if ( index === null ) page --
+				else if ( index == $.Token.next ) page ++
+				else {
+					let state = await DB.loadState( title, index )
+					stateList.push( state )
+					return init( )
+				}
 
-		} break
-		default: $.error( 'UnEx' )
+			} break
+			case '終了する': {
+
+				stateList.length = 0
+				return init( )
+
+			} break
+			default: $.error( 'UnEx' )
+		}
+
 	}
 
 	layer.fire( 'menu' )
@@ -493,7 +506,8 @@ export async function scenarioChoices ( layer, choices ) {
 	return showChoices( { layer, choices, inputBox: layer.inputSubBox } )
 }
 
-export async function showChoices ( { layer, choices, inputBox = layer.menuSubBox, rowLen = 4, cancelable = false } ) {
+export async function showChoices ( { layer, choices, inputBox = layer.menuSubBox, rowLen = 4,
+	cancelable = false, proceedable = false } ) {
 
 	let m = .05
 
@@ -532,10 +546,14 @@ export async function showChoices ( { layer, choices, inputBox = layer.menuSubBo
 
 	let backBotton = layer.backBotton
 	if ( cancelable ) {
-
 		backBotton.show( )
 		nextClicks.push( backBotton.on( 'click' ).then( ( ) => null ) )
+	}
 
+	let nextBotton = layer.nextBotton
+	if ( proceedable ) {
+		nextBotton.show( )
+		nextClicks.push( nextBotton.on( 'click' ).then( ( ) => $.Token.next ) )
 	}
 
 	inputBox.show( )
@@ -543,6 +561,7 @@ export async function showChoices ( { layer, choices, inputBox = layer.menuSubBo
 	inputBox.removeChildren( )
 	inputBox.hide( )
 	backBotton.hide( )
+	nextBotton.hide( )
 	return val
 
 }

@@ -14,7 +14,7 @@ export const info	= console.info.bind( console )
 export const warn	= console.warn.bind( console )
 export const error = console.error.bind( console )
 
-export const Token = [ 'back' ].reduce( ( obj, key ) => { obj[ key ] = Symbol( ); return obj }, { } )
+export const Token = [ 'back', 'next' ].reduce( ( obj, key ) => { obj[ key ] = Symbol( ); return obj }, { } )
 
 
 export async function fetchFile ( name, type = 'blob' ) {
@@ -74,7 +74,7 @@ export async function getSaveChoices ( title, num, { isLoad = false } = { } ) {
 		let index = i + 1, state = stateList[ index ]
 		let mark = state ? state.mark || '???' : '--------'
 		if ( mark == '$root' ) mark = '(冒頭)'
-		let disabled　= ( isLoad && ! state ) || index > 20
+		let disabled = ( isLoad && ! state ) || index > 20
 		return { label: mark, value: index, disabled }
 	} )
 	return choices
