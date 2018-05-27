@@ -58,7 +58,7 @@ export async function getStateList ( title ) {
 	let type = 'State'
 	let os = DB.transaction( [ type ], 'readonly' ).objectStore( type )
 	let { promise, resolve } = new $.Deferred, list = [ ]
-	os.openCursor( IDBKeyRange.bound( [ title, 0 ], [ title, 1000 ] ) )
+	os.openCursor( IDBKeyRange.bound( [ title, 0 ], [ title, 10000 ] ) )
 	.onsuccess = ( { target: { result: cursor } } ) => {
 		if ( ! cursor ) return resolve( )
 		list[ cursor.key[ 1 ] ] = cursor.value

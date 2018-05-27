@@ -67,14 +67,15 @@ export function disableChoiceList ( disables, choiceList ) {
 }
 
 
-export async function getSaveChoices ( title, num, { isLoad = false } = { } ) {
+export async function getSaveChoices ( { title, start, num, isLoad = false } ) {
 
 	let stateList = await DB.getStateList( title )
 	let choices = [ ...Array( num ).keys( ) ].map( i => {
-		let index = i + 1, state = stateList[ index ]
+		let index = i + start + 1, state = stateList[ index ]
+		log( index )
 		let mark = state ? state.mark || '???' : '--------'
 		if ( mark == '$root' ) mark = '(冒頭)'
-		let disabled = ( isLoad && ! state ) || index > 20
+		let disabled = ( isLoad && ! state ) || ( ! isLoad && index > 20 )
 		return { label: mark, value: index, disabled }
 	} )
 	return choices

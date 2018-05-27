@@ -11,7 +11,7 @@ import * as DB from './データベース.js'
 
 
 
-let nowLayer, settings, trigger, stateList = [ ]
+let nowLayer, settings, trigger, others, stateList = [ ]
 
 
 export async function init ( _settings = settings ) {
@@ -29,9 +29,11 @@ export async function init ( _settings = settings ) {
 }
 
 
-export async function play ( settings, state, others ) {
+export async function play ( settings, state, _others = others ) {
 
+	others = _others
 	let { title } = settings
+	others.title = title
 
 	let text = await DB.getFile( [ title, 'シナリオ', settings[ '開始シナリオ' ] || title ].join( '/' ) )
 
@@ -108,6 +110,30 @@ export function setMenuVisible ( flag, layer = nowLayer ) {
 
 }
 
+export async function showSaveLoad ( { layer, title, isLoad = false, settings, others } ) {
+	let page = 1
+	let visibleTileNo = 12, getTileNo = 24, totalPageNo = ( ( getTileNo / visibleTileNo ) | 0 ) + ( isLoad ? 1 : 0 )
+	while ( page > 0 ) {
+
+		let start = ( page - 1 ) * visibleTileNo
+		let choices = await $.getSaveChoices ( { title, start: ( isLoad && page == totalPageNo ) ? 1000 : start, num: visibleTileNo, isLoad } )
+
+		let index = await sysChoices( choices, { cancelable: true, proceedable: page < totalPageNo } )
+		if ( index === null ) page --
+		else if ( index == $.Token.next ) page ++
+		else {
+			if ( isLoad ) {
+				let state = await DB.loadState( title, index )
+				return play( settings, state, others )
+			}
+			else {
+				return DB.saveState( title, index, Scenario.getState( layer )  )
+			}
+		}
+	}
+	return null
+}
+
 
 async function showMenu ( layer ) {
 
@@ -126,45 +152,28 @@ async function showMenu ( layer ) {
 
 	let visibleTileNo = 12, getTileNo = 24
 
-	if ( type !== null )  while ( page > 0 ) {
 
-		let startTile = ( page - 1 ) * visibleTileNo, endTile = page * visibleTileNo
-		switch ( type ) {
+	switch ( type ) {
 
-			case 'セーブ': {
+		case null:
+		break;
+		case 'セーブ': {
 
-				let choices = ( await $.getSaveChoices( title, getTileNo ) ).slice( startTile, endTile )
-				let index = await sysChoices( choices, { cancelable: true, proceedable: endTile < getTileNo } )
-				if ( index === null ) page --
-				else if ( index == $.Token.next ) page ++
-				else {
-					await DB.saveState( title, index, Scenario.getState( layer )  )
-					page = 0
-				}
+			await showSaveLoad( { title, layer } )
 
-			} break
-			case 'ロード': {
+		} break
+		case 'ロード': {
 
-				let choices = ( await $.getSaveChoices( title, getTileNo, { isLoad: true } ) ).slice( startTile, endTile )
-				let index = await sysChoices( choices, { cancelable: true, proceedable: endTile < getTileNo } )
-				if ( index === null ) page --
-				else if ( index == $.Token.next ) page ++
-				else {
-					let state = await DB.loadState( title, index )
-					stateList.push( state )
-					return init( )
-				}
+			return showSaveLoad( { title, settings, isLoad: true } )
 
-			} break
-			case '終了する': {
+		} break
+		case '終了する': {
 
-				stateList.length = 0
-				return init( )
+			stateList.length = 0
+			return init( )
 
-			} break
-			default: $.error( 'UnEx' )
-		}
-
+		} break
+		default: $.error( 'UnEx' )
 	}
 
 	layer.fire( 'menu' )

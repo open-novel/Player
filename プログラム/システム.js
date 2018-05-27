@@ -26,7 +26,7 @@ async function play ( ctx, mode ) {
 	await DB.init( )
 	await Action.initAction( settings )
 
-	Action.sysMessage( 'openノベルプレイヤー v1.0β_030   18/05/20' )
+	Action.sysMessage( 'openノベルプレイヤー v1.0β_031   18/05/27' )
 
 	Action.setMenuVisible( true )
 	let list = [ { label: '🔊', value: 'on' }, { label: '🔇', value: 'off' } ]
@@ -123,20 +123,8 @@ async function playSystemOpening ( mode ) {
 
 		} break
 		case '続きから': {
-			let page = 1
-			let visibleTileNo = 12, getTileNo = 24
-			while ( page > 0 ) {
-				let startTile = ( page - 1 ) * visibleTileNo, endTile = page * visibleTileNo
-				let stateList = await DB.getStateList( title )  // TODO
-				let choices = ( await $.getSaveChoices( title, 48, { isLoad: true } ) ).slice( startTile, endTile )
-				let index = await Action.sysChoices( choices, { cancelable: true, proceedable: endTile < getTileNo } )
-				if ( index === null ) page --
-				else if ( index == $.Token.next ) page ++
-				else {
-					let state = await DB.loadState( settings.title, index )
-					return Action.play( settings, state, others )
-				}
-			}
+
+			await Action.showSaveLoad( { title, isLoad: true, settings, others } )
 			return playSystemOpening( mode )
 
 		} break

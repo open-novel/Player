@@ -299,6 +299,8 @@ export async function play ( layer, state, others ) {
 					$.log( 'マーク', mark )
 					state.mark = mark
 
+					DB.saveState( state.title, 1001, getState( layer ) )
+
 				} break
 				default : {
 					$.warn( `"${ type }" このアクションの「実行」は未実装です` )
