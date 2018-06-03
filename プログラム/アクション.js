@@ -118,7 +118,11 @@ export async function showSaveLoad ( { layer, title, isLoad = false, settings, o
 		let start = ( page - 1 ) * visibleTileNo
 		let choices = await $.getSaveChoices ( { title, start: ( isLoad && page == totalPageNo ) ? 1000 : start, num: visibleTileNo, isLoad } )
 
-		let index = await sysChoices( choices, { cancelable: true, proceedable: page < totalPageNo } )
+		let backLabel = page > 1 ? `ページ ${ page - 1 }` : '戻る'
+		let nextLabel = page < totalPageNo ? `ページ ${ page + 1 }` : ''
+		if ( isLoad && page == totalPageNo - 1 ) nextLabel = 'オート'
+
+		let index = await sysChoices( choices, { backLabel, nextLabel } )
 		if ( index === null ) page --
 		else if ( index == $.Token.next ) page ++
 		else {
@@ -146,7 +150,7 @@ async function showMenu ( layer ) {
 
 	let choices = [ 'セーブ', 'ロード', '終了する' ].map( label => ( { label } ) )
 
-	let type = await sysChoices( choices, { rowLen: 4, cancelable: true } )
+	let type = await sysChoices( choices, { rowLen: 4, backLabel: '戻る' } )
 
 	let page = 1
 
@@ -516,7 +520,7 @@ export async function scenarioChoices ( layer, choices ) {
 }
 
 export async function showChoices ( { layer, choices, inputBox = layer.menuSubBox, rowLen = 4,
-	cancelable = false, proceedable = false } ) {
+	backLabel = '', nextLabel = '' } ) {
 
 	let m = .05
 
@@ -553,14 +557,19 @@ export async function showChoices ( { layer, choices, inputBox = layer.menuSubBo
 		textArea.set( label )
 	}
 
-	let backBotton = layer.backBotton
-	if ( cancelable ) {
+	let { backBotton, nextBotton } = layer
+
+	layer.backLabel.clear( )
+	layer.nextLabel.clear( )
+
+	if ( backLabel ) {
+		layer.backLabel.set( backLabel )
 		backBotton.show( )
 		nextClicks.push( backBotton.on( 'click' ).then( ( ) => null ) )
 	}
 
-	let nextBotton = layer.nextBotton
-	if ( proceedable ) {
+	if ( nextLabel ) {
+		layer.nextLabel.set( nextLabel )
 		nextBotton.show( )
 		nextClicks.push( nextBotton.on( 'click' ).then( ( ) => $.Token.next ) )
 	}

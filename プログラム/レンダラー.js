@@ -256,7 +256,9 @@ export class TextNode extends Node {
 		super ( opt )
 	}
 
-	set( text ) { this.prop( 'text', text ) }
+	set ( text ) { this.prop( 'text', text ) }
+
+	clear ( ) { this.prop( 'text', '' ) }
 
 	draw ( { x, y, w, h } ) {
 		let { fill, shadow, text, size, pos, rotate } = this
@@ -444,9 +446,19 @@ function initLayer ( ) {
 						path: [ [ .9, .2 ], [ .1, .5 ], [ .9, .8 ] ], sound: true
 					},
 					{
+						type: TextNode, name: 'backLabel',
+						x: 0, y: 0.575, w: .1, h: .3, fill: 'rgba( 100, 100, 255, .8 )',
+						pos: 'center', size: .15
+					},
+					{
 						type: PolygonNode, name: 'nextBotton', listenerMode: 'opaque',
 						x: -0, y: .05, w: .1, h: .65, o: 0, fill: 'rgba( 100, 100, 255, .8 )',
 						path: [ [ .1, .2 ], [ .9, .5 ], [ .1, .8 ] ], sound: true
+					},
+					{
+						type: TextNode, name: 'nextLabel',
+						x: -0, y: 0.575, w: .1, h: .3, fill: 'rgba( 100, 100, 255, .8 )',
+						pos: 'center', size: .15
 					},
 				]
 			},
