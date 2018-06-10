@@ -119,10 +119,13 @@ export async function showSaveLoad ( { layer, title, isLoad = false, settings, o
 		let choices = await $.getSaveChoices ( { title, start: ( isLoad && page == totalPageNo ) ? 1000 : start, num: visibleTileNo, isLoad } )
 
 		let backLabel = page > 1 ? `ページ ${ page - 1 }` : '戻る'
+		let currentLabel = `ページ ${ page }`
 		let nextLabel = page < totalPageNo ? `ページ ${ page + 1 }` : ''
+
+		if ( isLoad && page == totalPageNo ) currentLabel = 'オート'
 		if ( isLoad && page == totalPageNo - 1 ) nextLabel = 'オート'
 
-		let index = await sysChoices( choices, { backLabel, nextLabel } )
+		let index = await sysChoices( choices, { backLabel, currentLabel, nextLabel } )
 		if ( index === null ) page --
 		else if ( index == $.Token.next ) page ++
 		else {
@@ -520,7 +523,7 @@ export async function scenarioChoices ( layer, choices ) {
 }
 
 export async function showChoices ( { layer, choices, inputBox = layer.menuSubBox, rowLen = 4,
-	backLabel = '', nextLabel = '' } ) {
+	backLabel = '', currentLabel = '', nextLabel = '' } ) {
 
 	let m = .05
 
@@ -560,12 +563,17 @@ export async function showChoices ( { layer, choices, inputBox = layer.menuSubBo
 	let { backBotton, nextBotton } = layer
 
 	layer.backLabel.clear( )
+	layer.currentLabel.clear( )
 	layer.nextLabel.clear( )
 
 	if ( backLabel ) {
 		layer.backLabel.set( backLabel )
 		backBotton.show( )
 		nextClicks.push( backBotton.on( 'click' ).then( ( ) => null ) )
+	}
+
+	if ( currentLabel ) {
+		layer.currentLabel.set( currentLabel )
 	}
 
 	if ( nextLabel ) {

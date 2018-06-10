@@ -438,26 +438,31 @@ function initLayer ( ) {
 				children: [
 					{
 						type: RectangleNode, name: 'menuSubBox',
-						o: 0, x: .1, y: .05, w: .8, h: .65, fill: 'rgba( 75, 75, 100, .5 )'
+						o: 0, x: .1, y: .03, w: .8, h: .65, fill: 'rgba( 75, 75, 100, .5 )'
 					},
 					{
 						type: PolygonNode, name: 'backBotton', listenerMode: 'opaque',
-						x: 0, y: .05, w: .1, h: .65, o: 0, fill: 'rgba( 100, 100, 255, .8 )',
+						x: 0, y: .03, w: .1, h: .65, o: 0, fill: 'rgba( 100, 100, 255, .8 )',
 						path: [ [ .9, .2 ], [ .1, .5 ], [ .9, .8 ] ], sound: true
 					},
 					{
-						type: TextNode, name: 'backLabel',
-						x: 0, y: 0.575, w: .1, h: .3, fill: 'rgba( 100, 100, 255, .8 )',
-						pos: 'center', size: .15
-					},
-					{
 						type: PolygonNode, name: 'nextBotton', listenerMode: 'opaque',
-						x: -0, y: .05, w: .1, h: .65, o: 0, fill: 'rgba( 100, 100, 255, .8 )',
+						x: -0, y: .03, w: .1, h: .65, o: 0, fill: 'rgba( 100, 100, 255, .8 )',
 						path: [ [ .1, .2 ], [ .9, .5 ], [ .1, .8 ] ], sound: true
 					},
 					{
+						type: TextNode, name: 'backLabel',
+						x: 0, y: 0.55, w: .1, h: .3, fill: 'rgba( 100, 100, 255, .8 )',
+						pos: 'center', size: .15
+					},
+					{
+						type: TextNode, name: 'currentLabel',
+						x: 0.45, y: 0.68, w: .1, h: .3, fill: 'rgba( 100, 100, 255, .8 )',
+						pos: 'center', size: .15
+					},
+					{
 						type: TextNode, name: 'nextLabel',
-						x: -0, y: 0.575, w: .1, h: .3, fill: 'rgba( 100, 100, 255, .8 )',
+						x: -0, y: 0.55, w: .1, h: .3, fill: 'rgba( 100, 100, 255, .8 )',
 						pos: 'center', size: .15
 					},
 				]
