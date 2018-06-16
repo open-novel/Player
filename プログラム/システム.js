@@ -17,6 +17,18 @@ async function init ( { ctx, mode } ) {
 
 async function play ( ctx, mode ) {
 
+	if ( mode == 'VR' ) {
+		mode = ''
+		$.TEST.mode = 'VR'
+		let btn = document.createElement( 'button' )
+		btn.innerText = 'into VR'
+		document.body.appendChild( btn )
+		btn.onclick = async ( ) => {
+			let disp = await navigator.getVRDisplays( )[ 0 ]
+			disp.requestPresent( [ { source: ctx.canvas } ] )
+		}
+	}
+
 	//let settings = await $.fetchFile( 'json', './プログラム/設定.json' )
 	let settings = { }
 	settings.ctx = ctx
@@ -26,7 +38,8 @@ async function play ( ctx, mode ) {
 	await DB.init( )
 	await Action.initAction( settings )
 
-	Action.sysMessage( 'openノベルプレイヤー v1.0β_033   18/06/10' )
+	Action.sysMessage( 'openノベルプレイヤー v1.0β_034   18/06/10' +
+		( $.TEST.mode ? `  *${ $.TEST.mode } test mode*` : '' )  )
 
 	Action.setMenuVisible( true )
 	let list = [ { label: '🔊', value: 'on' }, { label: '🔇', value: 'off' } ]

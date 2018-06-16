@@ -486,7 +486,18 @@ export function drawCanvas ( ) {
 
 		ctx.fillColor = 'rgba( 0, 0, 0, 1 )'
 		ctx.fillRect( 0, 0, W, H )
-		draw( layerRoot, { x: 0, y: 0, w: W, h: H, o: 1 } )
+
+		if ( $.TEST.mode != 'VR' ) {
+			draw( layerRoot, { x: 0, y: 0, w: W, h: H, o: 1 } )
+		} else {
+			ctx.save( )
+			ctx.scale( 0.5, 1 )
+			draw( layerRoot, { x: 0, y: 0, w: W, h: H, o: 1 } )
+			ctx.translate( W, 0 )
+			draw( layerRoot, { x: 0, y: 0, w: W, h: H, o: 1 } )
+			ctx.restore( )
+		}
+
 		layerRoot.dirty = false
 
 	}

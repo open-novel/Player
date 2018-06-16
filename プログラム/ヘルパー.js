@@ -3,6 +3,8 @@ These codes are licensed under CC0.
 http://creativecommons.org/publicdomain/zero/1.0
 */
 
+export let TEST = { mode: '' }
+
 const metaurl = import.meta.url  // eslint-disable-line-parsing
 const baseurl = new URL( '../', metaurl ).href  // eslint-disable-line
 
