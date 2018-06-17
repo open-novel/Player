@@ -152,13 +152,19 @@ export class Awaiter {
 
 export class Time {
 
-	constructor ( ) {
+	constructor ( duration = 0 ) {
 		this.origin = performance.now( )
 		this.pauseStart = 0
+		this.duration = duration
 	}
 
 	get ( ) {
 		return performance.now( ) - this.origin
+	}
+
+	progress ( ) {
+		let p = this.get( ) / this.duration
+		return p < 0 ? 0 : p > 1 ? 1 : Number.isNaN( p ) ? 1 : p 
 	}
 
 	pause ( ) {

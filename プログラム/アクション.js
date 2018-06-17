@@ -132,13 +132,15 @@ export async function showSaveLoad ( { layer, title, isLoad = false, settings, o
 			if ( isLoad ) {
 				let state = await DB.loadState( title, index )
 				return play( settings, state, others )
+
 			}
 			else {
 				return DB.saveState( title, index, Scenario.getState( layer )  )
+
 			}
 		}
 	}
-	return null
+	return false
 }
 
 
@@ -171,7 +173,8 @@ async function showMenu ( layer ) {
 		} break
 		case 'ロード': {
 
-			return showSaveLoad( { title, settings, isLoad: true } )
+			let loaded = await showSaveLoad( { title, settings, isLoad: true } )
+			if ( loaded === false ) return
 
 		} break
 		case '終了する': {

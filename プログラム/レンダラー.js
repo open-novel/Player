@@ -30,6 +30,39 @@ async function init ( opt ) {
 export let { target: initRanderer, register: nextInit } = new $.AwaitRegister( init )
 
 
+async function anime ( elem, type1, duration = 100 ) {
+
+	if ( ! [ 'show', 'hide' ].includes( type1 ) ) return $.error( 'UnEx' )
+
+	let type2 = type1 == 'show' ? 'hide' : 'show'
+
+	if ( elem.animeType == type1 ) return
+
+	if ( elem.animeType == type2 ) {
+		elem.animeType = 'stop'
+		while ( elem.animeType == 'stop' ) {
+			await layerRoot.on( 'update' )
+		}
+	}
+
+	elem.animeType = type1
+	let time = new $.Time( duration )
+	let base = elem.o
+
+	while ( elem.animeType == type1 ) {
+		let prog = time.progress( )
+		//$.log( type1, prog )
+		let o = type1 == 'show' ? base + ( 1 - base ) * prog : base - base * prog
+		elem.prop( 'o', o )
+		if ( prog == 1 ) break
+		await layerRoot.on( 'update' )
+
+	}
+
+	if ( elem.animeType != type2 ) elem.animeType = 'none'
+
+}
+
 
 class Node {
 
@@ -37,7 +70,7 @@ class Node {
 
 		const def = { name: 'undefined', x: 0, y: 0, w: 1, h: 1, o: 1,
 			fill: '', stroke: '', shadow: true, listenerMode: '', children: new Set,
-			awaiter: new $.Awaiter, sound: false }
+			awaiter: new $.Awaiter, sound: false, animeType: 'none' }
 
 		Object.assign( this, def, opt )
 
@@ -133,9 +166,17 @@ class Node {
 	}
 
 
-	show ( ) { this.prop( 'o', 1 ) }
+	show ( duration ) {
 
-	hide ( ) { this.prop( 'o', 0 ) }
+		return anime( this, 'show', duration )
+
+	}
+
+	hide ( duration ) {
+
+		return anime( this, 'hide', duration )
+
+	}
 
 	searchImg ( src ) {
 
@@ -479,6 +520,8 @@ function initLayer ( ) {
 export function drawCanvas ( ) {
 
 	if ( ! ctx ) return
+
+	layerRoot.fire( 'update' )
 
 	if ( layerRoot.dirty ) {
 
