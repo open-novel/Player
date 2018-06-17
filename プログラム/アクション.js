@@ -140,7 +140,7 @@ export async function showSaveLoad ( { layer, title, isLoad = false, settings, o
 			}
 		}
 	}
-	return false
+	return $.Token.cancel
 }
 
 
@@ -174,7 +174,8 @@ async function showMenu ( layer ) {
 		case 'ロード': {
 
 			let loaded = await showSaveLoad( { title, settings, isLoad: true } )
-			if ( loaded === false ) return
+			$.log( loaded )
+			if ( loaded != $.Token.cancel ) return
 
 		} break
 		case '終了する': {

@@ -16,7 +16,7 @@ export const info	= console.info.bind( console )
 export const warn	= console.warn.bind( console )
 export const error = console.error.bind( console )
 
-export const Token = [ 'back', 'next' ].reduce( ( obj, key ) => { obj[ key ] = Symbol( ); return obj }, { } )
+export const Token = [ 'back', 'next', 'cancel' ].reduce( ( obj, key ) => { obj[ key ] = Symbol( ); return obj }, { } )
 
 
 export async function fetchFile ( name, type = 'blob' ) {
@@ -164,7 +164,7 @@ export class Time {
 
 	progress ( ) {
 		let p = this.get( ) / this.duration
-		return p < 0 ? 0 : p > 1 ? 1 : Number.isNaN( p ) ? 1 : p 
+		return p < 0 ? 0 : p > 1 ? 1 : Number.isNaN( p ) ? 1 : p
 	}
 
 	pause ( ) {
