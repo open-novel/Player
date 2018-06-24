@@ -57,7 +57,7 @@ async function main( ) {
 		}, true )
 	}
 
-	window.addEventListener( 'contextmenu', e => e.preventDefault( ) )
+	canvas.addEventListener( 'contextmenu', e => e.preventDefault( ) )
 
 
 	canvas.addEventListener( 'wheel', e => {
@@ -73,6 +73,13 @@ async function main( ) {
 		if ( files && files[ 0 ] ) Player.onDrop( files[ 0 ] )
 	} )
 
+	window.addEventListener( 'keydown', e => {
+		switch ( e.key ) {
+			case 'Enter':
+			case ' ':
+				Player.onKeyEvent( { type: 'next' } )
+		}
+	} )
 
 	window.addEventListener( 'message', e => {
 		Player.onMessage( e.data )
