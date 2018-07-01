@@ -91,3 +91,6 @@ async function main( ) {
 
 
 }
+
+
+navigator.serviceWorker.register( '/サービス.js', { scope: '/' } )
