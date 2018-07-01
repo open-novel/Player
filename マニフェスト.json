@@ -3,8 +3,15 @@
   "name": "openノベルプレイヤー",
   "display": "standalone",
   "orientation": "landscape",
-  "start_url": "/index.html",
+  "start_url": "/",
+  "background_color ": "rgb(100,100,255)",
+  "theme_color ": "rgb(100,100,255)",
   "icons": [
+	  {
+		  "src": "/Player/画像/アイコン512.png",
+		  "sizes": "512x512",
+		  "type": "image/png"
+	  },
 	  {
 		  "src": "/Player/画像/アイコン333.png",
 		  "sizes": "333x333",
