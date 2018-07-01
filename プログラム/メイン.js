@@ -93,4 +93,4 @@ async function main( ) {
 }
 
 
-navigator.serviceWorker.register( '/サービス.js', { scope: '/' } ).then( reg => reg.update( ) )
+navigator.serviceWorker.register( '/Player/サービス.js', { scope: '/Player/' } ).then( reg => reg.update( ) )
