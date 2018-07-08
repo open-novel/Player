@@ -93,6 +93,7 @@ async function main( ) {
 }
 
 window.addEventListener( 'beforeinstallprompt', e => {
+	window.installEvent = e
 	e.prompt( )
 } )
 
