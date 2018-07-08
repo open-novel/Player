@@ -92,5 +92,8 @@ async function main( ) {
 
 }
 
+window.addEventListener( 'beforeinstallprompt', e => {
+	e.prompt( )
+} )
 
 navigator.serviceWorker.register( '/Player/サービス.js', { scope: '/Player/' } ).then( reg => reg.update( ) )
