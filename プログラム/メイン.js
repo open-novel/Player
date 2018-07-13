@@ -86,7 +86,7 @@ async function main( ) {
 	} )
 
 	if ( window.opener ) {
-		window.opener.postMessage( 'ready' )
+		window.opener.postMessage( { type: 'ready' }, '*' )
 	}
 
 
