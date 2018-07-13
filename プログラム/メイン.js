@@ -85,6 +85,10 @@ async function main( ) {
 		Player.onMessage( e.data )
 	} )
 
+	if ( window.opener ) {
+		window.opener.postMessage( 'ready' )
+	}
+
 
 	const onp = Player.initPlayer( { ctx, mode: location.hash.slice( 1 ) } )
 	onp.then( ( ) => window.close( ), ( ) => window.close( ) )

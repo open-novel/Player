@@ -38,7 +38,7 @@ async function play ( ctx, mode ) {
 	await DB.init( )
 	await Action.initAction( settings )
 
-	Action.sysMessage( 'openノベルプレイヤー v1.0β_047   18/07/08' +
+	Action.sysMessage( 'openノベルプレイヤー v1.0β_048   18/07/14' +
 		( $.TEST.mode ? `  *${ $.TEST.mode } test mode*` : '' )  )
 
 	Action.setMenuVisible( true )

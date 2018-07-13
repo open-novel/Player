@@ -11,15 +11,21 @@ self.addEventListener( 'fetch', e => {
 		return
 	}
 	console.log( '!!!' )
+	// e.respondWith(
+	// 	caches.match( req ).then( res => {
+	// 		return fetch( req ).then( res => {
+	// 			return caches.open( 'v1' ).then( cache => {
+	// 				cache.put( req, res.clone( ) )
+	// 				return res
+	// 			})
+	// 		}, err => res )
+	// 	})
+	// )
 	e.respondWith(
-		caches.match( req ).then( res => {
-			return fetch( req ).then( res => {
-				return caches.open( 'v1' ).then( cache => {
-					cache.put( req, res.clone( ) )
-					return res
-				})
-			}, err => res )
-		})
+		fetch( req ).then( res => {
+			caches.open( 'v1' ).then( cache => cache.put( req, res ) )
+			return res.clone( )
+		}, err => caches.match( req ) )
 	)
 } )
 
