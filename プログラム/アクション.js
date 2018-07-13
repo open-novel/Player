@@ -21,7 +21,6 @@ export async function init ( _settings = settings ) {
 	let oldLayer = nowLayer
 	let layer = nowLayer = await Renderer.initRanderer( settings )
 	if ( oldLayer ) oldLayer.fire( 'dispose' )
-	nowLayer.on( 'click' ).then(  _ => action.on( 'next' ) )
 	trigger = new Trigger
 	layer.on( 'menu' ).then( ( ) => showMenu( layer ) )
 	setMenuVisible( false, layer )
@@ -90,11 +89,13 @@ export async function onPoint ( { type, button, x, y } ) {
 
 class Trigger {
 
+	constructor ( ) { this.layer = nowLayer }
+
 	step ( ) { return this.stepOr( ) }
 	stepOr ( ...awaiters ) {
-		//if ( isOldLayer( this.layer ) ) return $.neverRun( )
+		if ( isOldLayer( this.layer ) ) return $.neverRun( )
 		return Promise.race(
-			[ action.on( 'next' ), ...awaiters ] )
+			[ this.layer.on( 'click' ), action.on( 'next' ), ...awaiters ] )
 	}
 	stepOrFrameupdate ( ) { return this.stepOr( frame.on( 'update' ) ) }
 	stepOrTimeout ( ms ) { return this.stepOr( $.timeout( ms ) ) }

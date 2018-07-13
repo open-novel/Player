@@ -38,7 +38,7 @@ async function play ( ctx, mode ) {
 	await DB.init( )
 	await Action.initAction( settings )
 
-	Action.sysMessage( 'openノベルプレイヤー v1.0β_052   18/07/14' +
+	Action.sysMessage( 'openノベルプレイヤー v1.0β_053   18/07/14' +
 		( $.TEST.mode ? `  *${ $.TEST.mode } test mode*` : '' )  )
 
 	Action.setMenuVisible( true )
@@ -57,6 +57,7 @@ async function play ( ctx, mode ) {
 		}
 
 		await Action.initAction( settings )
+		Action.setMenuVisible( false )
 		if ( res == 'error' ) await Action.sysMessage( '問題が発生しました', 50 )
 		else await Action.sysMessage( '再生が終了しました', 50 )
 
@@ -105,6 +106,7 @@ async function playSystemOpening ( mode ) {
 
 	if ( mode == 'install' ) {
 		let success = await installScenario( index, 'Webから' )
+		Action.setMenuVisible( false )
 		if ( success ) await Action.sysMessage( 'インストールが完了しました', 100 )
 		else await Action.sysMessage( 'インストールできませんでした', 100 )
 		window.close( )
@@ -153,6 +155,7 @@ async function playSystemOpening ( mode ) {
 
 			let success = await installScenario( index )
 			if ( success === null ) return playSystemOpening( mode )
+			Action.setMenuVisible( false )
 			if ( success ) await Action.sysMessage( 'インストールが完了しました', 100 )
 			else await Action.sysMessage( 'インストールできませんでした', 100 )
 			return playSystemOpening( mode )
