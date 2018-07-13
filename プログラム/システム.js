@@ -38,12 +38,16 @@ async function play ( ctx, mode ) {
 	await DB.init( )
 	await Action.initAction( settings )
 
-	Action.sysMessage( 'openノベルプレイヤー v1.0β_054   18/07/14' +
-		( $.TEST.mode ? `  *${ $.TEST.mode } test mode*` : '' )  )
+	let sound = 'off'
+	if ( mode != 'install' ) {
+		Action.sysMessage( 'openノベルプレイヤー v1.0β_055   18/07/14' +
+			( $.TEST.mode ? `  *${ $.TEST.mode } test mode*` : '' )  )
 
-	Action.setMenuVisible( true )
-	let list = [ { label: '🔊', value: 'on' }, { label: '🔇', value: 'off' } ]
-	let sound = await Action.sysChoices( list, { rowLen: 1 } )
+		Action.setMenuVisible( true )
+		let list = [ { label: '🔊', value: 'on' }, { label: '🔇', value: 'off' } ]
+		sound = await Action.sysChoices( list, { rowLen: 1 } )
+	}
+
 	if ( sound == 'on' ) Action.setMainVolume( 1 )
 	else Action.setMainVolume( 0 )
 	Action.setMenuVisible( false )
