@@ -107,7 +107,7 @@ async function playSystemOpening ( mode ) {
 		let success = await installScenario( index, 'Webから' )
 		if ( success ) await Action.sysMessage( 'インストールが完了しました', 100 )
 		else await Action.sysMessage( 'インストールできませんでした', 100 )
-		return
+		window.close( )
 
 	}
 	// シナリオ開始メニュー表示

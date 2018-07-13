@@ -89,12 +89,11 @@ export async function onPoint ( { type, button, x, y } ) {
 
 class Trigger {
 
-	constructor ( ) { this.layer = nowLayer }
 	step ( ) { return this.stepOr( ) }
 	stepOr ( ...awaiters ) {
 		if ( isOldLayer( this.layer ) ) return $.neverRun( )
 		return Promise.race(
-			[ this.layer.on( 'click' ), action.on( 'next' ), ...awaiters ] )
+			[ nowLayer.on( 'click' ), action.on( 'next' ), ...awaiters ] )
 	}
 	stepOrFrameupdate ( ) { return this.stepOr( frame.on( 'update' ) ) }
 	stepOrTimeout ( ms ) { return this.stepOr( $.timeout( ms ) ) }
