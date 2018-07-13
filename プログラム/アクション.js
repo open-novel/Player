@@ -92,7 +92,7 @@ class Trigger {
 
 	step ( ) { return this.stepOr( ) }
 	stepOr ( ...awaiters ) {
-		if ( isOldLayer( this.layer ) ) return $.neverRun( )
+		//if ( isOldLayer( this.layer ) ) return $.neverRun( )
 		return Promise.race(
 			[ action.on( 'next' ), ...awaiters ] )
 	}
