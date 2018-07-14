@@ -425,13 +425,6 @@ function initLayer ( ) {
 		type: GroupNode, name: 'rootSub',
 		children: [
 			{
-				type: ImageNode, name: 'backgroundColor',
-				fill: 'rgba( 0, 0, 0, 1 )'
-			},
-			{
-				type: GroupNode, name: 'backgroundGroup',
-			},
-			{
 				type: GroupNode, name: 'portraitGroup'
 			},
 			{
@@ -508,6 +501,13 @@ function initLayer ( ) {
 					},
 				]
 			},
+			{
+				type: GroupNode, name: 'backgroundGroup', operation: 'reverse'
+			},
+			{
+				type: ImageNode, name: 'backgroundColor', operation: 'reverse',
+				fill: 'rgba( 0, 0, 0, 1 )'
+			},
 		]
 	}, layerRoot )
 
@@ -527,8 +527,8 @@ export function drawCanvas ( ) {
 
 		refreshCanvasSize( )
 
-		ctx.fillColor = 'rgba( 0, 0, 0, 1 )'
-		ctx.fillRect( 0, 0, W, H )
+		//ctx.fillColor = 'rgba( 0, 0, 0, 1 )'
+		ctx.clearRect( 0, 0, W, H )
 
 		if ( $.TEST.mode != 'VR' ) {
 			draw( layerRoot, { x: 0, y: 0, w: W, h: H, o: 1 } )
@@ -561,10 +561,14 @@ export function drawCanvas ( ) {
 
 		ctx.globalAlpha = prop.o
 
+		if ( node.operation == 'reverse' ) ctx.globalCompositeOperation = 'destination-over'
 		ctx.save( )
 		node.draw( prop )
 		ctx.restore( )
-		for ( let childnode of node.children ) { draw( childnode, prop ) }
+
+		for ( let childnode of node.children ) draw( childnode, prop )
+		if ( node.operation == 'reverse' ) ctx.globalCompositeOperation = 'source-over'
+
 	}
 
 }
