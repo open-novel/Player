@@ -449,7 +449,7 @@ async function showImage ( targetGroup, path, pos, kind ) {
 	while ( true ) {
 
 		let prog = eff.started ? await eff.on( 'step', true ) : 1
-		$.log( 'show', 'step', prog )
+		// $.log( 'show', 'step', prog )
 		if ( prog == before ) {
 			$.error( 'stepの変化が停止' )
 			prog = 1

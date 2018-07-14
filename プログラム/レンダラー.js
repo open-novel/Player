@@ -380,7 +380,7 @@ export class ImageNode extends Node {
 		//$.log( { x:this.x, y:this.y, w:this.w, h:this.h } )
 	}
 
-	draw ( { x, y, w, h } ) {
+	draw ( { ctx, x, y, w, h } ) {
 		let { img, fill } = this
 		if ( img ) ctx.drawImage( img, x, y, w, h )
 		else if ( fill ) {
@@ -425,7 +425,14 @@ function initLayer ( ) {
 		type: GroupNode, name: 'rootSub',
 		children: [
 			{
-				type: GroupNode, name: 'portraitGroup'
+				type: ImageNode, name: 'backgroundColor',
+				fill: 'rgba( 0, 0, 0, 1 )'
+			},
+			{
+				type: GroupNode, name: 'backgroundGroup',
+			},
+			{
+				type: GroupNode, name: 'portraitGroup', operation: 'separateblend',
 			},
 			{
 				type: RectangleNode, name: 'conversationBox',
@@ -501,13 +508,6 @@ function initLayer ( ) {
 					},
 				]
 			},
-			{
-				type: GroupNode, name: 'backgroundGroup', operation: 'reverse'
-			},
-			{
-				type: ImageNode, name: 'backgroundColor', operation: 'reverse',
-				fill: 'rgba( 0, 0, 0, 1 )'
-			},
 		]
 	}, layerRoot )
 
@@ -531,13 +531,13 @@ export function drawCanvas ( ) {
 		ctx.clearRect( 0, 0, W, H )
 
 		if ( $.TEST.mode != 'VR' ) {
-			draw( layerRoot, { x: 0, y: 0, w: W, h: H, o: 1 } )
+			draw( layerRoot, { ctx, x: 0, y: 0, w: W, h: H, o: 1 } )
 		} else {
 			ctx.save( )
 			ctx.scale( 0.5, 1 )
-			draw( layerRoot, { x: 0, y: 0, w: W, h: H, o: 1 } )
+			draw( layerRoot, { ctx, x: 0, y: 0, w: W, h: H, o: 1 } )
 			ctx.translate( W, 0 )
-			draw( layerRoot, { x: 0, y: 0, w: W, h: H, o: 1 } )
+			draw( layerRoot, { ctx, x: 0, y: 0, w: W, h: H, o: 1 } )
 			ctx.restore( )
 		}
 
@@ -550,6 +550,7 @@ export function drawCanvas ( ) {
 		if ( node.o == 0 ) return
 
 		let prop = {
+			ctx,
 			x: base.x + node.x * base.w,
 			y: base.y + node.y * base.h,
 			w: base.w * node.w,
@@ -561,13 +562,50 @@ export function drawCanvas ( ) {
 
 		ctx.globalAlpha = prop.o
 
-		if ( node.operation == 'reverse' ) ctx.globalCompositeOperation = 'destination-over'
 		ctx.save( )
 		node.draw( prop )
 		ctx.restore( )
 
-		for ( let childnode of node.children ) draw( childnode, prop )
-		if ( node.operation == 'reverse' ) ctx.globalCompositeOperation = 'source-over'
+		let separateblend = false // node.operation == 'separateblend'
+
+		if ( ! separateblend ) for ( let childnode of node.children ) draw( childnode, prop )
+		else {
+			let separates = [ ]
+			for ( let childnode of node.children ) {
+				let canvas = //new OffscreenCanvas( W, H )
+					document.createElement( 'canvas' )
+				canvas.width = W, canvas.height = H
+				prop.ctx = canvas.getContext( '2d' )
+				separates.push( prop.ctx )
+				draw( childnode, prop )
+			}
+
+			let buf = new Float64Array( W * H * 4 )
+
+			for ( let ctx of separates ) {
+				let data = ctx.getImageData( 0, 0, W, H ).data
+				for ( let i = 0; i < data.length; i +=4 ) {
+					let r = data[ i ], g = data[ i + 1 ], b = data[ i + 2 ], a = data[ i + 3 ] / 255
+					buf[ i ] += r * a, buf[ i + 1 ] += g * a, buf[ i + 2 ] += b * a, buf[ i + 3 ] += a
+				}
+			}
+
+			for ( let i = 0; i < buf.length; i +=4 ) {
+				let r = buf[ i ], g = buf[ i + 1 ], b = buf[ i + 2 ], a = buf[ i + 3 ]
+				if ( a > 1 ) { buf[ i ] /= a, buf[ i + 1 ] /= a, buf[ i + 2 ] /= a, buf[ i + 3 ] = 1 }
+			}
+
+			let image = new ImageData( new Uint8ClampedArray( buf ), W )
+
+			let canvas2 = //new OffscreenCanvas( W, H )
+				document.createElement( 'canvas' )
+			canvas2.width = W, canvas2.height = H
+			let ctx2 = canvas2.getContext( '2d' )
+			ctx2.putImageData( image, 0, 0 )
+
+			ctx.drawImage( canvas2 , 0, 0 )
+
+		}
 
 	}
 
