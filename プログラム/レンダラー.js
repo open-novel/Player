@@ -549,6 +549,8 @@ export function drawCanvas ( ) {
 
 		if ( node.o == 0 ) return
 
+		let ctx = base.ctx
+
 		let prop = {
 			ctx,
 			x: base.x + node.x * base.w,
@@ -566,10 +568,33 @@ export function drawCanvas ( ) {
 		node.draw( prop )
 		ctx.restore( )
 
-		let separateblend = false // node.operation == 'separateblend'
+		let separateblend = false //node.operation == 'separateblend'
 
 		if ( ! separateblend ) for ( let childnode of node.children ) draw( childnode, prop )
 		else {
+
+
+			let canvas = //new OffscreenCanvas( W, H )
+				document.createElement( 'canvas' )
+			canvas.width = W, canvas.height = H
+			prop.ctx = canvas.getContext( '2d' )
+
+			for ( let childnode of node.children ) draw( childnode, prop )
+
+			let data = prop.ctx.getImageData( 0, 0, W, H ).data
+
+			for ( let i = 0; i < data.length; i +=4 ) {
+				let a = data[ i + 3 ] / 255
+				if ( a > 0.5 ) a =  1 - ( 1 - a ) ** 4
+				data[ i + 3 ] = a * 255
+			}
+
+			prop.ctx.putImageData( new ImageData( data, W ), 0, 0 )
+
+			base.ctx.drawImage( canvas , 0, 0 )
+
+
+			/*
 			let separates = [ ]
 			for ( let childnode of node.children ) {
 				let canvas = //new OffscreenCanvas( W, H )
@@ -592,7 +617,8 @@ export function drawCanvas ( ) {
 
 			for ( let i = 0; i < buf.length; i +=4 ) {
 				let r = buf[ i ], g = buf[ i + 1 ], b = buf[ i + 2 ], a = buf[ i + 3 ]
-				if ( a > 1 ) { buf[ i ] /= a, buf[ i + 1 ] /= a, buf[ i + 2 ] /= a, buf[ i + 3 ] = 1 }
+				if ( a > 1 ) { buf[ i ] /= a, buf[ i + 1 ] /= a, buf[ i + 2 ] /= a, buf[ i + 3 ] = 255 }
+				else buf[ i + 3 ] *= 255
 			}
 
 			let image = new ImageData( new Uint8ClampedArray( buf ), W )
@@ -604,6 +630,7 @@ export function drawCanvas ( ) {
 			ctx2.putImageData( image, 0, 0 )
 
 			ctx.drawImage( canvas2 , 0, 0 )
+			*/
 
 		}
 

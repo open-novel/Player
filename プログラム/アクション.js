@@ -459,7 +459,8 @@ async function showImage ( targetGroup, path, pos, kind ) {
 		switch ( type ) {
 
 			case 'フェード': {
-				image.prop( 'o', 1 - ( 1 - prog ) ** 2 )
+				//image.prop( 'o', prog )
+				image.prop( 'o', 1 - ( 1 - prog ) ** 3 )
 			} break
 			case 'トランス': {
 				[ 'x', 'y', 'w', 'h' ].forEach( p => {
@@ -509,7 +510,8 @@ async function removeImages ( targetGroup, kind ) {
 					prog = 1
 				}
 				before = prog
-				for ( let image of children ) { image.prop( 'o', 1 - prog ** 2 ) }
+				//for ( let image of children ) image.prop( 'o', 1 - prog )
+				for ( let image of children ) image.prop( 'o', 1 - prog ** 3 )
 				if ( prog == 1 ) break
 			}
 			for ( let image of children ) { image.remove( ) }
