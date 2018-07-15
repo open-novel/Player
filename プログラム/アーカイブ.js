@@ -5,7 +5,8 @@ http://creativecommons.org/publicdomain/zero/1.0
 
 'use strict'
 
-const $ = { log ( ...args ) { return console.log( ...args ) } }
+// const $ = { log ( ...args ) { return console.log( ...args ) } }
+const $ = { log ( ) { } }
 
 
 
@@ -27,15 +28,15 @@ async function unpackFile( zip ) {
 
 	const FixedHuffmanTable = ( ( ) => {
 
-		const repeat = { 
+		const repeat = {
 			ex: new Uint16Array( 29 ),
-			len: new Uint16Array( 29 ) 
+			len: new Uint16Array( 29 )
 		}
 
-		const distance = { 
+		const distance = {
 			ex: new Uint16Array( 30 ),
-			dis: new Uint16Array( 30 ) 
-		}		
+			dis: new Uint16Array( 30 )
+		}
 
 		let len = 3
 		for ( let i of Array( 29 ).keys( ) ) {
@@ -46,7 +47,7 @@ async function unpackFile( zip ) {
 			repeat.len[ i ] = len
 			len += 1 << ex
 		}
-		repeat.len[ 28 ] = 258	
+		repeat.len[ 28 ] = 258
 
 		let dis = 1
 		for ( let i of Array( 30 ).keys( ) ) {
@@ -58,7 +59,7 @@ async function unpackFile( zip ) {
 		}
 
 		return { repeat, distance }
-		
+
 	} ) ( )
 
 	$.log( FixedHuffmanTable )
@@ -88,8 +89,8 @@ async function unpackFile( zip ) {
 	readAreas( files )
 	console.timeEnd( 'unpack' )
 
-	
-	files = files.reduce( ( a, f ) => { 
+
+	files = files.reduce( ( a, f ) => {
 		if ( f.data.length != 0 ) a.push( f )
 		return a
 	}, [ ] )
@@ -101,7 +102,7 @@ async function unpackFile( zip ) {
 
 	function bit16 ( len ) {
 		let n = view.getUint16( pointer, true )
-		n = ( ( n << offset ) & 0xFFFF ) >>> ( 16 - len ) 
+		n = ( ( n << offset ) & 0xFFFF ) >>> ( 16 - len )
 		offset += len
 		if ( offset == 16 ) {
 			offset = 0
@@ -115,7 +116,7 @@ async function unpackFile( zip ) {
 		//let n = view.getUint8( pointer ) | ( view.getUint8( pointer + 1 ) << 8 )
 		//let m = 0, m2 = 0
 		//for ( let i = 0; i < len ; i ++ ) {
-		//	m = ( m << 1 ) | ( ( n >>> ( i + offset ) ) & 0b1 )  
+		//	m = ( m << 1 ) | ( ( n >>> ( i + offset ) ) & 0b1 )
 		//}
 		let m = 0
 		for ( let i = 0; i < len; i ++ ) { m = ( m << 1 ) | bit1( ) }
@@ -131,7 +132,7 @@ async function unpackFile( zip ) {
 		//let n = view.getUint8( pointer ) | ( view.getUint8( pointer + 1 ) << 8 )
 		//let m = 0, m2 = 0
 		//for ( let i = 0; i < len ; i ++ ) {
-		//	m = m | ( ( ( n >>> ( i + offset ) ) & 0b1 ) << i ) 
+		//	m = m | ( ( ( n >>> ( i + offset ) ) & 0b1 ) << i )
 		//}
 		let m = 0
 		for ( let i = 0; i < len; i ++ ) { m = m | ( bit1( ) << i ) }
@@ -163,7 +164,7 @@ async function unpackFile( zip ) {
 		     if ( len == 1 ) n = view.getUint8 ( pointer, true )
 		else if ( len == 2 ) n = view.getUint16( pointer, true )
 		else if ( len == 4 ) n = view.getUint32( pointer, true )
-		//else if ( len == 8 ) n = view.getUint32( pointer, true ) * 4294967296 
+		//else if ( len == 8 ) n = view.getUint32( pointer, true ) * 4294967296
 		//						+ view.getUint32( pointer + 4, true )
 		else n = 0
 		pointer += len
@@ -175,7 +176,7 @@ async function unpackFile( zip ) {
 		let dec = new TextDecoder( type, { fatal: true } )
 		let buf = buffer.slice( pointer, pointer + size )
 		let str
-		
+
 		try {
 			str = dec.decode( buf )
 		} catch ( e ) {
@@ -246,7 +247,7 @@ async function unpackFile( zip ) {
 	function readLocalFileHeader ( file ) {
 
 		file.version = byte( 2 )
- 
+
 		byte( 2 )
 
 		file.deflate = byte( 2 ) == 8
@@ -258,7 +259,7 @@ async function unpackFile( zip ) {
 
 		file.compressedSize = byte( 4 )
 		file.originalSize = byte( 4 )
-		
+
 		let nameLength = byte( 2 )
 
 		let extrasLength = byte( 2 )  // extra field length
@@ -271,7 +272,7 @@ async function unpackFile( zip ) {
 
 	}
 
-	
+
 	function readExtraField ( file, length ) {
 
 		if ( length <= 0 ) return
@@ -301,9 +302,9 @@ async function unpackFile( zip ) {
 
 
 		if ( ! file.deflate ) {
-		
+
 			file.data = new Uint8Array( slice( file.originalSize ) )
-		
+
 		} else {
 
 			//let p = pointer
@@ -365,7 +366,7 @@ async function unpackFile( zip ) {
 		//	throw e
 		//}
 		//$.log( file, deflate )
-		
+
 
 		if ( final ) {
 			if ( offset > 0 ) {
@@ -457,7 +458,7 @@ async function unpackFile( zip ) {
 				//if ( j < lower ) continue
 				n = repT[ b + ( 1 << j ) - 2 ]
 				//tmp.push(b.toString(2))
-				
+
 				if ( n !== 65535 ) break
 			}
 			if ( n === undefined ) throw 'wtf!'
@@ -467,13 +468,13 @@ async function unpackFile( zip ) {
 			if ( n <= 0b0010111 ) {
 				m = n + 256
 			} else {
-				n = ( n << 1 ) | bit1( ) 
+				n = ( n << 1 ) | bit1( )
 				if ( 0b00110000 <= n && n <= 0b10111111 ) {
 					m = n - 0b00110000
 				} else if ( 0b11000000 <= n && n <= 0b11000111 ) {
 					m = n - 0b11000000 + 280
 				} else {
-					n = ( n << 1 ) | bit1( ) 	
+					n = ( n << 1 ) | bit1( )
 					m = n - 0b110010000 + 144
 				}
 			}
@@ -489,7 +490,7 @@ async function unpackFile( zip ) {
 				break W
 			} else {
 
-				let len = FixedHuffmanTable.repeat.len[ m - 257 ] 
+				let len = FixedHuffmanTable.repeat.len[ m - 257 ]
 					+ bitU( FixedHuffmanTable.repeat.ex[ m - 257 ] )
 
 				//let tmp = []
@@ -525,7 +526,7 @@ async function unpackFile( zip ) {
 		}
 
 		return p
-	
+
 
 
 		function decodeBase ( len, base, upper ) {
@@ -558,7 +559,7 @@ async function unpackFile( zip ) {
 				for ( j = 1; j <= upper; j ++ ) {
 					b = bit1( ) | ( b << 1 )
 					//tmp.push( [('0'.repeat(upper)+b.toString(2)).slice(-j),b] )
-					//b = b | ( bit1( ) << ( j - 1 ) )  
+					//b = b | ( bit1( ) << ( j - 1 ) )
 					if ( j < lower ) continue
 					c = base[ b + ( 1 << j ) - 2 ]
 					if ( c === undefined ) throw 'wtf!'
@@ -571,7 +572,7 @@ async function unpackFile( zip ) {
 					if      ( c == 16 ) ex = bitU( 2 ) + 3, before = table[ i - 1 ]
 					else if ( c == 17 ) ex = bitU( 3 ) + 3
 					else if ( c == 18 ) ex = bitU( 7 ) + 11
-					//if ( DBG ) $.log( c, ex )	
+					//if ( DBG ) $.log( c, ex )
 					for ( let j = 0; j < ex; j ++ ) {
 						table[ i ++ ] = before
 					}
@@ -619,18 +620,18 @@ async function unpackFile( zip ) {
 			//for ( let i = 0; i < 20; i ++ ) $.log( bit1( ) )
 			//offset -= 20; while ( offset < 0 ) { offset += 8 ; pointer -- }
 			let n = bitD( 7 )
-			
+
 
 			if ( n <= 0b0010111 ) {
 				m = n + 256
 			} else {
-				n = ( n << 1 ) | bit1( ) 
+				n = ( n << 1 ) | bit1( )
 				if ( 0b00110000 <= n && n <= 0b10111111 ) {
 					m = n - 0b00110000
 				} else if ( 0b11000000 <= n && n <= 0b11000111 ) {
 					m = n - 0b11000000 + 280
 				} else {
-					n = ( n << 1 ) | bit1( ) 	
+					n = ( n << 1 ) | bit1( )
 					m = n - 0b110010000 + 144
 				}
 			}
@@ -644,7 +645,7 @@ async function unpackFile( zip ) {
 				break W
 			} else {
 
-				let len = FixedHuffmanTable.repeat.len[ m - 257 ] 
+				let len = FixedHuffmanTable.repeat.len[ m - 257 ]
 					+ bitU( FixedHuffmanTable.repeat.ex[ m - 257 ] )
 
 				let c = bitD( 5 )
@@ -668,4 +669,3 @@ async function unpackFile( zip ) {
 	}
 
 }
-

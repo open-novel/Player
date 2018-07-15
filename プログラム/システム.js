@@ -40,7 +40,7 @@ async function play ( ctx, mode ) {
 
 	let sound = 'off'
 	if ( mode != 'install' ) {
-		Action.sysMessage( 'openノベルプレイヤー v1.0β_067   18/07/15' +
+		Action.sysMessage( 'openノベルプレイヤー v1.0β_068   18/07/15' +
 			( $.TEST.mode ? `  *${ $.TEST.mode } test mode*` : '' )  )
 
 		Action.setMenuVisible( true )
@@ -245,15 +245,15 @@ async function installScenario ( index, sel ) {
 	//window.files = files
 
 	let settingFile
-	let data = files.map( file => {
+	let data = files.filter( file => {
+		let flag = [ 'text', 'image', 'audio' ].inclise( file.type.slice( '/' )[ 0 ] )
+		if ( ! flag ) $.warn( `"${ file.type }" このMINEタイプのファイルは保存されません` )
+		return flag
+	} ).map( file => {
 		if ( file.name.includes( '設定.txt' ) ) { settingFile = file }
 		let relpath = file.webkitRelativePath || file.name
 		let path = relpath.match( /(.+)\./ )[ 1 ]
 		return [ file, path ]
-	} ).filter( file => {
-		let flag = [ 'text', 'image', 'audio' ].inclise( file.type.slice( '/' )[ 0 ] )
-		if ( ! flag ) $.warn( `"${ file.type }" このMINEタイプのファイルは保存されません` )
-		return flag
 	} )
 
 	let title = ( files[ 0 ].webkitRelativePath || files[ 0 ].name ).match( /[^/]+/ )[ 0 ]
