@@ -11,10 +11,14 @@ const baseurl = new URL( '../', metaurl ).href  // eslint-disable-line
 import * as DB from './データベース.js'
 
 
-export const log	= console.log.bind( console )
-export const info	= console.info.bind( console )
-export const warn	= console.warn.bind( console )
-export const error = console.error.bind( console )
+window.logEnable = ! baseurl.includes( 'github.io' )
+
+const NOP = ( ) => { }
+export const log	= ( ...args ) => window.logEnable && console.log( ...args )
+export const info	= ( ...args ) => window.logEnable && console.info( ...args )
+export const warn	= ( ...args ) => window.logEnable && console.warn( ...args )
+export const error = ( ...args ) => window.logEnable && console.error( ...args )
+export const hint = console.error.bind( console )
 
 export const Token = [ 'back', 'next', 'cancel' ].reduce( ( obj, key ) => { obj[ key ] = Symbol( ); return obj }, { } )
 

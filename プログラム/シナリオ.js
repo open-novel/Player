@@ -27,8 +27,16 @@ export async function play ( layer, state, others ) {
 	for ( let [ url, pos ] of state.BGImages  || [ ] ) Action.showBGImage( layer, url, pos )
 	if ( state.BGM ) Action.playBGM( state.BGM )
 
+	let nowAct
 	while ( act || scenarioStack.length ) {
-		if ( act ) await playAct( act, scenario, jump )
+		if ( act ) await playAct( act, scenario, jump ).catch( e => {
+			let { type, meta } = nowAct
+			$.hint( `エラーが発生しました\n${
+				meta.fileName }　　行${
+					meta.lineNo ? meta.lineNo : '不明' }　　【${
+						type }】` )
+			throw e
+		} )
 		jump = null
 		;( { act, scenario } = scenarioStack.pop( ) || { } )
 	}
@@ -85,7 +93,7 @@ export async function play ( layer, state, others ) {
 			if ( typeof scenario_act_title != 'object' ) {
 				let title = scenario_act_title
 				let text = await DB.getFile( [ basePath, 'シナリオ', title ].join( '/' ) )
-				newScenario = await parse( text )
+				newScenario = await parse( text, title )
 			} else if( Array.isArray( scenario_act_title ) ) newScenario = scenario_act_title
 			else act = scenario_act_title
 
@@ -107,6 +115,8 @@ export async function play ( layer, state, others ) {
 		do {
 
 			if ( Action.isOldLayer( layer ) ) return
+
+			nowAct = act
 
 			let { type, prop } = act
 
@@ -316,36 +326,38 @@ export async function play ( layer, state, others ) {
 
 
 
-export function parse ( text ) {
+export function parse ( text, fileName ) {
 
 
-	return thirdParse( secondParse( firstParse( text ) ) )
+	return thirdParse( secondParse( firstParse( text, 1 ) ) )
 
 
 
 	// 文の取り出しと、第一級アクションとその配下のグルーピング
-	function firstParse ( text ) {
+	function firstParse ( text, baseNo ) {
 
 		let stateList = text.replace( /\r/g, '' ).split( '\n' )
 		let actList = [ ], propTarget = null
 
-		function addAct ( type ) {
-			let act = { type: type.replace( '・', '' ).trim( ), children: [ ] }
+		function addAct ( type, lineNo ) {
+			let act = { type: type.replace( '・', '' ).trim( ), children: [ ],
+			meta: { fileName, lineNo: lineNo + baseNo } }
 			propTarget = act.children
 			actList.push( act )
 		}
 
-		for ( let sta of stateList ) {
+		for ( let i = 0; i < stateList.length; i ++ ) {
+			let sta = stateList[ i ]
 			if ( sta.trim( ).length == 0 ) continue
 			if ( sta[ 0 ] == '・' ) {
-				addAct( sta )
+				addAct( sta, i )
 			} else {
 				if ( sta.slice( 0, 2 ) == '//' ) continue
 				else if ( sta[ 0 ].match( /#|＃/ ) ) {
-					addAct( 'マーク' )
+					addAct( 'マーク', i )
 					sta = sta.slice( 1 )
 				} else if ( sta[ 0 ] != '\t' ) {
-					addAct( '会話' )
+					addAct( '会話', i )
 				}
 				propTarget.push( sta )
 			}
@@ -361,14 +373,14 @@ export function parse ( text ) {
 	// アクション種に応じた配下の処理と、一次元配列への展開
 	function secondParse ( actList ) {
 
-		let actRoot = { type: 'マーク', prop: '$root' }
+		let actRoot = { type: 'マーク', prop: '$root', meta: { fileName, lineNo: 0 } }
 		let progList = [ actRoot ]
 		let prev = actRoot
 
 
-		function addAct ( type, prop, { separate = false, subjump = false } = { } ) {
+		function addAct ( type, prop, { meta, separate = false, subjump = false } = { } ) {
 
-			let act = { type, prop }
+			let act = { type, prop, meta }
 			//if ( type == '分岐' ) debugger
 			if ( subjump ) {
 
@@ -376,7 +388,7 @@ export function parse ( text ) {
 				if ( separate ) prop = [ prop ]
 
 				for ( let p of prop ) {
-					let subList = secondParse( firstParse( p[ 1 ] ) )
+					let subList = secondParse( firstParse( p[ 1 ], meta.lineNo ) )
 					// もし要素がコマンド郡でなく、リンクなら飛ばす
 					if ( subList.length == 2 && subList[ 1 ].type == '会話' &&
 						subList[ 1 ].prop[ 1 ] == '' ) continue
@@ -392,7 +404,7 @@ export function parse ( text ) {
 		}
 
 
-		function subParse ( type, children, { separate = false, subjump = false } = { } ) {
+		function subParse ( { type, children, meta, separate = false, subjump = false } = { } ) {
 
 			let tabs = '\t'.repeat( ( children[ 0 ].match( /^\t+/ ) || [ '' ] ) [ 0 ].length )
 			children = children.map( child => child.replace( tabs, '' ) )
@@ -404,7 +416,7 @@ export function parse ( text ) {
 				if ( child[ 0 ] != '\t' ) {
 					if ( key ) {
 						// \t以外から始まったときで初回以外（バッファを見て判断）
-						if ( separate ) addAct( type, [ key, value ], { separate, subjump } )
+						if ( separate ) addAct( type, [ key, value ], { meta, separate, subjump } )
 						// 細かく分離する
 						else prop.push( [ key, value ] )
 						// 配列に貯める
@@ -419,14 +431,14 @@ export function parse ( text ) {
 					value += child.replace( '\t', '' ).replace( /\s+$/, '' )
 				}
 			}
-			if ( ! separate ) addAct( type, prop, { separate, subjump } )
+			if ( ! separate ) addAct( type, prop, { meta, separate, subjump } )
 
 
 		}
 
 
 		for ( let act of actList ) {
-			let { type, children } = act
+			let { type, children, meta } = act
 
 			if ( children.length == 0 ) {
 				$.warn( `"${ type }" 子要素が空なので無視されました` )
@@ -434,7 +446,7 @@ export function parse ( text ) {
 			}
 
 			switch ( type ) {
-				       case 'パラメータ': type = '変数'
+						case 'パラメータ': type = '変数'
 				break; case '立ち絵': type = '立絵'
 				break; case 'ＢＧＭ': type = 'BGM'
 				break; case '選択肢': type = '選択'
@@ -447,17 +459,17 @@ export function parse ( text ) {
 				case 'コメント': /* 何もしない */
 				break
 				case '立絵': case '背景': case '変数': case '入力': case '効果':
-					subParse( type, children )
+					subParse( { type, children, meta } )
 				break
 				case '会話':
-					subParse( type, children, { separate: true } )
+					subParse( { type, children, meta, separate: true } )
 				break
 				case '選択': case '分岐': case '繰返':
 					//if ( type == '分岐' ) debugger
-					subParse( type, children, { subjump: true } )
+					subParse( { type, children, meta, subjump: true } )
 				break
 				default :
-					addAct( type, children[ 0 ].trim( ) )
+					addAct( type, children[ 0 ].trim( ), { meta } )
 
 			}
 
