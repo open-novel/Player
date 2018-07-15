@@ -40,7 +40,7 @@ async function play ( ctx, mode ) {
 
 	let sound = 'off'
 	if ( mode != 'install' ) {
-		Action.sysMessage( 'openノベルプレイヤー v1.0β_065   18/07/15' +
+		Action.sysMessage( 'openノベルプレイヤー v1.0β_066   18/07/15' +
 			( $.TEST.mode ? `  *${ $.TEST.mode } test mode*` : '' )  )
 
 		Action.setMenuVisible( true )
@@ -209,8 +209,9 @@ async function installScenario ( index, sel ) {
 		case 'Webから': {
 
 			Action.sysMessage( 'ダウンロード中……' )
-			files = ( await player.on( 'install', true ) ).file
-			files = await unpackFile( files )
+			let data = await player.on( 'install', true )
+			if ( ! data || ! data.file ) return null
+			files = await unpackFile( data.file )
 
 		} break
 		default : throw 'UnEx'

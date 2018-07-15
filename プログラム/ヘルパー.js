@@ -143,7 +143,7 @@ export class Awaiter {
 		if ( late && lateValue !== undefined ) {
 			//delete this[ key ].lateValue
 			resolve( lateValue )
-			console.log( 'late', key, lateValue )
+			log( 'late', key, lateValue )
 		}
 		return promise
 
