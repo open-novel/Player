@@ -40,7 +40,7 @@ async function play ( ctx, mode ) {
 
 	let sound = 'off'
 	if ( mode != 'install' ) {
-		Action.sysMessage( 'openノベルプレイヤー v1.0β_063   18/07/15' +
+		Action.sysMessage( 'openノベルプレイヤー v1.0β_064   18/07/15' +
 			( $.TEST.mode ? `  *${ $.TEST.mode } test mode*` : '' )  )
 
 		Action.setMenuVisible( true )
@@ -55,10 +55,7 @@ async function play ( ctx, mode ) {
 	while ( true ) {
 
 		let res = await playSystemOpening( mode ).catch( e => $.error( e ) || 'error' )
-		if ( mode == 'install' ) {
-			location.href = new URL( '', location.href ).href
-			return
-		}
+		if ( mode == 'install' ) return
 
 		await Action.initAction( settings )
 		Action.setMenuVisible( false )
