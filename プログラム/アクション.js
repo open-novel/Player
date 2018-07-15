@@ -70,7 +70,7 @@ const frame = new $.Awaiter
 } ) ( )
 
 
-export const action = new $.Awaiter
+const action = new $.Awaiter
 export function onAction ( type ) {
 
 	$.log( type )
@@ -89,7 +89,7 @@ export async function onPoint ( { type, button, x, y } ) {
 }
 
 
-class Trigger {
+export class Trigger {
 
 	constructor ( ) { this.layer = nowLayer }
 

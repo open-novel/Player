@@ -40,7 +40,7 @@ async function play ( ctx, mode ) {
 
 	let sound = 'off'
 	if ( mode != 'install' ) {
-		Action.sysMessage( 'openノベルプレイヤー v1.0β_064   18/07/15' +
+		Action.sysMessage( 'openノベルプレイヤー v1.0β_065   18/07/15' +
 			( $.TEST.mode ? `  *${ $.TEST.mode } test mode*` : '' )  )
 
 		Action.setMenuVisible( true )
@@ -175,7 +175,7 @@ async function installScenario ( index, sel ) {
 		Action.sysMessage( 'インストール方法を選んで下さい', 100 )
 
 		let menuList = [ 'フォルダから', 'Zipファイルから' ].map( label => ( { label } ) )
-		$.disableChoiceList( [ 'Webから' ], menuList )
+		//$.disableChoiceList( [ 'Webから' ], menuList )
 
 		sel = await Action.sysChoices( menuList, { backLabel: '戻る' } )
 	}
@@ -233,9 +233,10 @@ async function installScenario ( index, sel ) {
 		input.webkitdirectory = folder
 		input.onchange = ( ) => player.fire( 'file', input.files )
 		input.click( )
-		let files = await Promise.race( [ player.on( 'file' ), Action.action.on( 'next' ) ] )
-		if ( files ) files = Array.from( files )
-		return files
+		let trigger = new Action.Trigger
+		let files = await trigger.stepOr( player.on( 'file' ) )
+		if ( typeof files == 'object' ) return Array.from( files )
+		else return null
 	}
 
 	Action.sysMessage( 'インストールしています……' )
