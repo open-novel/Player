@@ -70,7 +70,7 @@ const frame = new $.Awaiter
 } ) ( )
 
 
-const action = new $.Awaiter
+export const action = new $.Awaiter
 export function onAction ( type ) {
 
 	$.log( type )

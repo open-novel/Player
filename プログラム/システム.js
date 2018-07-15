@@ -40,7 +40,7 @@ async function play ( ctx, mode ) {
 
 	let sound = 'off'
 	if ( mode != 'install' ) {
-		Action.sysMessage( 'openノベルプレイヤー v1.0β_062   18/07/15' +
+		Action.sysMessage( 'openノベルプレイヤー v1.0β_063   18/07/15' +
 			( $.TEST.mode ? `  *${ $.TEST.mode } test mode*` : '' )  )
 
 		Action.setMenuVisible( true )
@@ -236,7 +236,7 @@ async function installScenario ( index, sel ) {
 		input.webkitdirectory = folder
 		input.onchange = ( ) => player.fire( 'file', input.files )
 		input.click( )
-		let files = await Promise.race( [ player.on( 'file' ), player.on( 'pointer' ) ] )
+		let files = await Promise.race( [ player.on( 'file' ), Action.action.on( 'next' ) ] )
 		if ( files ) files = Array.from( files )
 		return files
 	}

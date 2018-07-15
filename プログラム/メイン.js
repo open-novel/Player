@@ -90,8 +90,7 @@ async function main( ) {
 	}
 
 
-	const onp = Player.initPlayer( { ctx, mode: location.hash.slice( 1 ) } )
-	onp.then( ( ) => window.close( ), ( ) => window.close( ) )
+	Player.initPlayer( { ctx, mode: location.hash.slice( 1 ) } )
 
 
 }
