@@ -40,7 +40,7 @@ async function play ( ctx, mode ) {
 
 	let sound = 'off'
 	if ( mode != 'install' ) {
-		Action.sysMessage( 'openノベルプレイヤー v1.0β_070   18/07/15' +
+		Action.sysMessage( 'openノベルプレイヤー v1.0β_072   18/07/15' +
 			( $.TEST.mode ? `  *${ $.TEST.mode } test mode*` : '' )  )
 
 		Action.setMenuVisible( true )
@@ -106,7 +106,7 @@ async function playSystemOpening ( mode ) {
 
 
 	if ( mode == 'install' ) {
-		let success = await installScenario( index, 'Webから' )
+		let success = await installScenario( index, 'Webリンクから' )
 		if ( success ) await Action.sysMessage( 'インストールが完了しました', 100 )
 		else await Action.sysMessage( 'インストールできませんでした', 100 )
 		window.close( )
@@ -174,8 +174,7 @@ async function installScenario ( index, sel ) {
 	if ( ! sel ) {
 		Action.sysMessage( 'インストール方法を選んで下さい', 100 )
 
-		let menuList = [ 'フォルダから', 'Zipファイルから' ].map( label => ( { label } ) )
-		//$.disableChoiceList( [ 'Webから' ], menuList )
+		let menuList = [ 'フォルダから', 'Zipファイルから', 'Webから' ].map( label => ( { label } ) )
 
 		sel = await Action.sysChoices( menuList, { backLabel: '戻る' } )
 	}
@@ -207,6 +206,12 @@ async function installScenario ( index, sel ) {
 
 		} break
 		case 'Webから': {
+
+			await Action.sysMessage( 'openノベルプレイヤー向けに作品を公開しているサイトで'
+			+'\\n作品のリンクをクリックするとここへインストールできます' )
+
+		} break
+		case 'リンクから': {
 
 			Action.sysMessage( 'ダウンロード中……' )
 			let data = await player.on( 'install', true )
