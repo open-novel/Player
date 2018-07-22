@@ -40,7 +40,7 @@ async function play ( ctx, mode ) {
 
 	let sound = 'off'
 	if ( mode != 'install' ) {
-		Action.sysMessage( 'openノベルプレイヤー v1.0β_075   18/07/22' +
+		Action.sysMessage( 'openノベルプレイヤー v1.0β_076   18/07/22' +
 			( $.TEST.mode ? `  *${ $.TEST.mode } test mode*` : '' )  )
 
 		Action.setMenuVisible( true )
