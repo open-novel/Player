@@ -272,7 +272,7 @@ function decoText ( text ) {
 
 	let mag = 1, bold = false, color = undefined, row = 0
 
-	for ( let unit of ( text.match( /\\\w(\[[\w.]+\])?|./g ) || [ ] ) ) {
+	for ( let unit of ( text.match( /\\\w(\[[\w.]+\])?|./gu ) || [ ] ) ) {
 		let magic = unit.match( /\\(\w)\[?([\w.]+)?\]?/ )
 		if ( magic ) {
 			let [ , type, val ] = magic
