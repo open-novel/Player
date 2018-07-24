@@ -40,7 +40,7 @@ async function play ( ctx, mode ) {
 
 	let sound = 'off'
 	if ( mode != 'install' ) {
-		Action.sysMessage( 'openノベルプレイヤー v1.0β_079   18/07/25' +
+		Action.sysMessage( 'openノベルプレイヤー v1.0β_080   18/07/25' +
 			( $.TEST.mode ? `  *${ $.TEST.mode } test mode*` : '' )  )
 
 		Action.setMenuVisible( true )
@@ -256,7 +256,7 @@ async function installScenario ( index, sel ) {
 		if ( file.name.includes( '設定.txt' ) ) { settingFile = file }
 		let relpath = file.webkitRelativePath || file.name
 		let [ ,path, cut ] = relpath.match( /([^.]+)(.*)$/ )
-		path = path.replace( /:/g, '\\' )
+		path = path.replace( /:/g, '/' )
 		if ( ( ! dataMap.has( path ) ) || ( dataMap.get( path ).cut.length > cut.length ) ) {
 			dataMap.set( path, { file, cut } )
 		}
@@ -268,7 +268,7 @@ async function installScenario ( index, sel ) {
 		return flag
 	} )
 
-	let title = data[ 0 ][ 1 ].match( /^[^/:]+/ )[ 0 ]
+	let title = data[ 0 ][ 1 ].match( /^[^/]+/ )[ 0 ]
 
 	let setting = settingFile ?  $.parseSetting( await new Response( settingFile ).text( ) ) : { }
 	setting.title = title
