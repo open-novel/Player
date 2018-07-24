@@ -102,4 +102,4 @@ window.addEventListener( 'beforeinstallprompt', e => {
 
 let time = Date.now( )
 navigator.serviceWorker.register( `サービス.js?t=${ time }`, { scope: '/', updateViaCache: 'none' } ).then( reg => reg.update( ) )
-navigator.serviceWorker.register( `/Player/サービス.js?t=${ time }`, { scope: '/Player/', updateViaCache: 'none'  } ).then( reg => reg.update( ) )
+navigator.serviceWorker.register( `サービス.js?t=${ time }`, { scope: '/Player/', updateViaCache: 'none'  } ).then( reg => reg.update( ) )
