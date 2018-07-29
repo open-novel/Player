@@ -40,7 +40,7 @@ async function play ( ctx, mode ) {
 
 	let sound = 'off'
 	if ( mode != 'install' ) {
-		Action.sysMessage( 'openノベルプレイヤー v1.0β_080   18/07/25' +
+		Action.sysMessage( 'openノベルプレイヤー v1.0β_081   18/07/29' +
 			( $.TEST.mode ? `  *${ $.TEST.mode } test mode*` : '' )  )
 
 		Action.setMenuVisible( true )
@@ -109,7 +109,9 @@ async function playSystemOpening ( mode ) {
 		let success = await installScenario( index, 'リンクから' )
 		if ( success ) await Action.sysMessage( 'インストールが完了しました', 100 )
 		else await Action.sysMessage( 'インストールできませんでした', 100 )
-		window.close( )
+		location.hash = ''
+		location.reload( )
+		await $.neverDone( )
 
 	}
 	// シナリオ開始メニュー表示

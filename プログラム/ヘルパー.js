@@ -23,6 +23,8 @@ export const hint = console.error.bind( console )
 export const Token = [ 'back', 'next', 'cancel' ].reduce( ( obj, key ) => { obj[ key ] = Symbol( ); return obj }, { } )
 
 
+export const neverDone = new Promise( NOP )
+
 export async function fetchFile ( name, type = 'blob' ) {
 	return ( await fetch( new URL( name, baseurl ) ) )[ type ]( )
 }
