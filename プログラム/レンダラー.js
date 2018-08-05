@@ -220,7 +220,18 @@ export class RectangleNode extends Node {
 				if ( forcused && listenerMode == 'opaque' ) ctx.filter = 'brightness(150%)'
 			}
 			ctx.fillStyle = fill
-			ctx.fillRect( x, y, w, h )
+
+			//ctx.fillRect( x, y, w, h )
+
+			const r = 10
+			ctx.beginPath( )
+			ctx.moveTo( x, y )
+			ctx.arcTo( x + w, y, x + w, y + h, r )
+			ctx.arcTo( x + w, y + h, x, y + h, r )
+			ctx.arcTo( x, y + h, x, y, r )
+			ctx.arcTo( x, y, x + w, y, r )
+			ctx.fill( )
+
 
 		}
 
