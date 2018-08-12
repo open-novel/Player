@@ -100,6 +100,7 @@ async function main( ) {
 window.addEventListener( 'beforeinstallprompt', e => {
 	installEvent = e
 	e.preventDefault( )
+	return false
 } )
 
 let time = Date.now( )
