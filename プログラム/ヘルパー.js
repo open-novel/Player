@@ -7,7 +7,7 @@ export let TEST = { mode: '' }
 
 //const metaurl = import.meta.url  // eslint-disable-line-parsing
 //const baseurl = new URL( '../', metaurl ).href  // eslint-disable-line
-const baseurl = new URL( './Player', location.href ).href
+const baseurl = new URL( '/Player/', location.href ).href
 
 import * as DB from './データベース.js'
 
