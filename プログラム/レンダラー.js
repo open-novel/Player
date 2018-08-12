@@ -26,6 +26,12 @@ async function init ( opt ) {
 	return await initLayer( )
 }
 
+export function toBlob( hiquality ) {
+	return new Promise( ok => DPCanvas.toBlob( ok,
+		hiquality ? 'image/webp' : undefined,
+		hiquality ? 1 : undefined
+	) )
+}
 
 export let { target: initRanderer, register: nextInit } = new $.AwaitRegister( init )
 

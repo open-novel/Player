@@ -8,6 +8,8 @@ import * as Player from './システム.js'
 
 window.addEventListener( 'DOMContentLoaded', main )
 
+let installEvent = new $.Deferred
+
 async function main( ) {
 
 
@@ -90,14 +92,14 @@ async function main( ) {
 	}
 
 
-	Player.initPlayer( { ctx, mode: location.hash.slice( 1 ) } )
+	Player.initPlayer( { ctx, mode: location.hash.slice( 1 ), installEvent } )
 
 
 }
 
 window.addEventListener( 'beforeinstallprompt', e => {
-	window.installEvent = e
-	e.prompt( )
+	installEvent = e
+	e.preventDefault( )
 } )
 
 let time = Date.now( )

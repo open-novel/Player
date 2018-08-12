@@ -133,9 +133,7 @@ export async function showSaveLoad ( { layer, title, isLoad = false, settings, o
 		else if ( index == $.Token.next ) page ++
 		else {
 			if ( isLoad ) {
-				let state = await DB.loadState( title, index )
-				return play( settings, state, others )
-
+				return await DB.loadState( title, index )
 			}
 			else {
 				return DB.saveState( title, index, Scenario.getState( layer )  )
@@ -156,7 +154,7 @@ async function showMenu ( layer ) {
 
 	layer.on( 'menu' ).then( ( ) => closeMenu( layer ) )
 
-	let choices = [ 'セーブ', 'ロード', '終了する' ].map( label => ( { label } ) )
+	let choices = [ 'セーブ', 'ロード', 'シェアする', '終了する' ].map( label => ( { label } ) )
 
 	let type = await sysChoices( choices, { rowLen: 4, backLabel: '戻る' } )
 
@@ -176,15 +174,58 @@ async function showMenu ( layer ) {
 		} break
 		case 'ロード': {
 
-			let loaded = await showSaveLoad( { title, settings, isLoad: true } )
-			$.log( loaded )
-			if ( loaded != $.Token.cancel ) return
+			let state = await showSaveLoad( { title, settings, isLoad: true } )
+			$.log( state )
+			if ( state != $.Token.cancel ) {
+				stateList = [ state ]
+				return init( )
+			}
+
+		} break
+		case 'シェアする': {
+
+			let capture = false, hiquality = false
+			WHILE: while ( true ) {
+				let choices = Object.entries( {
+					[ ( capture ? '☑' : '☐' ) + '　　　同時にサムネイルをDLする　　　　' ]: 'capture',
+					'Twitter': 'twitter.com/intent/tweet',
+					'Mastodon (mstdn.jp)': 'mstdn.jp/share',
+					//[ ( hiquality ? '🗹' : '☐' ) + 'サムネイルを高画質にする' ]: 'hiquality',
+					'Pawoo (Pixiv)': 'pawoo.net/share',
+					'Friends (niconico)': 'friends.nico/share'
+				} ).map( ( [ key, value ] ) => ( { label: key, value } ) )
+				let type = await sysChoices( choices, { rowLen: 5, backLabel: '戻る' } )
+				if ( type === null ) break WHILE
+				if ( type == 'capture' ) {
+					capture = ! capture
+					continue WHILE
+				}
+				/*if ( type == 'hiquality' ) {
+					hiquality = ! hiquality
+					continue WHILE
+				}*/
+				let url = `https://${ type }?text=`+ encodeURIComponent(
+					'Openノベルプレイヤー\nhttps://open-novel.github.io' )
+				window.open( url )
+				if ( capture ) {
+					layer.menuBox.prop( 'o', 0 )
+					Renderer.drawCanvas( )
+					$.download( await Renderer.toBlob( hiquality ), title )
+					layer.menuBox.prop( 'o', 1 )
+				}
+				break WHILE
+			}
+
 
 		} break
 		case '終了する': {
 
-			stateList.length = 0
-			return init( )
+			let choices = [ '本当に終了する' ].map( label => ( { label } ) )
+			let type = await sysChoices( choices, { rowLen: 4, backLabel: '戻る' } )
+			if ( type != null ) {
+				stateList.length = 0
+				return init( )
+			}
 
 		} break
 		default: $.error( 'UnEx' )

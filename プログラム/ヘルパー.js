@@ -5,8 +5,9 @@ http://creativecommons.org/publicdomain/zero/1.0
 
 export let TEST = { mode: '' }
 
-const metaurl = import.meta.url  // eslint-disable-line-parsing
-const baseurl = new URL( '../', metaurl ).href  // eslint-disable-line
+//const metaurl = import.meta.url  // eslint-disable-line-parsing
+//const baseurl = new URL( '../', metaurl ).href  // eslint-disable-line
+const baseurl = new URL( './', location.href ).href
 
 import * as DB from './データベース.js'
 
@@ -42,6 +43,17 @@ export function timeout ( ms ) {
 	let { promise, resolve } = new Deferred
 	if ( ms != Infinity ) setTimeout( resolve, ms )
 	return promise
+}
+
+export function download ( blob, title ) {
+	let link = document.createElement( 'a' )
+	link.href = URL.createObjectURL( blob )
+	link.download = 'ONP'
+	+ decodeURIComponent( `_【${ title }】_` )
+	+ ( new Date ).toISOString( ).replace( /\.\d+Z$|[^\d]|/g, '' )
+
+	link.click( )
+	URL.revokeObjectURL( link.href )
 }
 
 

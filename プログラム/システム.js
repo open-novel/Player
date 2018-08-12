@@ -10,12 +10,12 @@ import * as DB from './データベース.js'
 
 const Archive = $.importWorker( `アーカイブ` )
 
-async function init ( { ctx, mode } ) {
-	await play( ctx, mode )
+async function init ( { ctx, mode, installEvent } ) {
+	await play( ctx, mode, installEvent )
 }
 
 
-async function play ( ctx, mode ) {
+async function play ( ctx, mode, installEvent ) {
 
 	if ( mode == 'VR' ) {
 		mode = ''
@@ -40,12 +40,34 @@ async function play ( ctx, mode ) {
 
 	let sound = 'off'
 	if ( mode != 'install' ) {
-		Action.sysMessage( 'openノベルプレイヤー v1.0β_082   18/08/05' +
-			( $.TEST.mode ? `  *${ $.TEST.mode } test mode*` : '' )  )
+	let text = 'openノベルプレイヤー v1.0β_090   18/08/12' +
+		( $.TEST.mode ? `  *${ $.TEST.mode } test mode*` : '' )
 
-		Action.setMenuVisible( true )
-		let list = [ { label: '🔊', value: 'on' }, { label: '🔇', value: 'off' } ]
-		sound = await Action.sysChoices( list, { rowLen: 1 } )
+		WHILE: while ( true ) {
+
+			Action.sysMessage( text )
+			Action.setMenuVisible( true )
+
+			let list = [
+				{ label: '🔊　サウンドONで開始する ', value: 'on' },
+				{ label: '🔇　サウンドOFFで開始する', value: 'off' },
+				{ label: '⏬　アプリとして登録する　', value: 'install' }
+			]
+			let select = await Action.sysChoices( list, { rowLen: 3 } )
+			if ( select == 'install' ) {
+				let result = await Promise.race( [ installEvent.promise, $.timeout( 1 ) ] )
+				if ( result ) result.prompt( )
+				else {
+					Action.sysMessage(
+						'ブラウザの準備が整っていなかったため'
+						+'\\nインストールできませんでした' )
+					await $.timeout( 3000 )
+				}
+				continue WHILE
+			}
+			sound = select
+			break WHILE
+		}
 	}
 
 	if ( sound == 'on' ) Action.setMainVolume( 1 )
@@ -141,8 +163,9 @@ async function playSystemOpening ( mode ) {
 		} break
 		case '続きから': {
 
-			await Action.showSaveLoad( { title, isLoad: true, settings, others } )
-			return playSystemOpening( mode )
+			let state = await Action.showSaveLoad( { title, isLoad: true, settings, others } )
+			return Action.play( settings, state, others )
+			//return playSystemOpening( mode )
 
 		} break
 		case '途中から': {
