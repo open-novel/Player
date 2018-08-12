@@ -322,7 +322,7 @@ export class TextNode extends Node {
 		let { fill, shadow, text, size, pos, rotate } = this
 
 		ctx.font = `${ h * size }px "Hiragino Kaku Gothic ProN", Meiryo`
-		ctx.textBaseline = 'top'
+		//ctx.textBaseline = 'top'
 		ctx.textAlign = pos
 
 		//let b = h * size * .075
@@ -339,7 +339,7 @@ export class TextNode extends Node {
 		if ( fill ) {
 			if( shadow ) setShadow( { offset: b } )
 			ctx.fillStyle = fill
-			ctx.fillText( text, x, y, w - b )
+			ctx.fillText( text, x, y + h * size, w - b )
 
 		}
 
@@ -369,13 +369,13 @@ export class DecoTextNode extends Node {
 			preRow = row
 			let size = this.size * mag
 			ctx.font = `${ bold ? 'bold' : '' } ${ h * size }px "Hiragino Kaku Gothic ProN", Meiryo`
-			ctx.textBaseline = 'top'
+			//ctx.textBaseline = 'top'
 
 			let b = ( h *  size )  * .025 + 2.5
 
 			setShadow( { offset: b } )
 			ctx.fillStyle = color
-			ctx.fillText( text, x + xBuf, y + ( row * h * size * 1.4 ) )
+			ctx.fillText( text, x + xBuf, y + ( row * h * size * 1.4 ) + h * size / 2 )
 			let metrics = ctx.measureText( text )
 			xBuf += metrics.width
 

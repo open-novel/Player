@@ -359,7 +359,7 @@ async function getImage ( blob ) {
 		cache.blob.set( blob, url )
 	}
 	img.src = url
-	await img.decode( )
+	if ( img.decode ) await img.decode( )
 	return img
 }
 
