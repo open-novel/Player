@@ -199,8 +199,7 @@ export class Time {
 
 export function importWorker ( name ) {
 
-	let w = new Worker( new URL( `プログラム/${ name }.js`, baseurl ) )
-	window.w = w  // for firefox
+	let w = new Worker( new URL( `Player/プログラム/${ name }.js`, baseurl ) )
 
 	return new Proxy( { }, {
 		get ( tar, key ) {
