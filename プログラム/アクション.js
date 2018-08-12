@@ -191,8 +191,8 @@ async function showMenu ( layer ) {
 					'Twitter': 'twitter.com/intent/tweet',
 					'Mastodon (mstdn.jp)': 'mstdn.jp/share',
 					//[ ( hiquality ? '🗹' : '☐' ) + 'サムネイルを高画質にする' ]: 'hiquality',
+					'Friends (niconico)': 'friends.nico/share',
 					'Pawoo (Pixiv)': 'pawoo.net/share',
-					'Friends (niconico)': 'friends.nico/share'
 				} ).map( ( [ key, value ] ) => ( { label: key, value } ) )
 				let type = await sysChoices( choices, { rowLen: 5, backLabel: '戻る' } )
 				if ( type === null ) break WHILE

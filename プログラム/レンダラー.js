@@ -277,8 +277,13 @@ export class PolygonNode extends Node {
 				if ( shadow ) setShadow( { offset, alpha: .5 } )
 				if ( forcused && listenerMode == 'opaque' ) ctx.filter = 'brightness(150%)'
 			}
+
+			const r = 10
 			ctx.beginPath( )
-			for ( let [ l, t ] of path ) ctx.lineTo( x + w * l, y + h * t )
+			//for ( let [ l, t ] of path ) ctx.lineTo( x + w * l, y + h * t )
+			ctx.moveTo( x + w * path[ path.length-1 ][ 0 ], y + h * path[ path.length-1 ][ 1 ] )
+			for ( let i = 0; i < path.length - 1; i++ ) ctx.arcTo( x + w * path[ i ][ 0 ], y + h * path[ i ][ 1 ], x + w * path[ i+1 ][ 0 ], y + h * path[ i+1 ][ 1 ], r )
+			ctx.arcTo( x + w * path[ path.length-1 ][ 0 ], y + h * path[ path.length-1 ][ 1 ], x + w * path[ 0 ][ 0 ], y + h * path[ 0 ][ 1 ], r )
 			ctx.fillStyle = fill
 			ctx.fill( )
 
@@ -469,12 +474,12 @@ function initLayer ( ) {
 							{
 								type: PolygonNode, name: 'menuBotton', listenerMode: 'opaque',
 								fill: 'rgba( 255, 200, 200, .25 )', event: 'menu',
-								path: [ [ .005, .25 ], [ .005, .96 ], [ .145, .96 ] ], sound: true
+								path: [ [ .005, .20 ], [ .005, .96 ], [ .130, .96 ] ], sound: true
 							},
 							{
 								type: TextNode, name: 'openMenuText',
-								y: .2, w: .165, fill: 'rgba( 255, 255, 255, .5 )', text: 'open menu',
-								pos: 'center', size: .15, rotate: 35
+								y: .15, w: .165, fill: 'rgba( 255, 255, 255, .5 )', text: ' open menu',
+								pos: 'center', size: .15, rotate: 40
 							}
 						]
 					}
