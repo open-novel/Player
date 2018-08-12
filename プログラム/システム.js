@@ -40,7 +40,7 @@ async function play ( ctx, mode, installEvent ) {
 
 	let sound = 'off'
 	if ( mode != 'install' ) {
-	let text = 'openノベルプレイヤー v1.0β_103   18/08/13' +
+	let text = 'openノベルプレイヤー v1.0β_104   18/08/13' +
 		( $.TEST.mode ? `  *${ $.TEST.mode } test mode*` : '' )
 
 		WHILE: while ( true ) {
@@ -164,6 +164,7 @@ async function playSystemOpening ( mode ) {
 		case '続きから': {
 
 			let state = await Action.showSaveLoad( { title, isLoad: true, settings, others } )
+			if ( state === $.Token.cancel ) return playSystemOpening( mode )
 			return Action.play( settings, state, others )
 			//return playSystemOpening( mode )
 
