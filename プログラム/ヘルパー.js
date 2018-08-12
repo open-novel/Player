@@ -15,10 +15,11 @@ import * as DB from './データベース.js'
 window.logEnable = ! baseurl.includes( 'github.io' )
 
 const NOP = ( ) => { }
+window.logBuffer = [ ]
 export const log	= ( ...args ) => window.logEnable && console.log( ...args )
 export const info	= ( ...args ) => window.logEnable && console.info( ...args )
 export const warn	= ( ...args ) => window.logEnable && console.warn( ...args )
-export const error = ( ...args ) => window.logEnable && console.error( ...args )
+export const error = ( ...args ) => window.logEnable ? console.error( ...args ) : window.logBuffer.push( args )
 export const hint = console.error.bind( console )
 
 export const Token = [ 'back', 'next', 'cancel' ].reduce( ( obj, key ) => { obj[ key ] = Symbol( ); return obj }, { } )
