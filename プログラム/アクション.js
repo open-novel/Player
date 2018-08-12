@@ -205,7 +205,7 @@ async function showMenu ( layer ) {
 					continue WHILE
 				}*/
 				let url = `https://${ type }?text=`+ encodeURIComponent(
-					`『${ title }』をプレイしています\nby Openノベルプレイヤー https://open-novel.github.io` )
+					`『${ title }』をプレイしています。\nby Openノベルプレイヤー https://open-novel.github.io` )
 				window.open( url )
 				if ( capture ) {
 					layer.menuBox.prop( 'o', 0 )
