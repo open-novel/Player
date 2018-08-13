@@ -539,13 +539,16 @@ function initLayer ( ) {
 }
 
 
-export function drawCanvas ( ) {
+let oldTime = performance.now( )
+export function drawCanvas ( newTime ) {
 
 	if ( ! ctx ) return
 
 	layerRoot.fire( 'update' )
 
-	if ( layerRoot.dirty ) {
+	if ( layerRoot.dirty || ( newTime - oldTime ) >= 100 ) {
+
+		oldTime = newTime
 
 		refreshCanvasSize( )
 

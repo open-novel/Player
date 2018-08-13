@@ -62,8 +62,8 @@ export let { target: initAction, register: nextInit } = new $.AwaitRegister( ini
 const frame = new $.Awaiter
 ;( ( ) => {
 	loop( )
-	function loop ( ) {
-		Renderer.drawCanvas( )
+	function loop ( time ) {
+		Renderer.drawCanvas( time )
 		requestAnimationFrame( loop )
 		frame.fire( 'update' )
 	}
@@ -351,16 +351,23 @@ async function getFile ( path ) {
 	return blob
 }
 
-async function getImage ( blob ) {
-	let img = new Image
-	let url = cache.blob.get( blob )
-	if ( ! url ) {
-		url = URL.createObjectURL( blob )
-		cache.blob.set( blob, url )
-	}
-	img.src = url
-	if ( img.decode ) await img.decode( )
-	return img
+function getImage ( blob ) {
+	return new Promise( ( ok, ng ) => {
+		let img = new Image
+		let url = cache.blob.get( blob )
+		if ( ! url ) {
+			url = URL.createObjectURL( blob )
+			cache.blob.set( blob, url )
+		}
+		img.onload = ( ) => {
+			if ( img.decode ) img.decode( ).then( ( ) => ok( img ), ng )
+			else ok( img )
+		}
+		img.style.width = '0px'
+		img.style.height = '0px'
+		document.body.append( img )
+		img.src = url
+	} )
 }
 
 
