@@ -29,6 +29,8 @@ export function setMainVolume ( value ) {
 
 const sysEffectMap = new Map
 
+const bufferCache = new Map
+
 export async function playSysEffect ( name ) {
 
 	//$.log( 'SysEffect', name )
@@ -41,9 +43,13 @@ export async function playSysEffect ( name ) {
 	}
 
 	async function addBuffer ( ) {
-		let ab = await $.fetchFile( `効果音/${ name }`, 'arrayBuffer' )
+		let ab = bufferCache.get( name )
+		if ( ! ab ) {
+			ab = await $.fetchFile( `効果音/${ name }`, 'arrayBuffer' )
+			bufferCache.set( name, ab )
+		}
 		let source = ctx.createBufferSource( )
-		source.buffer = await ctx.decodeAudioData( ab )
+		source.buffer = await ctx.decodeAudioData( ab.slice( ) )
 		ary.push( source )
 	}
 

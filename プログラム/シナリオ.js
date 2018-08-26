@@ -156,6 +156,8 @@ export async function play ( layer, state, others ) {
 							pos = pos.map( d => d / 100 )
 						} else throw `立ち絵『${ name }』の位置指定が不正です。`
 
+						//$.log(pos)
+
 						let path = [ basePath, '立ち絵', name ].join( '/' )
 
 						state.portraits.push( [ path, pos ] )

@@ -69,7 +69,7 @@ async function unpackFile( zip ) {
 	if ( zip instanceof ArrayBuffer ) buffer = zip
 	else {
 		const fr = new FileReader
-		let promise = new Promise( ok => { fr.onload　= ( ) => ok( fr.result ) } )
+		let promise = new Promise( ok => { fr.onload = ( ) => ok( fr.result ) } )
 		fr.readAsArrayBuffer( zip )
 		buffer = await promise
 	}
@@ -317,7 +317,37 @@ async function unpackFile( zip ) {
 
 		}
 
-		file.type = file.name.match( /\.txt$/ ) ? 'text/plain' : ''
+		let ext = ( file.name.match( /\.([^.]+)$/ ) || [ ,'' ] )[ 1 ]
+		file.type = {
+			'aac': 'audio/aac',
+			'avi': 'video/x-msvideo',
+			'bmp': 'image/bmp',
+			'gif': 'image/gif',
+			'ico': 'image/x-icon',
+			'jpeg': 'image/jpeg',
+			'jpg': 'image/jpeg',
+			'json': 'application/json',
+			'mid': 'audio/midi',
+			'midi': 'audio/midi',
+			'mpeg': 'video/mpeg',
+			'oga': 'audio/ogg',
+			'ogv': 'video/ogg',
+			'png': 'image/png',
+			'svg': 'image/svg+xml',
+			'tif': 'image/tiff',
+			'tiff': 'image/tiff',
+			'text': 'text/plain',
+			'txt': 'text/plain',
+			'wav': 'audio/wav',
+			'weba': 'audio/webm',
+			'webm': 'video/webm',
+			'webp': 'image/webp',
+			'woff': 'font/woff',
+			'woff2': 'font/woff2',
+			'zip': 'application/zip',
+			'3gp': 'video/3gpp',
+			'3g2': 'video/3gpp2',
+		}[ ext ] || ''
 		//file.data = new File( [ data ], file.name, { type } )
 
 

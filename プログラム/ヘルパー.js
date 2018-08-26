@@ -46,6 +46,18 @@ export function timeout ( ms ) {
 	return promise
 }
 
+export function normalizePos ( obj ) {
+	for ( let [ key, look ] of [ [ 'x', 'w' ], [ 'y', 'h' ] ] ) {
+		let val = obj[ key ]
+		if ( ! Number.isFinite( val ) ) continue
+		if ( 1 / val < 0 ) {
+			obj[ key ] = val = 1 - obj[ look ] + val
+			if ( val < 0 || Object.is( val, -0 ) || 1 < val )
+				warn( `"${ val }" 不正な範囲の数値です` )
+		}
+	}
+}
+
 export function download ( blob, title ) {
 	let link = document.createElement( 'a' )
 	link.href = URL.createObjectURL( blob )

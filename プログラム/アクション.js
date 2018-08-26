@@ -477,8 +477,11 @@ async function showImage ( targetGroup, path, pos, kind ) {
 
 	$.log( 'show', type, eff, targetGroup.name )
 
-	let { x, y, h, w = 9 / 16 * h * img.naturalWidth / img.naturalHeight } = pos
+
+	let { h, w = 9 / 16 * h * img.naturalWidth / img.naturalHeight } = pos
 	pos.w = w
+	$.normalizePos( pos )
+	let { x, y } = pos
 
 	let image, oldPos
 
@@ -514,7 +517,7 @@ async function showImage ( targetGroup, path, pos, kind ) {
 			} break
 			case 'トランス': {
 				[ 'x', 'y', 'w', 'h' ].forEach( p => {
-					let val = oldPos[ p ] * prog + pos[ p ] * ( 1- prog )
+					let val = oldPos[ p ] * ( 1 - prog ) + pos[ p ] * prog
 					//$.log( p, val )
 					image.prop( p, val )
 				} )
