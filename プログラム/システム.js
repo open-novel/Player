@@ -40,7 +40,7 @@ async function play ( ctx, mode, installEvent ) {
 
 	let sound = 'off'
 	if ( mode != 'install' ) {
-	let text = 'openノベルプレイヤー v1.0β_105   18/08/13' +
+	let text = 'openノベルプレイヤー v1.0β_110   18/08/26' +
 		( $.TEST.mode ? `  *${ $.TEST.mode } test mode*` : '' )
 
 		WHILE: while ( true ) {
@@ -278,11 +278,21 @@ async function installScenario ( index, sel ) {
 	let settingFile
 	let dataMap = new Map
 
+
+
+	let title = ''
+	if ( files.every( ( file ) => {
+		let relpath = file.webkitRelativePath || file.name
+		let [ ,path, cut ] = relpath.match( /([^.]+)(.*)$/ )
+		path = path.replace( /:/g, '/' )
+		return path.match( /^シナリオ\// )
+	} ) ) title = files[ 0 ].name.match(/([^/.]+)\..+$/)[ 1 ] + '/'
+
 	let data = files.map( file => {
 		if ( file.name.includes( '設定.txt' ) ) { settingFile = file }
 		let relpath = file.webkitRelativePath || file.name
 		let [ ,path, cut ] = relpath.match( /([^.]+)(.*)$/ )
-		path = path.replace( /:/g, '/' )
+		path = title + path.replace( /:/g, '/' )
 		if ( ( ! dataMap.has( path ) ) || ( dataMap.get( path ).cut.length > cut.length ) ) {
 			dataMap.set( path, { file, cut } )
 		}
@@ -294,7 +304,7 @@ async function installScenario ( index, sel ) {
 		return flag
 	} )
 
-	let title = data[ 0 ][ 1 ].match( /^[^/]+/ )[ 0 ]
+	title = data[ 0 ][ 1 ].match( /^[^/]+/ )[ 0 ]
 
 	let setting = settingFile ?  $.parseSetting( await new Response( settingFile ).text( ) ) : { }
 	setting.title = title
