@@ -40,7 +40,7 @@ async function play ( ctx, mode, installEvent ) {
 
 	let sound = 'off'
 	if ( mode != 'install' ) {
-	let text = 'openノベルプレイヤー v1.0β_115   18/09/02' +
+	let text = 'openノベルプレイヤー v1.0β_118   18/09/02' +
 		( $.TEST.mode ? `  *${ $.TEST.mode } test mode*` : '' )
 
 		WHILE: while ( true ) {
@@ -274,16 +274,23 @@ async function installScenario ( index, sel ) {
 	async function collectScenarioFiles ( { port, title } ) {
 
 		let fileMap = new Map
-
 		let cacheMap = new Map
 
+		let doneCount = 0, fetchCount = 0
+
 		function getFile( path ) {
+
+			++fetchCount
+
+			Action.sysMessage( 'ダウンロード中……\\n' + `${ doneCount }/${ fetchCount }` )
 
 			if ( cacheMap.has( path ) ) return null
 
 			return new Promise( ( ok, ng ) => {
 				port.addEventListener( 'message', ( { data } ) => {
 					if ( data.path != path ) return
+					++doneCount
+					Action.sysMessage( 'ダウンロード中……\\n' + `${ doneCount }/${ fetchCount }` )
 					if ( ! data.file ) ng ( )
 					cacheMap.set( path, data.file )
 					ok( data.file )
