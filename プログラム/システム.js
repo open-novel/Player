@@ -271,7 +271,7 @@ async function installScenario ( index, sel ) {
 		if ( ! zip ) return null
 		let data = ( await Archive.unpackFile( zip ) ).data
 		if ( ! data ) return null
-		return data.map( f => new File( [ f ], f.name, { type: f.type } ) )
+		return data.map( f => new File( [ f.data ], f.name, { type: f.type } ) )
 	}
 
 
@@ -328,7 +328,7 @@ async function installScenario ( index, sel ) {
 
 		port.close( )
 
-		return [ ...cacheMap ].map( ( [ name, f ] ) => new File( [ f.data ], title + '/' + name, { type: f.type }  ) )
+		return [ ...cacheMap ].map( ( [ name, f ] ) => new File( [ f ], title + '/' + name, { type: f.type }  ) )
 
 	}
 
