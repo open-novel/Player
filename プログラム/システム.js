@@ -273,7 +273,7 @@ async function installScenario ( index, sel ) {
 
 	async function collectScenarioFiles ( { port, title } ) {
 
-		let fileMap = new Map
+		$.log( port, title )
 		let cacheMap = new Map
 
 		let doneCount = 0, fetchCount = 0
@@ -288,7 +288,7 @@ async function installScenario ( index, sel ) {
 
 			return new Promise( ( ok, ng ) => {
 				port.addEventListener( 'message', ( { data } ) => {
-					$.log( path )
+					$.log( data.path )
 					if ( data.path != path ) return
 					++doneCount
 					Action.sysMessage( 'ダウンロード中……\\n' + `${ doneCount }/${ fetchCount }` )
