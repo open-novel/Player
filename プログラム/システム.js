@@ -308,7 +308,10 @@ async function installScenario ( index, sel ) {
 			} ) )
 		}
 
-		await getScenario( startScenario )
+		await getScenario( startScenario ).catch( e => {
+			$.hint( '取得できないファイルがありました' )
+			return e
+		} )
 
 		return [ ...cacheMap ].map( ( [ name, f ] ) => new File( [ f.data ], title + '' + name, { type: f.type }  ) )
 

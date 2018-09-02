@@ -654,6 +654,46 @@ export function parse ( text, fileName ) {
 
 export function getFileList ( text ) {
 
-	parse( text, '???' )
-	return [ ]
+	let fileList = [ ]
+	let progList = parse( text, '???' )
+
+	function textEval ( text ) {
+		return eval( text )
+	}
+
+	for ( let act of progList ) {
+		let { type, prop } = act
+
+		switch ( type ) {
+
+			case '立絵': {
+
+				prop.forEach( p => {
+					fileList.push( { type: 'image', path: textEval( '立ち絵/' + p[ 1 ] ) } )
+				} )
+
+			} break
+			case '背景': {
+
+				prop.forEach( p => {
+					fileList.push( { type: 'image', path: textEval( '背景/' + p[ 1 ] ) } )
+				} )
+
+			} break
+			case 'ジャンプ': {
+
+				let title = textEval( prop[ 0 ] )
+				if ( title ) fileList.push( { type: 'scenario', path: textEval( 'シナリオ/' + title ) } )
+
+			} break
+			case 'BGM': {
+
+				fileList.push( { type: 'audio', path: textEval( 'BGM/' + prop ) } )
+
+			} break
+
+		}
+	}
+	
+	return fileList
 }
