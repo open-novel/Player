@@ -133,7 +133,7 @@ async function playSystemOpening ( mode ) {
 		else await Action.sysMessage( 'インストールできませんでした', 100 )
 		location.hash = ''
 		location.reload( )
-		await $.neverDone( )
+		await $.neverDone
 
 	}
 	// シナリオ開始メニュー表示
@@ -279,6 +279,8 @@ async function installScenario ( index, sel ) {
 
 		port.start( )
 
+		title = decodeURIComponent( title )
+
 		let cacheMap = new Map
 
 		let doneCount = 0, fetchCount = 0
@@ -326,7 +328,7 @@ async function installScenario ( index, sel ) {
 
 		port.close( )
 
-		return [ ...cacheMap ].map( ( [ name, f ] ) => new File( [ f.data ], title + '' + name, { type: f.type }  ) )
+		return [ ...cacheMap ].map( ( [ name, f ] ) => new File( [ f.data ], title + '/' + name, { type: f.type }  ) )
 
 	}
 
