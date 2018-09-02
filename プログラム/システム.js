@@ -288,6 +288,7 @@ async function installScenario ( index, sel ) {
 
 			return new Promise( ( ok, ng ) => {
 				port.addEventListener( 'message', ( { data } ) => {
+					$.log( path )
 					if ( data.path != path ) return
 					++doneCount
 					Action.sysMessage( 'ダウンロード中……\\n' + `${ doneCount }/${ fetchCount }` )
@@ -295,7 +296,7 @@ async function installScenario ( index, sel ) {
 					cacheMap.set( path, data.file )
 					ok( data.file )
 				} )
-				port.postMessage( { path } )
+				port.postMessage( { path }, '*' )
 			} )
 		}
 
