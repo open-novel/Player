@@ -308,7 +308,8 @@ async function installScenario ( index, sel ) {
 		let startScenario ='シナリオ/' + title
 		let file = await getFile( '設定.txt' )
 		if ( file ) {
-			startScenario = 'シナリオ/' + ( await new Response( file ).json( ) ) [ '開始シナリオ' ]
+			let settings = $.parseSetting( await new Response( file ).text( ) )
+			startScenario = 'シナリオ/' + settings[ '開始シナリオ' ]
 		}
 
 		async function getScenario( path ) {
