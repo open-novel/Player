@@ -247,6 +247,7 @@ async function installScenario ( index, sel ) {
 					if ( ! data.title ) return null
 					files = await collectScenarioFiles( data ).catch( e => {
 						$.hint( '取得できないファイルがありました' )
+						$.error( e )
 						return null
 					} )
 				} break
