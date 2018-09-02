@@ -296,7 +296,7 @@ async function installScenario ( index, sel ) {
 					cacheMap.set( path, data.file )
 					ok( data.file )
 				} )
-				port.postMessage( { path }, '*' )
+				port.postMessage( { path } )
 			} )
 		}
 
