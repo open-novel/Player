@@ -245,7 +245,10 @@ async function installScenario ( index, sel ) {
 			switch ( data.type ) {
 				case 'install-folder': {
 					if ( ! data.title ) return null
-					files = await collectScenarioFiles( data )
+					files = await collectScenarioFiles( data ).catch( e => {
+						$.hint( '取得できないファイルがありました' )
+						return null
+					} )
 				} break
 				case 'install-packed': {
 					if ( ! data.file ) return null
@@ -317,10 +320,7 @@ async function installScenario ( index, sel ) {
 			} ) )
 		}
 
-		await getScenario( startScenario ).catch( e => {
-			$.hint( '取得できないファイルがありました' )
-			return e
-		} )
+		await getScenario( startScenario )
 
 		port.close( )
 
