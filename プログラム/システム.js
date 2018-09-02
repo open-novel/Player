@@ -273,7 +273,8 @@ async function installScenario ( index, sel ) {
 
 	async function collectScenarioFiles ( { port, title } ) {
 
-		$.log( port, title )
+		port.start( )
+
 		let cacheMap = new Map
 
 		let doneCount = 0, fetchCount = 0
@@ -320,6 +321,8 @@ async function installScenario ( index, sel ) {
 			$.hint( '取得できないファイルがありました' )
 			return e
 		} )
+
+		port.close( )
 
 		return [ ...cacheMap ].map( ( [ name, f ] ) => new File( [ f.data ], title + '' + name, { type: f.type }  ) )
 
