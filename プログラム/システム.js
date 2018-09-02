@@ -275,11 +275,18 @@ async function installScenario ( index, sel ) {
 
 		let fileMap = new Map
 
+		let cacheMap = new Map
+
 		function getFile( path ) {
+
+			if ( cacheMap.has( path ) ) return null
+
 			return new Promise( ( ok, ng ) => {
-				port.addEventListener( 'message', e => {
-					if ( e.data.path != path ) return
-					e.data.files ? ok( e.data.files ) : ng( )
+				port.addEventListener( 'message', ( { data } ) => {
+					if ( data.path != path ) return
+					if ( ! data.file ) ng ( )
+					cacheMap.set( path, data.file )
+					ok( data.file )
 				} )
 				port.postMessage( { path } )
 			} )
@@ -291,14 +298,19 @@ async function installScenario ( index, sel ) {
 			startScenario = 'シナリオ/' + ( await new Response( file ).json( ) ) [ '開始シナリオ' ]
 		}
 
-		await getScenario( startScenario )
-
 		async function getScenario( path ) {
 			let file = await getFile( path )
-			let list = Action.parse( file )
+			if ( ! file ) return null
+			let list = Action.getFileList( await new Response( file ).text( ) )
 			$.log( 'list', list )
+			return Promise.all( list.map( ( { type, path } ) => {
+				return type == 'scenario' ? getScenario( path ) : getFile( path )
+			} ) )
 		}
 
+		await getScenario( startScenario )
+
+		return [ ...cacheMap ].map( ( [ name, f ] ) => new File( [ f.data ], title + '' + name, { type: f.type }  ) )
 
 	}
 

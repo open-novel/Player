@@ -650,3 +650,10 @@ export function parse ( text, fileName ) {
 	}
 
 }
+
+
+export function getFileList ( text ) {
+
+	parse( text, '???' )
+	return [ ]
+}
