@@ -84,7 +84,7 @@ async function main( ) {
 	} )
 
 	window.addEventListener( 'message', e => {
-		Player.onMessage( e.data )
+		Player.onMessage( { port: e.ports[ 0 ], ...e.data } )
 	} )
 
 	if ( window.opener ) {

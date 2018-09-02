@@ -40,7 +40,7 @@ async function play ( ctx, mode, installEvent ) {
 
 	let sound = 'off'
 	if ( mode != 'install' ) {
-	let text = 'openノベルプレイヤー v1.0β_111   18/08/26' +
+	let text = 'openノベルプレイヤー v1.0β_115   18/09/02' +
 		( $.TEST.mode ? `  *${ $.TEST.mode } test mode*` : '' )
 
 		WHILE: while ( true ) {
@@ -241,8 +241,20 @@ async function installScenario ( index, sel ) {
 
 			Action.sysMessage( 'ダウンロード中……' )
 			let data = await player.on( 'install', true )
-			if ( ! data || ! data.file ) return null
-			files = await unpackFile( data.file )
+			if ( ! data ) return null
+			switch ( data.type ) {
+				case 'install-folder': {
+					if ( ! data.title ) return null
+					files = await collectScenarioFiles( data )
+				} break
+				case 'install-packed': {
+					if ( ! data.file ) return null
+					files = await unpackFile( data.file )
+				} break
+				default: {
+					return null
+				}
+			}
 
 		} break
 		default : throw 'UnEx'
@@ -256,6 +268,38 @@ async function installScenario ( index, sel ) {
 		let data = ( await Archive.unpackFile( zip ) ).data
 		if ( ! data ) return null
 		return data.map( f => new File( [ f.data ], f.name, { type: f.type } ) )
+	}
+
+
+	async function collectScenarioFiles ( { port, title } ) {
+
+		let fileMap = new Map
+
+		function getFile( path ) {
+			return new Promise( ( ok, ng ) => {
+				port.addEventListener( 'message', e => {
+					if ( e.data.path != path ) return
+					e.data.files ? ok( e.data.files ) : ng( )
+				} )
+				port.postMessage( { path } )
+			} )
+		}
+
+		let startScenario ='シナリオ/' + title
+		let file = await getFile( '設定.txt' )
+		if ( file ) {
+			startScenario = 'シナリオ/' + ( await new Response( file ).json( ) ) [ '開始シナリオ' ]
+		}
+
+		await getScenario( startScenario )
+
+		async function getScenario( path ) {
+			let file = await getFile( path )
+			let list = Action.parse( file )
+			$.log( 'list', list )
+		}
+
+
 	}
 
 

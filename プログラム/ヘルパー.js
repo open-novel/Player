@@ -12,14 +12,20 @@ const baseurl = new URL( '/Player/', location.href ).href
 import * as DB from './データベース.js'
 
 
-window.logEnable = ! baseurl.includes( 'github.io' )
+let logEnable
+checkLogEnable( )
+
+function checkLogEnable( ) {
+	logEnable = !! localStorage.logEnable
+	setTimeout( checkLogEnable, 1000 )
+}
 
 const NOP = ( ) => { }
 window.logBuffer = [ ]
-export const log	= ( ...args ) => window.logEnable && console.log( ...args )
-export const info	= ( ...args ) => window.logEnable && console.info( ...args )
-export const warn	= ( ...args ) => window.logEnable && console.warn( ...args )
-export const error = ( ...args ) => window.logEnable ? console.error( ...args ) : window.logBuffer.push( args )
+export const log	= ( ...args ) => logEnable && console.log( ...args )
+export const info	= ( ...args ) => logEnable && console.info( ...args )
+export const warn	= ( ...args ) => logEnable && console.warn( ...args )
+export const error = ( ...args ) => logEnable ? console.error( ...args ) : window.logBuffer.push( args )
 export const hint = console.error.bind( console )
 
 export const Token = [ 'back', 'next', 'cancel' ].reduce( ( obj, key ) => { obj[ key ] = Symbol( ); return obj }, { } )

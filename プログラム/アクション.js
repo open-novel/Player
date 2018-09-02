@@ -363,6 +363,7 @@ function getImage ( blob ) {
 			if ( img.decode ) img.decode( ).then( ( ) => ok( img ), ng )
 			else ok( img )
 		}
+		img.onerror = ng
 		img.style.width = '0px'
 		img.style.height = '0px'
 		document.body.append( img )
@@ -655,3 +656,4 @@ export async function showChoices ( { layer, choices, inputBox = layer.menuSubBo
 
 
 export { playBGM, stopBGM, setMainVolume } from './サウンド.js'
+export { parse } from './シナリオ.js'
