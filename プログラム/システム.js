@@ -322,6 +322,7 @@ async function installScenario ( index, sel ) {
 		let startScenario ='シナリオ/' + title
 		let file = await getFile( '設定', 'text' )
 		if ( file ) {
+			cacheMap.set( '設定.txt', data.file )
 			let settings = $.parseSetting( await new Response( file ).text( ) )
 			startScenario = 'シナリオ/' + settings[ '開始シナリオ' ]
 		}
@@ -375,7 +376,7 @@ async function installScenario ( index, sel ) {
 	} ) ) title = files[ 0 ].name.match(/([^/.]+)\.?.*$/)[ 1 ] + '/'
 
 	let data = files.map( file => {
-		if ( file.name.includes( '設定.' ) ) { settingFile = file }
+		if ( file.name.includes( '設定.t' ) ) { settingFile = file }
 		let relpath = file.webkitRelativePath || file.name
 		let [ ,path, cut ] = relpath.match( /([^.]+)(.*)$/ )
 		path = title + path.replace( /:/g, '/' )
