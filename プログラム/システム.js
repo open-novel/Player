@@ -40,7 +40,7 @@ async function play ( ctx, mode, installEvent ) {
 
 	let sound = 'off'
 	if ( mode != 'install' ) {
-	let text = 'openノベルプレイヤー v1.0β_131   18/09/04' +
+	let text = 'openノベルプレイヤー v1.0β_132   18/09/04' +
 		( $.TEST.mode ? `  *${ $.TEST.mode } test mode*` : '' )
 
 		WHILE: while ( true ) {
@@ -298,7 +298,7 @@ async function installScenario ( index, sel ) {
 			let showCount = ( ) => Action.sysMessage( 'ダウンロード中……\\n' + `${ doneCount }/${ fetchCount }` )
 
 			++fetchCount; showCount( )
-			
+
 			let exts = extensions[ type ].concat( extensions[ type ].map( e => e.toUpperCase( ) ) )
 
 			return new Promise( ( ok, ng ) => {
