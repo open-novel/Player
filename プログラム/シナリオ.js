@@ -664,13 +664,13 @@ export function getFileList ( text ) {
 	for ( let act of progList ) {
 		let { type, prop } = act
 
-		switch ( type ) {
+		SWITCH: switch ( type ) {
 
 			case '立絵': {
 
 				prop.forEach( p => {
 					let name = textEval( p[ 1 ] )
-					if ( ! name ) return
+					if ( ! name ) break SWITCH
 					fileList.push( { type: 'image', path: '立ち絵/' + name } )
 				} )
 
@@ -679,7 +679,7 @@ export function getFileList ( text ) {
 
 				prop.forEach( p => {
 					let name = textEval( p[ 1 ] ) || textEval( p[ 0 ] )
-					if ( ! name ) return
+					if ( ! name ) break SWITCH
 					fileList.push( { type: 'image', path: '背景/' + name } )
 				} )
 
@@ -687,7 +687,7 @@ export function getFileList ( text ) {
 			case 'BGM': {
 
 				let name = textEval( prop )
-				if ( ! name ) return
+				if ( ! name ) break SWITCH
 				fileList.push( { type: 'audio', path: 'BGM/' + name } )
 
 			} break
