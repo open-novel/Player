@@ -676,7 +676,8 @@ export function getFileList ( text ) {
 			case '背景': {
 
 				prop.forEach( p => {
-					fileList.push( { type: 'image', path: '背景/' + textEval(p[ 1 ] ) } )
+					let name = textEval( p[ 1 ] ) || textEval( p[ 0 ] )
+					fileList.push( { type: 'image', path: '背景/' + name } )
 				} )
 
 			} break

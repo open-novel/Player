@@ -332,7 +332,7 @@ async function installScenario ( index, sel ) {
 			let list = Action.getFileList( await new Response( file ).text( ) )
 			$.log( 'list', list )
 			return Promise.all( list.map( ( { type, path } ) => {
-				return type == 'scenario' ? getScenario( path ) : getFile( path )
+				return type == 'scenario' ? getScenario( path ) : getFile( path, type )
 			} ) )
 		}
 
