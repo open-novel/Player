@@ -40,7 +40,7 @@ async function play ( ctx, mode, installEvent ) {
 
 	let sound = 'off'
 	if ( mode != 'install' ) {
-	let text = 'openノベルプレイヤー v1.0β_120   18/09/02' +
+	let text = 'openノベルプレイヤー v1.0β_125   18/09/04' +
 		( $.TEST.mode ? `  *${ $.TEST.mode } test mode*` : '' )
 
 		WHILE: while ( true ) {
@@ -285,13 +285,21 @@ async function installScenario ( index, sel ) {
 
 		let doneCount = 0, fetchCount = 0
 
-		function getFile( path ) {
+		const extensions = {
+			text: [ 'txt' ],
+			image: [ 'webp', 'png', 'jpg', 'svg', 'gif' ],
+			audio: [ 'webm', 'mp3', 'wav', 'flac', 'oga' ],
+		}
+
+		function getFile( path, type ) {
+
+			if ( cacheMap.has( path ) ) return null
 
 			++fetchCount
 
 			Action.sysMessage( 'ダウンロード中……\\n' + `${ doneCount }/${ fetchCount }` )
 
-			if ( cacheMap.has( path ) ) return null
+			let exts = extensions[ type ].concat( extensions[ type ].map( e => e.toUpperCase( ) ) )
 
 			return new Promise( ( ok, ng ) => {
 				port.addEventListener( 'message', ( { data } ) => {
@@ -299,23 +307,27 @@ async function installScenario ( index, sel ) {
 					if ( data.path != path ) return
 					++doneCount
 					Action.sysMessage( 'ダウンロード中……\\n' + `${ doneCount }/${ fetchCount }` )
-					if ( ! data.file ) ng ( )
+					if ( ! data.file ) {
+						$.note( `【 ${ path } 】をダウンロードできませんでした。\n試した拡張子：${ exts }`)
+						ng ( )
+						return
+					}
 					cacheMap.set( path, data.file )
 					ok( data.file )
 				} )
-				port.postMessage( { path } )
+				port.postMessage( { path, extensions: exts } )
 			} )
 		}
 
 		let startScenario ='シナリオ/' + title
-		let file = await getFile( '設定.txt' )
+		let file = await getFile( '設定.txt', 'text' )
 		if ( file ) {
 			let settings = $.parseSetting( await new Response( file ).text( ) )
 			startScenario = 'シナリオ/' + settings[ '開始シナリオ' ]
 		}
 
 		async function getScenario( path ) {
-			let file = await getFile( path )
+			let file = await getFile( path, 'text' )
 			if ( ! file ) return null
 			let list = Action.getFileList( await new Response( file ).text( ) )
 			$.log( 'list', list )

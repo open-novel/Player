@@ -329,6 +329,8 @@ async function unpackFile( zip ) {
 			'json': 'application/json',
 			'mid': 'audio/midi',
 			'midi': 'audio/midi',
+			'mp3': 'audio/mpeg',
+			'mp4': 'video.mp4',
 			'mpeg': 'video/mpeg',
 			'oga': 'audio/ogg',
 			'ogv': 'video/ogg',
