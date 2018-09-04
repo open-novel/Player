@@ -670,7 +670,7 @@ export function getFileList ( text ) {
 
 				prop.forEach( p => {
 					let name = textEval( p[ 1 ] )
-					if ( ! name ) debugger
+					if ( ! name ) return
 					fileList.push( { type: 'image', path: '立ち絵/' + name } )
 				} )
 
@@ -679,6 +679,7 @@ export function getFileList ( text ) {
 
 				prop.forEach( p => {
 					let name = textEval( p[ 1 ] ) || textEval( p[ 0 ] )
+					if ( ! name ) return
 					fileList.push( { type: 'image', path: '背景/' + name } )
 				} )
 
@@ -686,6 +687,7 @@ export function getFileList ( text ) {
 			case 'BGM': {
 
 				let name = textEval( prop )
+				if ( ! name ) return
 				fileList.push( { type: 'audio', path: 'BGM/' + name } )
 
 			} break
