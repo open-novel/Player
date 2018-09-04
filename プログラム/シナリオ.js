@@ -684,7 +684,7 @@ export function getFileList ( text ) {
 			case 'ジャンプ': {
 
 				let title = textEval( prop[ 0 ] )
-				if ( title ) fileList.push( { type: 'scenario', path: 'シナリオ/' + textEval( title ) } )
+				if ( title ) fileList.push( { type: 'scenario', path: 'シナリオ/' + title } )
 
 			} break
 			case 'BGM': {
