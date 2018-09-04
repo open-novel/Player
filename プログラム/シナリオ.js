@@ -668,20 +668,20 @@ export function getFileList ( text ) {
 
 			case '立絵': {
 
-				prop.forEach( p => {
+				for ( let p of prop ) {
 					let name = textEval( p[ 1 ] )
 					if ( ! name ) break SWITCH
 					fileList.push( { type: 'image', path: '立ち絵/' + name } )
-				} )
+				}
 
 			} break
 			case '背景': {
 
-				prop.forEach( p => {
+				for ( let p of prop ) {
 					let name = textEval( p[ 1 ] ) || textEval( p[ 0 ] )
 					if ( ! name ) break SWITCH
 					fileList.push( { type: 'image', path: '背景/' + name } )
-				} )
+				}
 
 			} break
 			case 'BGM': {
