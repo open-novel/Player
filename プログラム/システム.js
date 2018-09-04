@@ -372,7 +372,7 @@ async function installScenario ( index, sel ) {
 		let [ ,path, cut ] = relpath.match( /([^.]+)(.*)$/ )
 		path = path.replace( /:/g, '/' )
 		return path.match( /^シナリオ\// )
-	} ) ) title = files[ 0 ].name.match(/([^/.]+)\..+$/)[ 1 ] + '/'
+	} ) ) title = files[ 0 ].name.match(/([^/.]+)\.?.*$/)[ 1 ] + '/'
 
 	let data = files.map( file => {
 		if ( file.name.includes( '設定.' ) ) { settingFile = file }
