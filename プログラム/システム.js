@@ -288,7 +288,7 @@ async function installScenario ( index, sel ) {
 		const extensions = {
 			text: [ 'txt' ],
 			image: [ 'webp', 'png', 'jpg', 'svg', 'gif' ],
-			audio: [ 'webm', 'mp3', 'wav', 'flac', 'oga' ],
+			audio: [ 'webm', 'mp3', 'wav', 'ogg', 'flac' ],
 		}
 
 		function getFile( path, type ) {
