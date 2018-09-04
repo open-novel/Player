@@ -258,7 +258,7 @@ export function sysMessage ( text, speed = 1000000 ) {
 
 export async function showMessage ( layer, name, text, speed ) {
 
-	layer.nameArea.clear( ), layer.messageArea.clear( )
+	layer.nameArea.reborn( ).clear( ), layer.messageArea.reborn( ).clear( )
 
 	if ( name.length == 0 && text.length == 0 ) {
 		layer.conversationBox.hide( )

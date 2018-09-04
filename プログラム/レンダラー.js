@@ -149,6 +149,16 @@ class Node {
 
 	}
 
+	reborn( ) {
+
+		let parent = this.parent
+		this.remove( )
+		let node = new this.constructor( this )
+		parent.append( node )
+		return node
+		
+	}
+
 	fire ( type ) {
 
 		//$.log( 'fire', type )
