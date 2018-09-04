@@ -375,7 +375,7 @@ async function installScenario ( index, sel ) {
 	} ) ) title = files[ 0 ].name.match(/([^/.]+)\..+$/)[ 1 ] + '/'
 
 	let data = files.map( file => {
-		if ( file.name.includes( '設定.txt' ) ) { settingFile = file }
+		if ( file.name.includes( '設定.' ) ) { settingFile = file }
 		let relpath = file.webkitRelativePath || file.name
 		let [ ,path, cut ] = relpath.match( /([^.]+)(.*)$/ )
 		path = title + path.replace( /:/g, '/' )
