@@ -295,17 +295,15 @@ async function installScenario ( index, sel ) {
 
 			if ( cacheMap.has( path ) ) return null
 
-			++fetchCount
-
-			Action.sysMessage( 'ダウンロード中……\\n' + `${ doneCount }/${ fetchCount }` )
+			let showCount = ( ) => Action.sysMessage( 'ダウンロード中……\\n' + `${ doneCount }/${ fetchCount }` )
 
 			let exts = extensions[ type ].concat( extensions[ type ].map( e => e.toUpperCase( ) ) )
 
-			return new Promise( ( ok, ng ) => {
+			let p = new Promise( ( ok, ng ) => {
 				port.addEventListener( 'message', ( { data } ) => {
 					if ( data.path != path ) return
 					//$.log( '<---', data.path )
-					++doneCount
+
 					Action.sysMessage( 'ダウンロード中……\\n' + `${ doneCount }/${ fetchCount }` )
 					if ( ! data.file ) {
 						$.hint( `【 ${ path } 】のダウンロードに失敗しました。\n確認した拡張子：${ exts }`)
@@ -322,6 +320,10 @@ async function installScenario ( index, sel ) {
 					ng( )
 				} )
 			} )
+
+			p.then( ( ) => { ++doneCount; showCount( ) } )
+			++fetchCount; showCount( )
+			return p
 		}
 
 		let startScenario ='シナリオ/' + title
