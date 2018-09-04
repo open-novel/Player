@@ -153,10 +153,10 @@ class Node {
 
 		let parent = this.parent
 		this.remove( )
-		let node = new this.constructor( this )
+		let node = new this.constructor( { ...this } )
 		parent.append( node )
 		return node
-		
+
 	}
 
 	fire ( type ) {
