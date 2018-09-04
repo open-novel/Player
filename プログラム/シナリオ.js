@@ -669,7 +669,9 @@ export function getFileList ( text ) {
 			case '立絵': {
 
 				prop.forEach( p => {
-					fileList.push( { type: 'image', path: '立ち絵/' + textEval( p[ 1 ] ) } )
+					let name = textEval( p[ 1 ] )
+					if ( ! name ) debugger
+					fileList.push( { type: 'image', path: '立ち絵/' + name } )
 				} )
 
 			} break
@@ -681,15 +683,16 @@ export function getFileList ( text ) {
 				} )
 
 			} break
+			case 'BGM': {
+
+				let name = textEval( prop )
+				fileList.push( { type: 'audio', path: 'BGM/' + name } )
+
+			} break
 			case 'ジャンプ': {
 
 				let title = textEval( prop[ 0 ] )
 				if ( title ) fileList.push( { type: 'scenario', path: 'シナリオ/' + title } )
-
-			} break
-			case 'BGM': {
-
-				fileList.push( { type: 'audio', path: 'BGM/' + textEval( prop ) } )
 
 			} break
 

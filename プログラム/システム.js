@@ -303,8 +303,8 @@ async function installScenario ( index, sel ) {
 
 			return new Promise( ( ok, ng ) => {
 				port.addEventListener( 'message', ( { data } ) => {
-					$.log( data.path )
 					if ( data.path != path ) return
+					$.log( '<---', data.path )
 					++doneCount
 					Action.sysMessage( 'ダウンロード中……\\n' + `${ doneCount }/${ fetchCount }` )
 					if ( ! data.file ) {
@@ -315,6 +315,7 @@ async function installScenario ( index, sel ) {
 					cacheMap.set( path, data.file )
 					ok( data.file )
 				} )
+				$.log( '--->', path )
 				port.postMessage( { path, extensions: exts } )
 				$.timeout( 10000 ).then(  ( ) => {
 					$.hint(`【 ${ path } 】のダウンロードがタイムアウトしました。\n制限時間：10秒`)
