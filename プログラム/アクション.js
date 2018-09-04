@@ -258,7 +258,8 @@ export function sysMessage ( text, speed = 1000000 ) {
 
 export async function showMessage ( layer, name, text, speed ) {
 
-	layer.nameArea.reborn( ).clear( ), layer.messageArea.reborn( ).clear( )
+	let nameArea = layer.nameArea.reborn( ), messageArea = layer.messageArea.reborn( )
+	nameArea.clear( ), messageArea.clear( )
 
 	if ( name.length == 0 && text.length == 0 ) {
 		layer.conversationBox.hide( )
@@ -268,7 +269,7 @@ export async function showMessage ( layer, name, text, speed ) {
 
 
 
-	for ( let deco of decoText( name ) ) layer.nameArea.add( deco )
+	for ( let deco of decoText( name ) ) nameArea.add( deco )
 
 	let decoList = decoText( text )
 
@@ -296,7 +297,7 @@ export async function showMessage ( layer, name, text, speed ) {
 				time.resume( )
 				continue loop
 			}
-			layer.messageArea.add( deco )
+			messageArea.add( deco )
 		}
 
 		if ( to >= len ) break
