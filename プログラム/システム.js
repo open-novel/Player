@@ -308,7 +308,7 @@ async function installScenario ( index, sel ) {
 					++doneCount
 					Action.sysMessage( 'ダウンロード中……\\n' + `${ doneCount }/${ fetchCount }` )
 					if ( ! data.file ) {
-						$.note( `【 ${ path } 】をダウンロードできませんでした。\n確認した拡張子：${ exts }`)
+						$.hint( `【 ${ path } 】をダウンロードできませんでした。\n確認した拡張子：${ exts }`)
 						ng ( )
 						return
 					}
