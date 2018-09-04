@@ -191,7 +191,7 @@ export class Awaiter {
 export class Time {
 
 	constructor ( duration = 0 ) {
-		this.origin = performance.now( )
+		this.origin = performance.now( ) - 0.01
 		this.pauseStart = 0
 		this.duration = duration
 	}

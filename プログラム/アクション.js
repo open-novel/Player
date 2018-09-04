@@ -251,7 +251,7 @@ export function isOldLayer ( layer ) {
 }
 
 
-export function sysMessage ( text, speed = 1000000 ) {
+export function sysMessage ( text, speed = Infinity ) {
 	return showMessage ( nowLayer, '', text, speed )
 }
 
@@ -282,9 +282,8 @@ export async function showMessage ( layer, name, text, speed ) {
 
 	let time = new $.Time
 
+	let interrupt = false
 	loop: while ( true ) {
-
-		let interrupt = await trigger.stepOrFrameupdate( )
 
 		let to = interrupt ? len : speed * time.get( ) / 1000 | 0
 
@@ -301,6 +300,9 @@ export async function showMessage ( layer, name, text, speed ) {
 		}
 
 		if ( to >= len ) break
+
+		interrupt = await trigger.stepOrFrameupdate( )
+
 	}
 
 	await trigger.step( )
