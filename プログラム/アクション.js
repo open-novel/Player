@@ -282,8 +282,12 @@ export async function showMessage ( layer, name, text, speed ) {
 
 	let time = new $.Time
 
-	let interrupt = false
-	loop: while ( true ) {
+	if ( speed == Infinity ) {
+		for ( let deco of decoList ) messageArea.add( deco )
+
+	} else loop: while ( true ) {
+
+		let interrupt = await trigger.stepOrFrameupdate( )
 
 		let to = interrupt ? len : speed * time.get( ) / 1000 | 0
 
@@ -300,9 +304,6 @@ export async function showMessage ( layer, name, text, speed ) {
 		}
 
 		if ( to >= len ) break
-
-		interrupt = await trigger.stepOrFrameupdate( )
-
 	}
 
 	await trigger.step( )
