@@ -308,7 +308,7 @@ async function installScenario ( index, sel ) {
 					++doneCount
 					Action.sysMessage( 'ダウンロード中……\\n' + `${ doneCount }/${ fetchCount }` )
 					if ( ! data.file ) {
-						$.note( `【 ${ path } 】をダウンロードできませんでした。\n試した拡張子：${ exts }`)
+						$.note( `【 ${ path } 】をダウンロードできませんでした。\n確認した拡張子：${ exts }`)
 						ng ( )
 						return
 					}
@@ -320,7 +320,7 @@ async function installScenario ( index, sel ) {
 		}
 
 		let startScenario ='シナリオ/' + title
-		let file = await getFile( '設定.txt', 'text' )
+		let file = await getFile( '設定', 'text' )
 		if ( file ) {
 			let settings = $.parseSetting( await new Response( file ).text( ) )
 			startScenario = 'シナリオ/' + settings[ '開始シナリオ' ]
