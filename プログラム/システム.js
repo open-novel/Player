@@ -308,7 +308,7 @@ async function installScenario ( index, sel ) {
 					++doneCount
 					Action.sysMessage( 'ダウンロード中……\\n' + `${ doneCount }/${ fetchCount }` )
 					if ( ! data.file ) {
-						$.hint( `【 ${ path } 】をダウンロードできませんでした。\n確認した拡張子：${ exts }`)
+						$.hint( `【 ${ path } 】のダウンロードに失敗しました。\n確認した拡張子：${ exts }`)
 						ng ( )
 						return
 					}
@@ -316,6 +316,10 @@ async function installScenario ( index, sel ) {
 					ok( data.file )
 				} )
 				port.postMessage( { path, extensions: exts } )
+				$.timeout( 10000 ).then(  ( ) => {
+					$.hint(`【 ${ path } 】のダウンロードがタイムアウトしました。\n制限時間：10秒`)
+					ng( )
+				} )
 			} )
 		}
 
