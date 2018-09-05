@@ -40,7 +40,7 @@ async function play ( ctx, mode, installEvent ) {
 
 	let sound = 'off'
 	if ( mode != 'install' ) {
-	let text = 'openノベルプレイヤー v1.0β_132   18/09/04' +
+	let text = 'openノベルプレイヤー v1.0β_133   18/09/05' +
 		( $.TEST.mode ? `  *${ $.TEST.mode } test mode*` : '' )
 
 		WHILE: while ( true ) {
@@ -302,6 +302,7 @@ async function installScenario ( index, sel ) {
 			let exts = extensions[ type ].concat( extensions[ type ].map( e => e.toUpperCase( ) ) )
 
 			return new Promise( ( ok, ng ) => {
+				let done = false
 				port.addEventListener( 'message', ( { data } ) => {
 					if ( data.path != path ) return
 					//$.log( '<---', data.path )
@@ -312,10 +313,12 @@ async function installScenario ( index, sel ) {
 					}
 					cacheMap.set( path, data.file )
 					ok( data.file )
+					done = true
 				} )
 				//$.log( '--->', path )
 				port.postMessage( { path, extensions: exts } )
 				$.timeout( 10000 ).then(  ( ) => {
+					if ( done ) return
 					$.hint(`【 ${ path } 】のダウンロードがタイムアウトしました。\n制限時間：10秒`)
 					ng( )
 				} )
