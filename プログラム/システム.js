@@ -40,7 +40,7 @@ async function play ( ctx, mode, installEvent ) {
 
 	let sound = 'off'
 	if ( mode != 'install' ) {
-	let text = 'openノベルプレイヤー v1.0β_133   18/09/05' +
+	let text = 'openノベルプレイヤー v1.0β_134   18/09/05' +
 		( $.TEST.mode ? `  *${ $.TEST.mode } test mode*` : '' )
 
 		WHILE: while ( true ) {
@@ -328,7 +328,7 @@ async function installScenario ( index, sel ) {
 		}
 
 		let startScenario ='シナリオ/' + title
-		let file = await getFile( '設定', 'text' )
+		let file = await getFile( '設定', 'text' ).catch( ( ) => null )
 		if ( file ) {
 			cacheMap.set( '設定.txt', file )
 			let settings = $.parseSetting( await new Response( file ).text( ) )
