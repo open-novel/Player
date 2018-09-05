@@ -40,7 +40,7 @@ async function play ( ctx, mode, installEvent ) {
 
 	let sound = 'off'
 	if ( mode != 'install' ) {
-	let text = 'openノベルプレイヤー v1.0β_135   18/09/05' +
+	let text = 'openノベルプレイヤー v1.0β_136   18/09/05' +
 		( $.TEST.mode ? `  *${ $.TEST.mode } test mode*` : '' )
 
 		WHILE: while ( true ) {
