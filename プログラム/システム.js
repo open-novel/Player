@@ -301,29 +301,30 @@ async function installScenario ( index, sel ) {
 
 			let exts = extensions[ type ].concat( extensions[ type ].map( e => e.toUpperCase( ) ) )
 
+			let done = false
+
 			return new Promise( ( ok, ng ) => {
-				let done = false
+
 				port.addEventListener( 'message', ( { data } ) => {
 					if ( data.path != path ) return
 					//$.log( '<---', data.path )
 					if ( ! data.file ) {
-						$.hint( `【 ${ path } 】のダウンロードに失敗しました。\n確認した拡張子：${ exts }`)
+						$.hint( `【 ${ path } 】のダウンロードに失敗しました\n確認した拡張子：${ exts }`)
 						ng ( )
 						return
 					}
 					cacheMap.set( path, data.file )
 					ok( data.file )
-					done = true
 				} )
 				//$.log( '--->', path )
 				port.postMessage( { path, extensions: exts } )
 				$.timeout( 10000 ).then(  ( ) => {
 					if ( done ) return
-					$.hint(`【 ${ path } 】のダウンロードがタイムアウトしました。\n制限時間：10秒`)
+					$.hint(`【 ${ path } 】のダウンロードがタイムアウトしました\n制限時間：10秒`)
 					ng( )
 				} )
 
-			} ).then( f => { ++doneCount; showCount( ); return f } )
+			} ).then( f => { ++doneCount; showCount( ); return f } ).finally( ( ) => { done = true } )
 
 		}
 
