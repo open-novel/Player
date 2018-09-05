@@ -40,7 +40,7 @@ async function play ( ctx, mode, installEvent ) {
 
 	let sound = 'off'
 	if ( mode != 'install' ) {
-	let text = 'openノベルプレイヤー v1.0β_134   18/09/05' +
+	let text = 'openノベルプレイヤー v1.0β_135   18/09/05' +
 		( $.TEST.mode ? `  *${ $.TEST.mode } test mode*` : '' )
 
 		WHILE: while ( true ) {
@@ -333,6 +333,8 @@ async function installScenario ( index, sel ) {
 			cacheMap.set( '設定.txt', file )
 			let settings = $.parseSetting( await new Response( file ).text( ) )
 			startScenario = 'シナリオ/' + settings[ '開始シナリオ' ]
+		} else {
+			$.hint( '設定ファイル省略モードでインストールを続行します' )
 		}
 
 		async function getScenario( path ) {
