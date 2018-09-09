@@ -207,8 +207,13 @@ export async function play ( layer, state, others ) {
 					) )
 					$.log( type, newAct )
 					if ( ! newAct ) continue
+					let mark = undefined
+					if ( typeof newAct == 'string'  ) {
+						[ newAct, mark ] = newAct.split( /#|＃/ )
+						if ( ! newAct ) newAct = scenario
+					}
 					pushScenarioStack( act.next )
-					return playScnario( newAct )
+					return playScnario( newAct, mark )
 
 				} break
 				case '分岐': {
@@ -217,8 +222,13 @@ export async function play ( layer, state, others ) {
 						let [ con, newAct ] = p.map( textEval )
 						$.log( type, con, newAct )
 						if ( ! con && con !== '' ) continue
+						let mark = undefined
+						if ( typeof newAct == 'string'  ) {
+							[ newAct, mark ] = newAct.split( /#|＃/ )
+							if ( ! newAct ) newAct = scenario
+						}
 						pushScenarioStack( act.next )
-						return playScnario( newAct )
+						return playScnario( newAct, mark )
 					}
 
 				} break
@@ -691,6 +701,31 @@ export function getFileList ( text ) {
 				if ( name ) fileList.push( { type: 'audio', path: 'BGM/' + name } )
 
 			} break
+			case '選択': {
+
+				for ( let p of prop ) {
+					let title = textEval( p[ 1 ] )
+					if ( ! title ) continue
+					if ( typeof title != 'string'  ) continue
+					[ title ] = title.split( /#|＃/ )
+					if ( ! title ) continue
+					fileList.push( { type: 'scenario', path: 'シナリオ/' + title } )
+
+				}
+
+			} break
+			case '分岐': {
+
+				for ( let p of prop ) {
+					let title = textEval( p[ 1 ] )
+					if ( typeof title != 'string'  ) continue
+					[ title ] = title.split( /#|＃/ )
+					if ( ! title ) continue
+					fileList.push( { type: 'scenario', path: 'シナリオ/' + title } )
+
+				}
+			}
+			break
 			case 'ジャンプ': {
 
 				let title = textEval( prop[ 0 ] )
