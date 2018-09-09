@@ -206,6 +206,7 @@ export async function play ( layer, state, others ) {
 						c => ( { label: textEval( c[ 0 ] ), value: textEval( c[ 1 ] ) } )
 					) )
 					$.log( type, newAct )
+					if ( ! newAct ) continue
 					pushScenarioStack( act.next )
 					return playScnario( newAct )
 
@@ -658,20 +659,21 @@ export function getFileList ( text ) {
 	let progList = parse( text, '???' )
 
 	function textEval ( text ) {
+
 		return eval( text )
+
 	}
 
 	for ( let act of progList ) {
 		let { type, prop } = act
 
-		SWITCH: switch ( type ) {
+		switch ( type ) {
 
 			case '立絵': {
 
 				for ( let p of prop ) {
 					let name = textEval( p[ 1 ] )
-					if ( ! name ) break SWITCH
-					fileList.push( { type: 'image', path: '立ち絵/' + name } )
+					if ( name ) fileList.push( { type: 'image', path: '立ち絵/' + name } )
 				}
 
 			} break
@@ -679,16 +681,14 @@ export function getFileList ( text ) {
 
 				for ( let p of prop ) {
 					let name = textEval( p[ 1 ] ) || textEval( p[ 0 ] )
-					if ( ! name ) break SWITCH
-					fileList.push( { type: 'image', path: '背景/' + name } )
+					if ( name ) fileList.push( { type: 'image', path: '背景/' + name } )
 				}
 
 			} break
 			case 'BGM': {
 
 				let name = textEval( prop )
-				if ( ! name ) break SWITCH
-				fileList.push( { type: 'audio', path: 'BGM/' + name } )
+				if ( name ) fileList.push( { type: 'audio', path: 'BGM/' + name } )
 
 			} break
 			case 'ジャンプ': {
@@ -702,4 +702,30 @@ export function getFileList ( text ) {
 	}
 
 	return fileList
+}
+
+
+export function getMarkList ( text, name ) {
+
+	let markList = [ ]
+	let progList = parse( text, name )
+
+	function textEval ( text ) {
+		try {
+			return eval( text )
+		} catch ( e ) {
+			return null
+		}
+	}
+
+	for ( let act of progList ) {
+		let { type, prop } = act
+
+		if ( type != 'マーク' ) continue
+		let mark = textEval( prop )
+		if ( mark ) markList.push( mark )
+
+	}
+
+	return markList
 }

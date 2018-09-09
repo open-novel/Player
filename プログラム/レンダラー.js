@@ -13,8 +13,8 @@ let [ W, H ] = [ 1, 1 ]
 
 let layerRoot = null
 
-let HRCanvas = //new OffscreenCanvas( W, H, { alpha: false } )
-	document.createElement( 'canvas' )
+let HRCanvas =window.OffscreenCanvas ?
+	new OffscreenCanvas( W, H, { alpha: false } ) : document.createElement( 'canvas' )
 
 let HRCtx = HRCanvas.getContext( '2d', { alpha: false } )
 HRCtx.translate( 0.5, 0.5 )

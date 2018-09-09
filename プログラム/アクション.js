@@ -145,6 +145,52 @@ export async function showSaveLoad ( { layer, title, isLoad = false, settings, o
 }
 
 
+export async function showMarkLoad ( { settings } ) {
+
+	let markList = settings.marks
+
+	if ( ( ! markList ) || ( ! markList.length ) ) return $.Token.cancel
+
+	let page = 1
+	let visibleTileNo = 10
+
+	markList = markList.flatMap( ( { name, marks } ) => {
+		let newList = [ ]
+
+		let i = 0
+		do {
+			newList.push( { name, marks: marks.slice( i, i + visibleTileNo ) } )
+			i += visibleTileNo
+		} while ( i < marks.length )
+
+		return newList
+	} )
+
+	$.log( markList )
+
+	let  totalPageNo = markList.length
+	while ( page > 0 ) {
+
+		let EMPTY = { name: '' }
+		let name = markList[ page - 1 ].name, backName = ( markList[ page - 2 ] || EMPTY ).name, nextName = ( markList[ page ] || EMPTY ) .name
+		if ( backName.length < nextName.length ) backName = '　'.repeat( nextName.length - backName.length ) + backName
+		if ( backName.length > nextName.length ) nextName = nextName + '　'.repeat( backName.length - nextName.length )
+
+		let choices = markList[ page - 1 ].marks.map( label => ( { label: label == '$root' ? '（冒頭）' : label } ) )
+
+		let backLabel = page > 1 ? backName : '戻る'
+		let currentLabel = name
+		let nextLabel = page < totalPageNo ? nextName : ''
+
+		let mark = await sysChoices( choices, { backLabel, currentLabel, nextLabel, rowLen: 5 } )
+		if ( mark === null ) page --
+		else if ( mark == $.Token.next ) page ++
+		else return `${ name }#${ mark }`
+	}
+	return $.Token.cancel
+}
+
+
 async function showMenu ( layer ) {
 
 	let title = settings.title
@@ -660,4 +706,4 @@ export async function showChoices ( { layer, choices, inputBox = layer.menuSubBo
 
 
 export { playBGM, stopBGM, setMainVolume } from './サウンド.js'
-export { getFileList } from './シナリオ.js'
+export { getFileList, getMarkList } from './シナリオ.js'

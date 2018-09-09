@@ -35,6 +35,8 @@ export async function playSysEffect ( name ) {
 
 	//$.log( 'SysEffect', name )
 	// TODO cache
+	ctx.resume( )
+
 	let ary = sysEffectMap.get( name )
 	if ( ! ary ) {
 		ary = [ ]

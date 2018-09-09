@@ -98,7 +98,7 @@ async function main( ) {
 }
 
 window.addEventListener( 'beforeinstallprompt', e => {
-	installEvent = e
+	installEvent.resolve( e )
 	e.preventDefault( )
 	return false
 } )

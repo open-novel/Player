@@ -40,7 +40,7 @@ async function play ( ctx, mode, installEvent ) {
 
 	let sound = 'off'
 	if ( mode != 'install' ) {
-	let text = 'openノベルプレイヤー v1.0β_136   18/09/05' +
+	let text = 'openノベルプレイヤー v1.0β_142   18/09/09' +
 		( $.TEST.mode ? `  *${ $.TEST.mode } test mode*` : '' )
 
 		WHILE: while ( true ) {
@@ -171,8 +171,9 @@ async function playSystemOpening ( mode ) {
 		} break
 		case '途中から': {
 
-			let jump = prompt( '開始先を次の形式で入力してください\nシナリオ名#マーク名', '#' )
-			if ( jump === null ) return playSystemOpening( mode )
+			let jump = await Action.showMarkLoad( { settings } )
+			//let jump = prompt( '開始先を次の形式で入力してください\nシナリオ名#マーク名', '#' )
+			if ( jump === null || jump == $.Token.cancel ) return playSystemOpening( mode )
 			others.jump = jump.split( '#' )
 			return Action.play( settings, null, others )
 
@@ -387,7 +388,7 @@ async function installScenario ( index, sel ) {
 	} ) ) title = files[ 0 ].name.match(/([^/.]+)\.?.*$/)[ 1 ] + '/'
 
 	let data = files.map( file => {
-		if ( file.name.includes( '設定.t' ) ) { settingFile = file }
+		if ( file.name.includes( '設定.' ) ) { settingFile = file }
 		let relpath = file.webkitRelativePath || file.name
 		let [ ,path, cut ] = relpath.match( /([^.]+)(.*)$/ )
 		path = title + path.replace( /:/g, '/' )
@@ -406,6 +407,18 @@ async function installScenario ( index, sel ) {
 
 	let setting = settingFile ?  $.parseSetting( await new Response( settingFile ).text( ) ) : { }
 	setting.title = title
+	setting.marks = ( await Promise.all(
+		data.filter( ( [ file, path ] ) => {
+			return /[^/]+\/シナリオ\/.+/.test( path )
+		} ).map( async ( [ file, path ] ) => {
+			let name = path.match( /[^/]+$/ )[ 0 ]
+			return {
+				name, marks: Action.getMarkList( await new Response( file ).text( ), name )
+			}
+		} )
+	) )
+
+	$.log( 'marks', setting.marks )
 
 	await DB.saveFiles( data )
 
