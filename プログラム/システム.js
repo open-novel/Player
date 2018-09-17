@@ -40,8 +40,19 @@ async function play ( ctx, mode, installEvent ) {
 
 	let sound = 'off'
 	if ( mode != 'install' ) {
-	let text = 'openノベルプレイヤー v1.0β_144   18/09/09' +
-		( $.TEST.mode ? `  *${ $.TEST.mode } test mode*` : '' )
+
+	let { usage, quota } = await navigator.storage.estimate( )
+	let  persisted = navigator.storage.persisted( )
+	let ratio = ( 100 * usage / quota / 1024 / 1024 ).toFixed( )
+	usage = ( usage / 1024 / 1024 ).toFixed( )
+	quota = ( quota / 1024 / 1024 ).toFixed( )
+
+	let text = 'openノベルプレイヤー v1.0γ_001   18/09/17\\n' +
+		( $.TEST.mode ? `  *${ $.TEST.mode } test mode*\\n` : '　\\n' )
+		//  +
+		// `\\n\\n\\s[0.5]データ保存状況：　${ usage }GB使用済 / ${ quota }GB割当済　利用率${ ratio } ％`+
+		// `　　ブラウザ判断での突然の削除の可能性${ persisted ? '有り' : '無し' }`
+
 
 		WHILE: while ( true ) {
 
@@ -209,7 +220,7 @@ async function installScenario ( index, sel ) {
 
 	Action.setMenuVisible( false )
 
-	let files
+	let files, origin = 'unknown/'
 
 	switch ( sel ) {
 
@@ -222,6 +233,7 @@ async function installScenario ( index, sel ) {
 
 			Action.sysMessage( 'フォルダを選んで下さい' )
 			files = await fileSelect( { folder: true } )
+			origin = 'local/'
 
 		} break
 		case 'Zipファイルから': {
@@ -230,6 +242,7 @@ async function installScenario ( index, sel ) {
 			files = await fileSelect( )
 			if ( ! files ) return false
 			files = await unpackFile( files[ 0 ] )
+			origin = 'local/'
 
 		} break
 		case 'Webから': {
@@ -243,6 +256,7 @@ async function installScenario ( index, sel ) {
 			Action.sysMessage( 'ダウンロード中……' )
 			let data = await player.on( 'install', true )
 			if ( ! data ) return null
+			if ( data.url ) origin = new URL( data.url ).origin + '/'
 			switch ( data.type ) {
 				case 'install-folder': {
 					if ( ! data.title ) return null
@@ -405,8 +419,11 @@ async function installScenario ( index, sel ) {
 
 	title = data[ 0 ][ 1 ].match( /^[^/]+/ )[ 0 ]
 
+	data.forEach( d => { d[ 1 ] = origin + d[ 1 ] } )
+
 	let setting = settingFile ?  $.parseSetting( await new Response( settingFile ).text( ) ) : { }
 	setting.title = title
+	setting.origin = origin
 	setting.marks = ( await Promise.all(
 		data.filter( ( [ file, path ] ) => {
 			return /[^/]+\/シナリオ\/.+/.test( path )

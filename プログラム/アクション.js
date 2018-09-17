@@ -32,7 +32,7 @@ export async function init ( _settings = settings ) {
 export async function play ( settings, state, _others = others ) {
 
 	others = _others
-	let { title } = settings
+	let { origin = '', title } = settings
 	others.title = title
 
 	let startScenario = String( settings[ '開始シナリオ' ] || title )
@@ -43,7 +43,7 @@ export async function play ( settings, state, _others = others ) {
 
 	await init( settings )
 
-	if ( ! state ) state = { scenario, title }
+	if ( ! state ) state = { scenario, origin, title }
 
 	do {
 		await Promise.race( [ Scenario.play( nowLayer, state, others ), nowLayer.on( 'dispose' ) ] )

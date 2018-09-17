@@ -19,7 +19,9 @@ export async function play ( layer, state, others ) {
 
 	stateMap.set( layer, state )
 
-	let { scenario, act = scenario[ 0 ], scenarioStack = [ ], title: basePath, varMap = new Map } = state
+	let { scenario, act = scenario[ 0 ], scenarioStack = [ ], varMap = new Map } = state
+	let basePath = state.origin + state.title
+
 	let { saveGlobalVarMap, globalVarMap = new Map, jump = null } = others
 	Object.assign( state, { act, scenarioStack, varMap } )
 
