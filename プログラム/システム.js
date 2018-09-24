@@ -10,12 +10,12 @@ import * as DB from './データベース.js'
 
 const Archive = $.importWorker( `アーカイブ` )
 
-async function init ( { ctx, mode, installEvent } ) {
-	await play( ctx, mode, installEvent )
+async function init ( { ctx, mode, installEvent, option } ) {
+	await play( ctx, mode, installEvent, option )
 }
 
 
-async function play ( ctx, mode, installEvent ) {
+async function play ( ctx, mode, installEvent, option ) {
 
 	if ( mode == 'VR' ) {
 		mode = ''
@@ -41,8 +41,9 @@ async function play ( ctx, mode, installEvent ) {
 	let sound = 'off'
 	if ( mode != 'install' ) {
 
-	let text = 'openノベルプレイヤー v1.0γ_010   18/09/24\\n' +
-		( $.TEST.mode ? `  *${ $.TEST.mode } test mode*\\n` : '　\\n' )
+	let text = 'openノベルプレイヤー v1.0γ_011   18/09/24\\n' +
+		( $.TEST.mode ? `  *${ $.TEST.mode } test mode*\\n` : '　\\n' ) +
+		( option.pwa ? '【 PWA Mode 】\\n' : '' )
 
 
 		WHILE: while ( true ) {
@@ -53,8 +54,11 @@ async function play ( ctx, mode, installEvent ) {
 			let list = [
 				{ label: '🔊　サウンドONで開始する ', value: 'on' },
 				{ label: '🔇　サウンドOFFで開始する', value: 'off' },
-				{ label: '⏬　アプリとして登録する　', value: 'install' }
 			]
+			if ( ! option.pwa ) list.push(
+				{ label: '⏬　アプリとして登録する　', value: 'install' }
+			)
+
 			let select = await Action.sysChoices( list, { rowLen: 3, menuEnebled: false } )
 			if ( select == 'install' ) {
 				let result = await Promise.race( [ installEvent.promise, $.timeout( 1 ) ] )
