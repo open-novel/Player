@@ -52,13 +52,15 @@ export async function playSysEffect ( name ) {
 		}
 		let source = ctx.createBufferSource( )
 		source.buffer = await ctx.decodeAudioData( ab.slice( ) )
+		source.connect( out )
+		source.onended = ( ) => source.disconnect( )
 		ary.push( source )
 	}
 
 
 	let source = ary.shift( )
 	if ( ! source ) return $.warn( `サウンドソースバッファ「${ name }」を使い切りました` )
-	source.connect( out )
+
 	source.start( )
 
 	for ( let i = ary.length; i < 5; i ++ ) addBuffer( )

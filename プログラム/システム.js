@@ -47,7 +47,7 @@ async function play ( ctx, mode, installEvent ) {
 	usage = ( usage / 1024 / 1024 ).toFixed( )
 	quota = ( quota / 1024 / 1024 ).toFixed( )
 
-	let text = 'openノベルプレイヤー v1.0γ_001   18/09/17\\n' +
+	let text = 'openノベルプレイヤー v1.0γ_005   18/09/24\\n' +
 		( $.TEST.mode ? `  *${ $.TEST.mode } test mode*\\n` : '　\\n' )
 		//  +
 		// `\\n\\n\\s[0.5]データ保存状況：　${ usage }GB使用済 / ${ quota }GB割当済　利用率${ ratio } ％`+

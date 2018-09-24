@@ -470,21 +470,6 @@ function initLayer ( ) {
 						type: DecoTextNode, name: 'messageArea',
 						x: .2, w: .75, y: .2, size: .175, fill: 'rgba( 255, 255, 200, .9 )'
 					},
-					{
-						type: GroupNode, name: 'iconGroup',
-						children: [
-							{
-								type: PolygonNode, name: 'menuBotton', listenerMode: 'opaque',
-								fill: 'rgba( 255, 200, 200, .25 )', event: 'menu',
-								path: [ [ .005, .20 ], [ .005, .96 ], [ .130, .96 ] ], sound: true
-							},
-							{
-								type: TextNode, name: 'openMenuText',
-								y: .15, w: .165, fill: 'rgba( 255, 255, 255, .5 )', text: ' open menu',
-								pos: 'center', size: .15, rotate: 40
-							}
-						]
-					}
 				]
 			},
 			{
@@ -532,6 +517,21 @@ function initLayer ( ) {
 					},
 				]
 			},
+			{
+				type: GroupNode, name: 'iconGroup',
+				children: [
+					{
+						type: PolygonNode, name: 'menuBotton', listenerMode: 'opaque',
+						fill: 'rgba( 255, 200, 200, .25 )', event: 'menu',
+						path: [ [ .005, .80 ], [ .005, .99 ], [ .133, .99 ] ], sound: true
+					},
+					{
+						type: TextNode, name: 'openMenuText',
+						y: .785, w: .17, fill: 'rgba( 255, 255, 255, .5 )', text: ' open menu',
+						pos: 'center', size: .037, rotate: 40
+					}
+				]
+			}
 		]
 	}, layerRoot )
 
@@ -749,11 +749,14 @@ export function onPoint ( { type, x, y } ) {
 
 function refreshCanvasSize( ) {
 
-	let width = DPCanvas.getBoundingClientRect( ).width
+	let wrapper = DPCanvas.parentElement
+	let { width, height } = DPCanvas.getBoundingClientRect( )
 	if ( W != width ) {
-		DPCanvas.width = HRCanvas.width = W = width
+		//if ( width * 9 > height * 16 ) width = height * 16 / 9 | 0
+		DPCanvas.width = HRCanvas.width = W = width | 0
 		DPCanvas.height = HRCanvas.height = H = W * 9 / 16 + .5 | 0
-		DPCanvas.parentNode.style.height = `${ H }px`
+		//wrapper.style.width = `${ W }px`
+		wrapper.style.height = `${ H }px`
 	}
 
 }

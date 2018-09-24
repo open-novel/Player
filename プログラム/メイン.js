@@ -17,19 +17,10 @@ async function main( ) {
 
 	const wrapper = document.querySelector( '#ONPWrapper' )
 
+	let option = JSON.parse( wrapper.dataset.onp || '{ }' )
+
 	const player = document.createElement( 'div' )
 
-	Object.assign( player.style, {
-		maxWidth: 'calc( 100% - 10px )',
-		width: '960px',
-		height: '540px',
-		margin: '5px auto',
-		padding: '5px',
-		borderRadius: '10px 10px 0px 10px',
-		boxShadow: '0px 0px 10px 1px blue inset',
-		overflow: 'hidden',
-		resize: 'horizontal',
-	} )
 	wrapper.appendChild( player )
 
 	const canvas = document.createElement( 'canvas' )
@@ -37,14 +28,54 @@ async function main( ) {
 		width: 960,
 		height: 540,
 	} )
-	Object.assign( canvas.style, {
-		width: '100%',
-		height: '100%',
-	} )
-
 
 	Array.from( wrapper.childNodes, node => node.remove( ) )
 	player.appendChild( canvas )
+
+	if ( option.pwa ) {
+
+		Object.assign( document.body.style, {
+			backgroundColor: 'black',
+			margin: '0',
+			textAlign: 'center',
+			width: '100vw',
+			height: '100vh',
+			overflow: 'hidden',
+		} )
+		Object.assign( player.style, {
+			width: '100%',
+			height: '100%',
+			overflow: 'hidden',
+		} )
+		Object.assign( canvas.style, {
+			display: 'inline-block',
+			margin: 'auto',
+			height: '56.25vw',
+			width: '177.78vh',
+			maxHeight: '100vh',
+			maxWidth: '100vw',
+		} )
+
+	} else {
+
+		Object.assign( player.style, {
+			maxWidth: 'calc( 100% - 10px )',
+			width: '960px',
+			height: '540px',
+			margin: '5px auto',
+			padding: '5px',
+			borderRadius: '10px 10px 0px 10px',
+			boxShadow: '0px 0px 10px 1px blue inset',
+			overflow: 'hidden',
+			resize: 'horizontal',
+		} )
+		Object.assign( canvas.style, {
+			width: '100%',
+			height: '100%',
+		} )
+
+	}
+
 
 	let ctx = canvas.getContext( '2d' )
 
@@ -84,7 +115,7 @@ async function main( ) {
 	} )
 
 	window.addEventListener( 'message', e => {
-		Player.onMessage( { port: e.ports[ 0 ], ...e.data } )
+		Player.onMessage( Object.assign( { port: e.ports[ 0 ] } ), e.data )
 	} )
 
 	if ( window.opener ) {
@@ -92,7 +123,7 @@ async function main( ) {
 	}
 
 
-	Player.initPlayer( { ctx, mode: location.hash.slice( 1 ), installEvent } )
+	Player.initPlayer( { ctx, mode: location.hash.slice( 1 ), installEvent, option } )
 
 
 }
