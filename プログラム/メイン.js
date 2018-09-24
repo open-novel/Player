@@ -21,8 +21,6 @@ async function main( ) {
 
 	const player = document.createElement( 'div' )
 
-	wrapper.appendChild( player )
-
 	const canvas = document.createElement( 'canvas' )
 	Object.assign( canvas, {
 		width: 960,
@@ -30,6 +28,8 @@ async function main( ) {
 	} )
 
 	Array.from( wrapper.childNodes, node => node.remove( ) )
+
+	wrapper.appendChild( player )
 	player.appendChild( canvas )
 
 	if ( option.pwa ) {

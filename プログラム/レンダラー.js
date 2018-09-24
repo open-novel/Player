@@ -11,7 +11,7 @@ let DPCanvas = null
 
 let [ W, H ] = [ 1, 1 ]
 
-let layerRoot = null
+let layerRoot = null, colorProfile = null
 
 let HRCanvas =window.OffscreenCanvas ?
 	new OffscreenCanvas( W, H, { alpha: false } ) : document.createElement( 'canvas' )
@@ -153,7 +153,7 @@ class Node {
 
 		let parent = this.parent
 		this.remove( )
-		let node = new this.constructor( { ...this } )
+		let node = new this.constructor( Object.assign( { }, this ) )
 		parent.append( node )
 		return node
 
@@ -213,9 +213,10 @@ export class GroupNode extends Node {
 
 export class RectangleNode extends Node {
 
-	draw ( { x, y, w, h } ) {
+	draw ( { x, y, w, h, c } ) {
 
-		let { fill, shadow, forcused, pushed, listenerMode } = this
+		let { name, color, fill, shadow, forcused, pushed, listenerMode } = this
+		if ( ! fill && c ) fill = c
 
 		let offset = H * .01
 
@@ -227,6 +228,7 @@ export class RectangleNode extends Node {
 				if ( shadow ) setShadow( { offset, alpha: .5 } )
 				if ( forcused && listenerMode == 'opaque' ) ctx.filter = 'brightness(150%)'
 			}
+
 			ctx.fillStyle = fill
 
 			//ctx.fillRect( x, y, w, h )
@@ -265,9 +267,10 @@ export class RectangleNode extends Node {
 
 export class PolygonNode extends Node {
 
-	draw ( { x, y, w, h } ) {
+	draw ( { x, y, w, h, c } ) {
 
 		let { fill, shadow, path, forcused, pushed, listenerMode } = this
+		if ( ! fill && c ) fill = c
 
 		let offset = H * .01
 
@@ -325,8 +328,9 @@ export class TextNode extends Node {
 
 	clear ( ) { this.prop( 'text', '' ) }
 
-	draw ( { x, y, w, h } ) {
+	draw ( { x, y, w, h, c } ) {
 		let { fill, shadow, text, size, pos, rotate } = this
+		if ( ! fill && c ) fill = c
 
 		ctx.font = `${ h * size }px "Hiragino Kaku Gothic ProN", Meiryo`
 		//ctx.textBaseline = 'top'
@@ -371,7 +375,7 @@ export class DecoTextNode extends Node {
 
 		let preRow = 0, xBuf = 0
 
-		for ( let { text, mag = 1, bold = false, color = this.fill, row = 0 } of this.decoList ) {
+		for ( let { text, mag = 1, bold = false, color: fill = this.fill, row = 0 } of this.decoList ) {
 			if ( preRow != row ) xBuf = 0
 			preRow = row
 			let size = this.size * mag
@@ -381,7 +385,7 @@ export class DecoTextNode extends Node {
 			let b = ( h *  size )  * .025 + 2.5
 
 			setShadow( { offset: b } )
-			ctx.fillStyle = color
+			ctx.fillStyle = fill
 			ctx.fillText( text, x + xBuf, y + ( row * h * size * 1.4 ) + h * size / 2 )
 			let metrics = ctx.measureText( text )
 			xBuf += metrics.width
@@ -473,46 +477,51 @@ function initLayer ( ) {
 				]
 			},
 			{
-				type: RectangleNode, name: 'inputBox',
-				fill: 'rgba( 255, 255, 255, 0 )',
+				type: GroupNode, name: 'inputBox',
+				//fill: 'rgba( 255, 255, 255, 0 )',
 				children: [
 					{
 						type: RectangleNode, name: 'inputSubBox', listenerMode: 'block',
-						o: 0, x: .1, y: .05, w: .8, h: .65, fill: 'rgba( 75, 75, 100, .5 )'
+						o: 0, x: .1, y: .04, w: .8, h: .65,
 					}
 				]
 			},
 			{
-				type: RectangleNode, name: 'menuBox', listenerMode: 'block',
-				o: 0, fill: 'rgba( 255, 255, 255, 0 )',
+				type: GroupNode, name: 'menuBox', listenerMode: 'block',
+				//fill: 'rgba( 255, 255, 255, 0 )',
 				children: [
 					{
 						type: RectangleNode, name: 'menuSubBox',
-						o: 0, x: .1, y: .03, w: .8, h: .65, fill: 'rgba( 75, 75, 100, .5 )'
+						o: 0, x: .1, y: .04, w: .8, h: .65,
 					},
+				]
+			},
+			{
+				type: GroupNode, name: 'buttonGroup',
+				children: [
 					{
-						type: PolygonNode, name: 'backBotton', listenerMode: 'opaque',
-						x: 0, y: .03, w: .1, h: .65, o: 0, fill: 'rgba( 100, 100, 255, .8 )',
+						type: PolygonNode, name: 'backButton', listenerMode: 'opaque',
+						x: 0, y: .03, w: .1, h: .65, o: 0,
 						path: [ [ .9, .2 ], [ .1, .5 ], [ .9, .8 ] ], sound: true
 					},
 					{
-						type: PolygonNode, name: 'nextBotton', listenerMode: 'opaque',
-						x: -0, y: .03, w: .1, h: .65, o: 0, fill: 'rgba( 100, 100, 255, .8 )',
+						type: PolygonNode, name: 'nextButton', listenerMode: 'opaque',
+						x: -0, y: .03, w: .1, h: .65, o: 0,
 						path: [ [ .1, .2 ], [ .9, .5 ], [ .1, .8 ] ], sound: true
 					},
 					{
 						type: TextNode, name: 'backLabel',
-						x: 0, y: 0.55, w: .1, h: .3, fill: 'rgba( 100, 100, 255, .8 )',
+						x: 0, y: 0.55, w: .1, h: .3,
 						pos: 'center', size: .15
 					},
 					{
 						type: TextNode, name: 'currentLabel',
-						x: 0.45, y: 0.68, w: .1, h: .3, fill: 'rgba( 100, 100, 255, .8 )',
+						x: 0.45, y: 0.68, w: .1, h: .3,
 						pos: 'center', size: .15
 					},
 					{
 						type: TextNode, name: 'nextLabel',
-						x: -0, y: 0.55, w: .1, h: .3, fill: 'rgba( 100, 100, 255, .8 )',
+						x: -0, y: 0.55, w: .1, h: .3,
 						pos: 'center', size: .15
 					},
 				]
@@ -521,14 +530,29 @@ function initLayer ( ) {
 				type: GroupNode, name: 'iconGroup',
 				children: [
 					{
-						type: PolygonNode, name: 'menuBotton', listenerMode: 'opaque',
+						type: PolygonNode, name: 'menuButton', listenerMode: 'opaque',
 						fill: 'rgba( 255, 200, 200, .25 )', event: 'menu',
 						path: [ [ .005, .80 ], [ .005, .99 ], [ .133, .99 ] ], sound: true
 					},
 					{
-						type: TextNode, name: 'openMenuText',
-						y: .785, w: .17, fill: 'rgba( 255, 255, 255, .5 )', text: ' open menu',
-						pos: 'center', size: .037, rotate: 40
+						type: GroupNode, name: 'menuLabels',
+						children: [
+							{
+								type: TextNode, name: 'open', o: 1,
+								y: .785, w: .175, fill: 'rgba( 255, 255, 255, .5 )', text: 'open menu',
+								pos: 'center', size: .037, rotate: 40
+							},
+							{
+								type: TextNode, name: 'close', o: 0,
+								y: .785, w: .175, fill: 'rgba( 255, 255, 255, .5 )', text: 'close menu',
+								pos: 'center', size: .037, rotate: 40
+							},
+							{
+								type: TextNode, name: 'top', o: 0,
+								y: .86, w: .1, fill: 'rgba( 255, 255, 255, .5 )', text: '🔝\uFE0E',
+								pos: 'center', size: .125
+							},
+						]
 					}
 				]
 			}
@@ -536,6 +560,38 @@ function initLayer ( ) {
 	}, layerRoot )
 
 	$.log( layerRoot )
+
+	colorProfile = {
+		blue: {
+			$subBox: 'rgba( 75, 75, 100, .5 )',
+			inputSubBox: '$subBox',
+			menuSubBox: '$subBox',
+			$button: 'rgba( 100, 100, 255, .8 )',
+			backButton: '$button',
+			nextButton: '$button',
+			$label: 'rgba( 100, 100, 255, .8 )',
+			backLabel: '$label',
+			currentLabel: '$label',
+			nextLabel: '$label',
+			choiceBox: 'rgba( 100, 100, 255, .8 )',
+			choiceText: 'rgba( 255, 255, 255, .9 )'
+		},
+		green: {
+			$subBox: 'rgba( 75, 100, 85, .5 )',
+			inputSubBox: '$subBox',
+			menuSubBox: '$subBox',
+			$button: 'rgba( 75, 200, 100, .8 )',
+			backButton: '$button',
+			nextButton: '$button',
+			$label: 'rgba( 75, 200, 100, .8 )',
+			backLabel: '$label',
+			currentLabel: '$label',
+			nextLabel: '$label',
+			choiceBox: 'rgba( 75, 200, 100, .8 )',
+			choiceText: 'rgba( 255, 200, 255, .9 )'
+		}
+	}
+
 
 	return layerRoot
 }
@@ -578,6 +634,12 @@ export function drawCanvas ( newTime ) {
 
 		let ctx = base.ctx
 
+		let color = node.color || base.color
+		let c = ( colorProfile[ color ] && colorProfile[ color ][ node.name ] ) || ''
+		if ( c[ 0 ] == '$' ) c = colorProfile[ color ][ c ] || ''
+		//if ( c ) $.log( c )
+		//if ( colorProfile[ color ] ) $.log( node.name )
+
 		let prop = {
 			ctx,
 			x: base.x + node.x * base.w,
@@ -585,6 +647,7 @@ export function drawCanvas ( newTime ) {
 			w: base.w * node.w,
 			h: base.h * node.h,
 			o: base.o * node.o,
+			color, c,
 		}
 
 		//$.log( node.name, prop )

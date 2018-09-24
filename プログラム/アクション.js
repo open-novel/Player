@@ -113,7 +113,8 @@ export function setMenuVisible ( flag, layer = nowLayer ) {
 
 }
 
-export async function showSaveLoad ( { layer, title, isLoad = false, settings, others } ) {
+
+export async function showSaveLoad ( { layer, title, isLoad = false, color } ) {
 	let page = 1
 	let visibleTileNo = 12, getTileNo = 24, totalPageNo = ( ( getTileNo / visibleTileNo ) | 0 ) + ( isLoad ? 1 : 0 )
 	while ( page > 0 ) {
@@ -128,9 +129,10 @@ export async function showSaveLoad ( { layer, title, isLoad = false, settings, o
 		if ( isLoad && page == totalPageNo ) currentLabel = 'オート'
 		if ( isLoad && page == totalPageNo - 1 ) nextLabel = 'オート'
 
-		let index = await sysChoices( choices, { backLabel, currentLabel, nextLabel } )
+		let index = await sysChoices( choices, { backLabel, currentLabel, nextLabel, color } )
 		if ( index === null ) page --
 		else if ( index == $.Token.next ) page ++
+		else if ( index == $.Token.menu ) return index
 		else {
 			if ( isLoad ) {
 				return await DB.loadState( title, index )
@@ -185,6 +187,7 @@ export async function showMarkLoad ( { settings } ) {
 		let mark = await sysChoices( choices, { backLabel, currentLabel, nextLabel, rowLen: 5 } )
 		if ( mark === null ) page --
 		else if ( mark == $.Token.next ) page ++
+		else if ( mark == $.Token.menu ) return mark
 		else return `${ name }#${ mark }`
 	}
 	return $.Token.cancel
@@ -194,33 +197,35 @@ export async function showMarkLoad ( { settings } ) {
 async function showMenu ( layer ) {
 
 	let title = settings.title
-	if ( ! title ) return //closeMenu( )
+	if ( ! title ) return
 
 	setMenuVisible( true, layer )
 
-	layer.on( 'menu' ).then( ( ) => closeMenu( layer ) )
+	//layer.on( 'menu' ).then( ( ) => closeMenu( layer ) )
 
 	let choices = [ 'セーブ', 'ロード', 'シェアする', '終了する' ].map( label => ( { label } ) )
 
-	let type = await sysChoices( choices, { rowLen: 4, backLabel: '戻る' } )
+	let type = await sysChoices( choices, { rowLen: 4, backLabel: '戻る', color: 'green' } )
 
 	let page = 1
 
 	let visibleTileNo = 12, getTileNo = 24
 
 
-	switch ( type ) {
+	SWITCH: switch ( type ) {
 
 		case null:
+		case $.Token.menu:
+
 		break;
 		case 'セーブ': {
 
-			await showSaveLoad( { title, layer } )
+			await showSaveLoad( { title, layer, color: 'green' } )
 
 		} break
 		case 'ロード': {
 
-			let state = await showSaveLoad( { title, settings, isLoad: true } )
+			let state = await showSaveLoad( { title, settings, isLoad: true, color: 'green' } )
 			$.log( state )
 			if ( state != $.Token.cancel ) {
 				stateList = [ state ]
@@ -240,8 +245,9 @@ async function showMenu ( layer ) {
 					'Friends (niconico)': 'friends.nico/share',
 					'Pawoo (Pixiv)': 'pawoo.net/share',
 				} ).map( ( [ key, value ] ) => ( { label: key, value } ) )
-				let type = await sysChoices( choices, { rowLen: 5, backLabel: '戻る' } )
+				let type = await sysChoices( choices, { rowLen: 5, backLabel: '戻る', color: 'green' } )
 				if ( type === null ) break WHILE
+				if ( type == $.Token.menu ) break SWITCH
 				if ( type == 'capture' ) {
 					capture = ! capture
 					continue WHILE
@@ -267,7 +273,7 @@ async function showMenu ( layer ) {
 		case '終了する': {
 
 			let choices = [ '本当に終了する' ].map( label => ( { label } ) )
-			let type = await sysChoices( choices, { rowLen: 4, backLabel: '戻る' } )
+			let type = await sysChoices( choices, { rowLen: 4, backLabel: '戻る', color: 'green' } )
 			if ( type != null ) {
 				stateList.length = 0
 				return init( )
@@ -277,18 +283,12 @@ async function showMenu ( layer ) {
 		default: $.error( 'UnEx' )
 	}
 
-	layer.fire( 'menu' )
-
-}
-
-
-
-async function closeMenu ( layer ) {
-
+	//layer.fire( 'menu' )
 	setMenuVisible( false, layer )
-
 	layer.on( 'menu' ).then( ( ) => showMenu( layer ) )
+
 }
+
 
 
 
@@ -630,11 +630,12 @@ export async function sysChoices ( choices, opt ) {
 }
 
 export async function scenarioChoices ( layer, choices ) {
-	return showChoices( { layer, choices, inputBox: layer.inputSubBox } )
+	return showChoices( { layer, choices, inputBox: layer.inputSubBox, menuType: 'open', menuEnebled: false } )
 }
 
 export async function showChoices ( { layer, choices, inputBox = layer.menuSubBox, rowLen = 4,
-	backLabel = '', currentLabel = '', nextLabel = '' } ) {
+	backLabel = '', currentLabel = '', nextLabel = '', menuType = 'close', menuEnebled = true,
+	color = 'blue' } ) {
 
 	let m = .05
 
@@ -654,7 +655,9 @@ export async function showChoices ( { layer, choices, inputBox = layer.menuSubBo
 
 		let choiceBox = new Renderer.RectangleNode( {
 			name: 'choiceBox',
-			x, y, w, h, listenerMode: 'opaque', fill: 'rgba( 100, 100, 255, .8 )',
+			x, y, w, h, listenerMode: 'opaque',
+			//disabled,
+			//fill:  'rgba( 0, 225, 255, 1 )',
 			sound: ! disabled
 		} )
 		inputBox.append( choiceBox )
@@ -662,7 +665,7 @@ export async function showChoices ( { layer, choices, inputBox = layer.menuSubBo
 
 		let textArea = new Renderer.TextNode( {
 			name: 'choiceText',
-			size: .7, y: .05, pos: 'center', fill: 'rgba( 255, 255, 255, .9 )'
+			size: .7, y: .05, pos: 'center'
 		} )
 		choiceBox.append( textArea )
 		if ( disabled ) textArea.fill = 'rgba( 255, 255, 255, .5 )'
@@ -671,7 +674,13 @@ export async function showChoices ( { layer, choices, inputBox = layer.menuSubBo
 		textArea.set( label )
 	}
 
-	let { backBotton, nextBotton } = layer
+	if ( menuEnebled ) nextClicks.push( layer.on( 'menu' ).then( ( ) => $.Token.menu ) )
+
+	let { backButton, nextButton } = layer
+
+	inputBox.prop( 'color', color )
+	layer.buttonGroup.prop( 'color', color )
+
 
 	layer.backLabel.clear( )
 	layer.currentLabel.clear( )
@@ -679,8 +688,8 @@ export async function showChoices ( { layer, choices, inputBox = layer.menuSubBo
 
 	if ( backLabel ) {
 		layer.backLabel.set( backLabel )
-		backBotton.show( )
-		nextClicks.push( backBotton.on( 'click' ).then( ( ) => null ) )
+		backButton.show( )
+		nextClicks.push( backButton.on( 'click' ).then( ( ) => null ) )
 	}
 
 	if ( currentLabel ) {
@@ -689,16 +698,33 @@ export async function showChoices ( { layer, choices, inputBox = layer.menuSubBo
 
 	if ( nextLabel ) {
 		layer.nextLabel.set( nextLabel )
-		nextBotton.show( )
-		nextClicks.push( nextBotton.on( 'click' ).then( ( ) => $.Token.next ) )
+		nextButton.show( )
+		nextClicks.push( nextButton.on( 'click' ).then( ( ) => $.Token.next ) )
+	}
+
+
+	if ( menuEnebled ) {
+		layer.menuLabels.children.forEach( label => label.prop( 'o', 0 ) )
+		layer.menuLabels[ menuType ].prop( 'o', 1 )
 	}
 
 	inputBox.show( )
 	let val = await Promise.race( nextClicks )
+
+	layer.backLabel.clear( )
+	layer.currentLabel.clear( )
+	layer.nextLabel.clear( )
+
 	inputBox.removeChildren( )
 	inputBox.hide( )
-	backBotton.hide( )
-	nextBotton.hide( )
+	backButton.hide( )
+	nextButton.hide( )
+
+	if ( menuEnebled ) {
+		layer.menuLabels.children.forEach( label => label.prop( 'o', 0 ) )
+		layer.menuLabels.open.prop( 'o', 1 )
+	}
+	
 	return val
 
 }

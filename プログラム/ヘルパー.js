@@ -28,7 +28,9 @@ export const warn	= ( ...args ) => logEnabled && console.warn( ...args )
 export const error = ( ...args ) => logEnabled ? console.error( ...args ) : window.logBuffer.push( args )
 export const hint = console.error.bind( console )
 
-export const Token = [ 'back', 'next', 'cancel' ].reduce( ( obj, key ) => { obj[ key ] = Symbol( ); return obj }, { } )
+export const Token = [
+	'back', 'next', 'cancel', 'menu'
+].reduce( ( obj, key ) => { obj[ key ] = Symbol( ); return obj }, { } )
 
 
 export const neverDone = new Promise( NOP )

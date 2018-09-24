@@ -41,17 +41,8 @@ async function play ( ctx, mode, installEvent ) {
 	let sound = 'off'
 	if ( mode != 'install' ) {
 
-	let { usage, quota } = await navigator.storage.estimate( )
-	let  persisted = navigator.storage.persisted( )
-	let ratio = ( 100 * usage / quota / 1024 / 1024 ).toFixed( )
-	usage = ( usage / 1024 / 1024 ).toFixed( )
-	quota = ( quota / 1024 / 1024 ).toFixed( )
-
-	let text = 'openノベルプレイヤー v1.0γ_005   18/09/24\\n' +
+	let text = 'openノベルプレイヤー v1.0γ_010   18/09/24\\n' +
 		( $.TEST.mode ? `  *${ $.TEST.mode } test mode*\\n` : '　\\n' )
-		//  +
-		// `\\n\\n\\s[0.5]データ保存状況：　${ usage }GB使用済 / ${ quota }GB割当済　利用率${ ratio } ％`+
-		// `　　ブラウザ判断での突然の削除の可能性${ persisted ? '有り' : '無し' }`
 
 
 		WHILE: while ( true ) {
@@ -64,7 +55,7 @@ async function play ( ctx, mode, installEvent ) {
 				{ label: '🔇　サウンドOFFで開始する', value: 'off' },
 				{ label: '⏬　アプリとして登録する　', value: 'install' }
 			]
-			let select = await Action.sysChoices( list, { rowLen: 3 } )
+			let select = await Action.sysChoices( list, { rowLen: 3, menuEnebled: false } )
 			if ( select == 'install' ) {
 				let result = await Promise.race( [ installEvent.promise, $.timeout( 1 ) ] )
 				if ( result ) result.prompt( )
@@ -83,7 +74,7 @@ async function play ( ctx, mode, installEvent ) {
 
 	if ( sound == 'on' ) Action.setMainVolume( 1 )
 	else Action.setMainVolume( 0 )
-	Action.setMenuVisible( false )
+	//Action.setMenuVisible( false )
 
 	while ( true ) {
 
@@ -124,7 +115,15 @@ async function playSystemOpening ( mode ) {
 	} )
 
 
-	let { settings, index } = await Action.sysChoices( titleList )
+	let cho = await Action.sysChoices( titleList, { menuType: 'open' } )
+
+	if ( cho == $.Token.menu ) {
+		await showSysMenu( )
+		return playSystemOpening( mode )
+	}
+
+	let { settings, index } = cho
+
 	let { title } = settings
 
 	$.log( index, settings )
@@ -156,51 +155,109 @@ async function playSystemOpening ( mode ) {
 		$.disableChoiceList( [ '初めから', '続きから', '途中から' ], menuList )
 	}
 
-	let sel = await Action.sysChoices( menuList, { backLabel: '戻る' } )
+	WHILE: while ( true ) {
+
+		let sel = await Action.sysChoices( menuList, { backLabel: '戻る' } )
+		$.log( sel )
+
+		SWITCH: switch ( sel ) {
+
+			case null:
+			case $.Token.menu:
+				break WHILE
+
+			case '初めから':
+				return Action.play( settings, null, others )
+
+			case '続きから': {
+
+				let state = await Action.showSaveLoad( { title, isLoad: true, settings, others } )
+				if ( state === $.Token.cancel ) break SWITCH
+				if ( state === $.Token.menu ) return playSystemOpening( mode )
+				return Action.play( settings, state, others )
+				//return playSystemOpening( mode )
+
+			} break
+			case '途中から': {
+
+				let jump = await Action.showMarkLoad( { settings } )
+				//let jump = prompt( '開始先を次の形式で入力してください\nシナリオ名#マーク名', '#' )
+				if ( jump === null || jump == $.Token.cancel ) break SWITCH
+				if ( jump == $.Token.menu ) break WHILE
+				others.jump = jump.split( '#' )
+				return Action.play( settings, null, others )
+
+			} break
+			case 'インストール': {
+
+				let success = await installScenario( index )
+				if ( success === null ) break SWITCH
+				if ( success ) await Action.sysMessage( 'インストールが完了しました', 100 )
+				else await Action.sysMessage( 'インストールできませんでした', 100 )
+				return playSystemOpening( mode )
+
+			} break
+
+			default: throw 'UnEx'
+		}
+
+	}
+
+	return playSystemOpening( mode )
+
+}
+
+
+async function showSysMenu ( ) {
+
+	Action.sysMessage( 'システムメニュー', 100 )
+
+	let menuList = [ 'データ使用状況' ].map( label => ( { label } ) )
+
+	$.disableChoiceList( [ ], menuList )
+
+	let sel = await Action.sysChoices( menuList, { backLabel: '戻る', color: 'green' } )
 
 	$.log( sel )
 
-	switch ( sel ) {
+	SWITCH: switch ( sel ) {
 
-		case null: {
+		case null:
+		case $.Token.menu:
+			return
 
-			return playSystemOpening( mode )
+		case 'データ使用状況': {
 
-		} break
-		case '初めから': {
+			let { usage, quota } = await navigator.storage.estimate( )
+			let  persisted = await navigator.storage.persisted( )
+			let ratio = ( 100 * usage / quota / 1024 / 1024 ).toFixed( )
+			usage = ( usage / 1024 / 1024 ).toFixed( )
+			quota = ( quota / 1024 / 1024 ).toFixed( )
 
-			return Action.play( settings, null, others )
+			while ( true ) {
+				Action.sysMessage(
+					`データ保存状況：　${ quota }GB割当済　${ usage }GB使用済　利用率${ ratio }％\\n`+
+					`ブラウザ判断での突然の消去の可能性：　${ persisted ? '無し' : '有り' }`
+				)
 
-		} break
-		case '続きから': {
-
-			let state = await Action.showSaveLoad( { title, isLoad: true, settings, others } )
-			if ( state === $.Token.cancel ) return playSystemOpening( mode )
-			return Action.play( settings, state, others )
-			//return playSystemOpening( mode )
-
-		} break
-		case '途中から': {
-
-			let jump = await Action.showMarkLoad( { settings } )
-			//let jump = prompt( '開始先を次の形式で入力してください\nシナリオ名#マーク名', '#' )
-			if ( jump === null || jump == $.Token.cancel ) return playSystemOpening( mode )
-			others.jump = jump.split( '#' )
-			return Action.play( settings, null, others )
-
-		} break
-		case 'インストール': {
-
-			let success = await installScenario( index )
-			if ( success === null ) return playSystemOpening( mode )
-			if ( success ) await Action.sysMessage( 'インストールが完了しました', 100 )
-			else await Action.sysMessage( 'インストールできませんでした', 100 )
-			return playSystemOpening( mode )
+				let choices =  persisted ? [ ] : [ 'データの永続的な保存をリクエストする' ]
+				let sel = await Action.sysChoices( choices, { backLabel: '戻る', color: 'green' } )
+				if ( sel === null ) break SWITCH
+				if ( sel == $.Token.menu ) return
+				if ( sel == 'データの永続的な保存をリクエストする' ) {
+					let success = await navigator.storage.persist( )
+					if ( success ) location.reload( )
+				}
+			}
 
 		} break
 
 		default: throw 'UnEx'
+
 	}
+
+	return showSysMenu( )
+
 
 }
 
@@ -218,17 +275,16 @@ async function installScenario ( index, sel ) {
 	}
 	$.log( sel )
 
-	Action.setMenuVisible( false )
+	//Action.setMenuVisible( false )
 
 	let files, origin = 'unknown/'
 
 	switch ( sel ) {
 
-		case null: {
-
+		case null:
+		case $.Token.menu:
 			return null
 
-		} break
 		case 'フォルダから': {
 
 			Action.sysMessage( 'フォルダを選んで下さい' )
