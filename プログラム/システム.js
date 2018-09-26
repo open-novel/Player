@@ -41,7 +41,7 @@ async function play ( ctx, mode, installEvent, option ) {
 	let sound = 'off'
 	if ( mode != 'install' ) {
 
-	let text = 'openノベルプレイヤー v1.0γ_011   18/09/24\\n' +
+	let text = 'openノベルプレイヤー v1.0γ_012   18/09/26\\n' +
 		( $.TEST.mode ? `  *${ $.TEST.mode } test mode*\\n` : '　\\n' ) +
 		( option.pwa ? '【 PWA Mode 】\\n' : '' )
 
@@ -151,7 +151,6 @@ async function playSystemOpening ( mode ) {
 
 	}
 	// シナリオ開始メニュー表示
-	Action.sysMessage( '開始メニュー', 100 )
 
 	let menuList = [ '初めから', '続きから', '途中から', 'インストール' ].map( label => ( { label } ) )
 
@@ -161,6 +160,7 @@ async function playSystemOpening ( mode ) {
 
 	WHILE: while ( true ) {
 
+		Action.sysMessage( '開始メニュー', 100 )
 		let sel = await Action.sysChoices( menuList, { backLabel: '戻る' } )
 		$.log( sel )
 
@@ -197,7 +197,10 @@ async function playSystemOpening ( mode ) {
 				let success = await installScenario( index )
 				if ( success === null ) break SWITCH
 				if ( success ) await Action.sysMessage( 'インストールが完了しました', 100 )
-				else await Action.sysMessage( 'インストールできませんでした', 100 )
+				else {
+					Action.sysMessage( 'インストールできませんでした', 100 )
+					Action.sysChoices( [ ], { backLabel: '戻る' } )
+				}
 				return playSystemOpening( mode )
 
 			} break
@@ -300,6 +303,7 @@ async function installScenario ( index, sel ) {
 
 			Action.sysMessage( 'Zipファイルを選んで下さい' )
 			files = await fileSelect( )
+			if ( files == null ) return null
 			if ( ! files ) return false
 			files = await unpackFile( files[ 0 ] )
 			origin = 'local/'
@@ -307,27 +311,31 @@ async function installScenario ( index, sel ) {
 		} break
 		case 'Webから': {
 
-			await Action.sysMessage( 'openノベルプレイヤー向けに作品を公開しているサイトで'
+			Action.sysMessage( 'openノベルプレイヤー向けに作品を公開しているサイトで'
 			+'\\n作品のリンクをクリックするとここへインストールできます' )
+
+			await Action.sysChoices( [ ], { backLabel: '戻る' } )
+			return null
+
 
 		} break
 		case 'リンクから': {
 
 			Action.sysMessage( 'ダウンロード中……' )
 			let data = await player.on( 'install', true )
-			if ( ! data ) return null
+			if ( ! data ) return false
 			if ( data.url ) origin = new URL( data.url ).origin + '/'
 			switch ( data.type ) {
 				case 'install-folder': {
-					if ( ! data.title ) return null
+					if ( ! data.title ) return false
 					files = await collectScenarioFiles( data ).catch( e => {
 						$.hint( '取得できないファイルがありました' )
 						$.error( e )
-						return null
+						return false
 					} )
 				} break
 				case 'install-packed': {
-					if ( ! data.file ) return null
+					if ( ! data.file ) return false
 					files = await unpackFile( data.file )
 				} break
 				default: {
@@ -438,9 +446,11 @@ async function installScenario ( index, sel ) {
 		input.webkitdirectory = folder
 		input.onchange = ( ) => player.fire( 'file', input.files )
 		input.click( )
-		let trigger = new Action.Trigger
-		let files = await trigger.stepOr( player.on( 'file' ) )
-		if ( typeof files == 'object' ) return Array.from( files )
+
+		let files = await (new Action.Trigger).stepOr(
+			player.on( 'file' ), Action.sysChoices( [ ], { backLabel: '戻る' } )
+		)
+		if ( files != null ) return Array.from( files )
 		else return null
 	}
 

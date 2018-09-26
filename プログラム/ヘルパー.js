@@ -22,11 +22,11 @@ function checkLogEnabled( ) {
 
 const NOP = ( ) => { }
 window.logBuffer = [ ]
-export const log	= ( ...args ) => logEnabled && console.log( ...args )
-export const info	= ( ...args ) => logEnabled && console.info( ...args )
-export const warn	= ( ...args ) => logEnabled && console.warn( ...args )
-export const error = ( ...args ) => logEnabled ? console.error( ...args ) : window.logBuffer.push( args )
-export const hint = console.error.bind( console )
+export const log	= logEnabled ? console.log  .bind( console ) : NOP
+export const info	= logEnabled ? console.info .bind( console ) : NOP
+export const warn	= logEnabled ? console.warn .bind( console ) : NOP
+export const error	= logEnabled ? console.error.bind( console ) : NOP
+export const hint	= console.info.bind( console )
 
 export const Token = [
 	'back', 'next', 'cancel', 'menu'

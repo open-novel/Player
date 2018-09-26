@@ -708,7 +708,7 @@ export async function showChoices ( { layer, choices, inputBox = layer.menuSubBo
 		layer.menuLabels[ menuType ].prop( 'o', 1 )
 	}
 
-	inputBox.show( )
+	if ( len != 0 ) inputBox.show( )
 	let val = await Promise.race( nextClicks )
 
 	layer.backLabel.clear( )
