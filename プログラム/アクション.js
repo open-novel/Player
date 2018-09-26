@@ -268,9 +268,11 @@ async function showMenu ( layer ) {
 					window.open( url )
 					if ( capture ) {
 						layer.menuBox.prop( 'o', 0 )
+						layer.buttonGroup.prop( 'o', 0 )
 						Renderer.drawCanvas( )
 						$.download( await Renderer.toBlob( hiquality ), title )
 						layer.menuBox.prop( 'o', 1 )
+						layer.buttonGroup.prop( 'o', 1 )
 					}
 					break WHILE2
 				}
