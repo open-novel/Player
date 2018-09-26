@@ -41,7 +41,7 @@ async function play ( ctx, mode, installEvent, option ) {
 	let sound = 'off'
 	if ( mode != 'install' ) {
 
-	let text = 'openノベルプレイヤー v1.0γ_025   18/09/27\\n' +
+	let text = 'openノベルプレイヤー v1.0γ_026   18/09/27\\n' +
 		( $.TEST.mode ? `  *${ $.TEST.mode } test mode*\\n` : '　\\n' ) +
 		( option.pwa ? '【 PWA Mode 】\\n' : '' )
 
@@ -204,11 +204,11 @@ async function playSystemOpening ( mode ) {
 				if ( success == $.Token.close ) break WHILE
 				if ( success == $.Token.success ) {
 					Action.sysMessage( 'インストールが完了しました', 100 )
-					await Action.sysChoices( [ ], { backLabel: '戻る' } )
+					await Action.sysChoices( [ ], { backLabel: '作品選択へ' } )
 				}
 				if ( success == $.Token.failure ) {
 					Action.sysMessage( 'インストールできませんでした', 100 )
-					await Action.sysChoices( [ ], { backLabel: '戻る' } )
+					await Action.sysChoices( [ ], { backLabel: '作品選択へ' } )
 				}
 				return playSystemOpening( mode )
 

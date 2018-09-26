@@ -206,14 +206,15 @@ async function showMenu ( layer ) {
 
 	let choices = [ 'セーブ', 'ロード', 'シェアする', '終了する' ].map( label => ( { label } ) )
 
-	let type = await sysChoices( choices, { rowLen: 4, backLabel: '戻る', color: 'green' } )
-
-	let page = 1
-
-	let visibleTileNo = 12, getTileNo = 24
-
 
 	WHILE: while ( true ) {
+
+		let type = await sysChoices( choices, { rowLen: 4, backLabel: '戻る', color: 'green' } )
+
+		let page = 1
+
+		let visibleTileNo = 12, getTileNo = 24
+
 		SWITCH: switch ( type ) {
 
 			case $.Token.back:
@@ -235,10 +236,8 @@ async function showMenu ( layer ) {
 				$.log( state )
 				if ( state == $.Token.back ) break SWITCH
 				if ( state == $.Token.close ) break WHILE
-				if ( state != $.Token.back ) {
-					stateList = [ state ]
-					return init( )
-				}
+				stateList = [ state ]
+				return init( )
 
 			} break
 			case 'シェアする': {
