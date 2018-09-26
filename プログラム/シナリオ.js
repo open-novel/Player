@@ -20,8 +20,8 @@ export async function play ( layer, state, others ) {
 	stateMap.set( layer, state )
 
 	let { scenario, act = scenario[ 0 ], scenarioStack = [ ], varMap = new Map } = state
-	let basePath = state.origin + state.title
-	basePath = basePath ? basePath + '/' : ''
+	let basePath = state.title 
+	if ( state.origin ) basePath = state.origin + '/' + basePath
 
 	let { saveGlobalVarMap, globalVarMap = new Map, jump = null } = others
 	Object.assign( state, { act, scenarioStack, varMap } )
@@ -95,7 +95,7 @@ export async function play ( layer, state, others ) {
 
 			if ( typeof scenario_act_title != 'object' ) {
 				let title = scenario_act_title
-				let text = await DB.getFile( `${ basePath }シナリオ/${ title }` )
+				let text = await DB.getFile( `${ basePath }/シナリオ/${ title }` )
 				newScenario = await parse( text, title )
 			} else if( Array.isArray( scenario_act_title ) ) newScenario = scenario_act_title
 			else act = scenario_act_title
@@ -161,7 +161,7 @@ export async function play ( layer, state, others ) {
 
 						//$.log(pos)
 
-						let path = `${ basePath }立ち絵/${ name }`
+						let path = `${ basePath }/立ち絵/${ name }`
 
 						state.portraits.push( [ path, pos ] )
 						return Action.showPortrait( layer, path, pos )
@@ -195,7 +195,7 @@ export async function play ( layer, state, others ) {
 							pos = pos.map( d => d / 100 )
 						} else pos = [ 0, 0, 1 ]
 
-						let path = `${ basePath }背景/${ name }`
+						let path = `${ basePath }/背景/${ name }`
 
 						state.BGImages.push( [ path, pos ] )
 						return Action.showBGImage( layer, path, pos )
@@ -283,7 +283,7 @@ export async function play ( layer, state, others ) {
 
 					if ( ! name ) Action.stopBGM( )
 					else {
-						let path = `${ basePath }BGM/${ name }`
+						let path = `${ basePath }/BGM/${ name }`
 
 						state.BGM = path
 						await Action.playBGM( path )
