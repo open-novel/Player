@@ -37,7 +37,7 @@ export async function play ( settings, state, _others = others ) {
 
 	let startScenario = String( settings[ '開始シナリオ' ] || title )
 
-	let text = await DB.getFile( [ title, 'シナリオ', startScenario ].join( '/' ) )
+	let text = await DB.getFile( `${ origin }/${ title }/シナリオ/${ startScenario }` )
 
 	let scenario = await Scenario.parse( text, startScenario )
 
@@ -213,75 +213,82 @@ async function showMenu ( layer ) {
 	let visibleTileNo = 12, getTileNo = 24
 
 
-	SWITCH: switch ( type ) {
+	WHILE: while ( true ) {
+		SWITCH: switch ( type ) {
 
-		case $.Token.back:
-		case $.Token.close:
+			case $.Token.back:
+			case $.Token.close:
 
-		break;
-		case 'セーブ': {
+			break;
+			case 'セーブ': {
 
-			await showSaveLoad( { title, layer, color: 'green' } )
-
-		} break
-		case 'ロード': {
-
-			let state = await showSaveLoad( { title, settings, isLoad: true, color: 'green' } )
-			$.log( state )
-			if ( state != $.Token.back ) {
-				stateList = [ state ]
-				return init( )
-			}
-
-		} break
-		case 'シェアする': {
-
-			let capture = false, hiquality = false
-			WHILE: while ( true ) {
-				let choices = Object.entries( {
-					[ ( capture ? '☑' : '☐' ) + '　　　同時にサムネイルをDLする　　　　' ]: 'capture',
-					'Twitter': 'twitter.com/intent/tweet',
-					'Mastodon (mstdn.jp)': 'mstdn.jp/share',
-					//[ ( hiquality ? '🗹' : '☐' ) + 'サムネイルを高画質にする' ]: 'hiquality',
-					'Friends (niconico)': 'friends.nico/share',
-					'Pawoo (Pixiv)': 'pawoo.net/share',
-				} ).map( ( [ key, value ] ) => ( { label: key, value } ) )
-				let type = await sysChoices( choices, { rowLen: 5, backLabel: '戻る', color: 'green' } )
-				if ( type === $.Token.back ) break WHILE
-				if ( type == $.Token.close ) break SWITCH
-				if ( type == 'capture' ) {
-					capture = ! capture
-					continue WHILE
+				while ( true ) {
+					let state = await showSaveLoad( { title, layer, color: 'green' } )
+					if ( state == $.Token.back ) break SWITCH
+					if ( state == $.Token.close ) break WHILE
 				}
-				/*if ( type == 'hiquality' ) {
-					hiquality = ! hiquality
-					continue WHILE
-				}*/
-				let url = `https://${ type }?text=`+ encodeURIComponent(
-					`『${ title }』をプレイしています。\nby Openノベルプレイヤー https://open-novel.github.io` )
-				window.open( url )
-				if ( capture ) {
-					layer.menuBox.prop( 'o', 0 )
-					Renderer.drawCanvas( )
-					$.download( await Renderer.toBlob( hiquality ), title )
-					layer.menuBox.prop( 'o', 1 )
+
+			} break
+			case 'ロード': {
+
+				let state = await showSaveLoad( { title, settings, isLoad: true, color: 'green' } )
+				$.log( state )
+				if ( state == $.Token.back ) break SWITCH
+				if ( state == $.Token.close ) break WHILE
+				if ( state != $.Token.back ) {
+					stateList = [ state ]
+					return init( )
 				}
-				break WHILE
-			}
 
+			} break
+			case 'シェアする': {
 
-		} break
-		case '終了する': {
+				let capture = false, hiquality = false
+				WHILE2: while ( true ) {
+					let choices = Object.entries( {
+						[ ( capture ? '☑' : '☐' ) + '　　　同時にサムネイルをDLする　　　　' ]: 'capture',
+						'Twitter': 'twitter.com/intent/tweet',
+						'Mastodon (mstdn.jp)': 'mstdn.jp/share',
+						//[ ( hiquality ? '🗹' : '☐' ) + 'サムネイルを高画質にする' ]: 'hiquality',
+						'Friends (niconico)': 'friends.nico/share',
+						'Pawoo (Pixiv)': 'pawoo.net/share',
+					} ).map( ( [ key, value ] ) => ( { label: key, value } ) )
+					let type = await sysChoices( choices, { rowLen: 5, backLabel: '戻る', color: 'green' } )
+					if ( type == $.Token.back ) break SWITCH
+					if ( type == $.Token.close ) break WHILE
+					if ( type == 'capture' ) {
+						capture = ! capture
+						continue WHILE2
+					}
+					/*if ( type == 'hiquality' ) {
+						hiquality = ! hiquality
+						continue WHILE2
+					}*/
+					let url = `https://${ type }?text=`+ encodeURIComponent(
+						`『${ title }』をプレイしています。\nby Openノベルプレイヤー https://open-novel.github.io` )
+					window.open( url )
+					if ( capture ) {
+						layer.menuBox.prop( 'o', 0 )
+						Renderer.drawCanvas( )
+						$.download( await Renderer.toBlob( hiquality ), title )
+						layer.menuBox.prop( 'o', 1 )
+					}
+					break WHILE2
+				}
 
-			let choices = [ '本当に終了する' ].map( label => ( { label } ) )
-			let type = await sysChoices( choices, { rowLen: 4, backLabel: '戻る', color: 'green' } )
-			if ( type != $.Token.back ) {
+			} break
+			case '終了する': {
+
+				let choices = [ '本当に終了する' ].map( label => ( { label } ) )
+				let type = await sysChoices( choices, { rowLen: 4, backLabel: '戻る', color: 'green' } )
+				if ( type == $.Token.back ) break SWITCH
+				if ( type == $.Token.close ) break WHILE
 				stateList.length = 0
 				return init( )
-			}
 
-		} break
-		default: $.error( 'UnEx' )
+			} break
+			default: $.error( 'UnEx' )
+		}
 	}
 
 	//layer.fire( 'menu' )

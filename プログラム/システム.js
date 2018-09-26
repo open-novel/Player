@@ -41,7 +41,7 @@ async function play ( ctx, mode, installEvent, option ) {
 	let sound = 'off'
 	if ( mode != 'install' ) {
 
-	let text = 'openノベルプレイヤー v1.0γ_024   18/09/27\\n' +
+	let text = 'openノベルプレイヤー v1.0γ_025   18/09/27\\n' +
 		( $.TEST.mode ? `  *${ $.TEST.mode } test mode*\\n` : '　\\n' ) +
 		( option.pwa ? '【 PWA Mode 】\\n' : '' )
 
