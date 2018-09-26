@@ -13,11 +13,6 @@ let [ W, H ] = [ 1, 1 ]
 
 let layerRoot = null, colorProfile = null
 
-let HRCanvas =window.OffscreenCanvas ?
-	new OffscreenCanvas( W, H, { alpha: false } ) : document.createElement( 'canvas' )
-
-let HRCtx = HRCanvas.getContext( '2d', { alpha: false } )
-HRCtx.translate( 0.5, 0.5 )
 
 async function init ( opt ) {
 
@@ -105,11 +100,11 @@ class Node {
 	draw ( ) { }
 
 
-	drawHR ( { x, y, w, h }, style ) {
+	drawPath ( { x, y, w, h } ) {
 
-		//$.warn( 'drawHRデフォルト動作が呼ばれました' )
-		HRCtx.fillStyle = style
-		HRCtx.fillRect( x, y, w, h )
+		ctx.beginPath( )
+		ctx.rect( x, y, w, h )
+		ctx.closePath( )
 
 	}
 
@@ -215,7 +210,7 @@ export class RectangleNode extends Node {
 
 	draw ( { x, y, w, h, c } ) {
 
-		let { name, color, fill, shadow, forcused, pushed, listenerMode } = this
+		let { fill, shadow, forcused, pushed, listenerMode } = this
 		if ( ! fill && c ) fill = c
 
 		let offset = H * .01
@@ -223,42 +218,35 @@ export class RectangleNode extends Node {
 		if ( fill ) {
 			if ( pushed ) {
 				ctx.filter = 'brightness(50%)'
-				x += offset / 2, y += offset / 2
 			} else {
 				if ( shadow ) setShadow( { offset, alpha: .5 } )
 				if ( forcused && listenerMode == 'opaque' ) ctx.filter = 'brightness(150%)'
 			}
 
 			ctx.fillStyle = fill
-
-			//ctx.fillRect( x, y, w, h )
-
-			const r = 10
-			ctx.beginPath( )
-			ctx.moveTo( x, y )
-			ctx.arcTo( x + w, y, x + w, y + h, r )
-			ctx.arcTo( x + w, y + h, x, y + h, r )
-			ctx.arcTo( x, y + h, x, y, r )
-			ctx.arcTo( x, y, x + w, y, r )
+			this.drawPath( { x, y, w, h } )
 			ctx.fill( )
-
 
 		}
 
 	}
 
-	drawHR ( { x, y, w, h }, style ) {
+
+	drawPath ( { x, y, w, h } ) {
 
 		let { pushed } = this
 
 		let offset = H * .01
+		if ( pushed ) { x += offset / 2, y += offset / 2 }
 
-		if ( pushed ) {
-			x += offset / 2, y += offset / 2
-		}
-
-		HRCtx.fillStyle = style
-		HRCtx.fillRect( x|0, y|0, w|0, h|0 )
+		const r = 10
+		ctx.beginPath( )
+		ctx.moveTo( x, y )
+		ctx.arcTo( x + w, y, x + w, y + h, r )
+		ctx.arcTo( x + w, y + h, x, y + h, r )
+		ctx.arcTo( x, y + h, x, y, r )
+		ctx.arcTo( x, y, x + w, y, r )
+		ctx.closePath( )
 
 	}
 
@@ -269,27 +257,19 @@ export class PolygonNode extends Node {
 
 	draw ( { x, y, w, h, c } ) {
 
-		let { fill, shadow, path, forcused, pushed, listenerMode } = this
+		let { fill, shadow, forcused, pushed, listenerMode } = this
 		if ( ! fill && c ) fill = c
-
-		let offset = H * .01
 
 		if ( fill ) {
 			if ( pushed ) {
 				ctx.filter = 'brightness(50%)'
-				x += offset / 2, y += offset / 2
 			} else {
-				if ( shadow ) setShadow( { offset, alpha: .5 } )
+				if ( shadow ) setShadow( { offset: H * .01, alpha: .5 } )
 				if ( forcused && listenerMode == 'opaque' ) ctx.filter = 'brightness(150%)'
 			}
 
-			const r = 10
-			ctx.beginPath( )
-			//for ( let [ l, t ] of path ) ctx.lineTo( x + w * l, y + h * t )
-			ctx.moveTo( x + w * path[ path.length-1 ][ 0 ], y + h * path[ path.length-1 ][ 1 ] )
-			for ( let i = 0; i < path.length - 1; i++ ) ctx.arcTo( x + w * path[ i ][ 0 ], y + h * path[ i ][ 1 ], x + w * path[ i+1 ][ 0 ], y + h * path[ i+1 ][ 1 ], r )
-			ctx.arcTo( x + w * path[ path.length-1 ][ 0 ], y + h * path[ path.length-1 ][ 1 ], x + w * path[ 0 ][ 0 ], y + h * path[ 0 ][ 1 ], r )
 			ctx.fillStyle = fill
+			this.drawPath( { x, y, w, h } )
 			ctx.fill( )
 
 		}
@@ -297,19 +277,20 @@ export class PolygonNode extends Node {
 
 	}
 
-	drawHR ( { x, y, w, h }, style ) {
 
-		let { pushed } = this
-		let offset = H * .01
+	drawPath ( { x, y, w, h } ) {
 
-		if ( pushed ) {
-			x += offset / 2, y += offset / 2
-		}
+		const { path, pushed } = this
 
-		HRCtx.beginPath( )
-		for ( let [ l, t ] of this.path ) HRCtx.lineTo( x + w * l |0, y + h * t |0 )
-		HRCtx.fillStyle = style
-		HRCtx.fill( )
+		const r = 10, offset = H * .01
+		if ( pushed ) { x += offset / 2, y += offset / 2 }
+
+		ctx.beginPath( )
+		//for ( let [ l, t ] of path ) ctx.lineTo( x + w * l, y + h * t )
+		ctx.moveTo( x + w * path[ path.length-1 ][ 0 ], y + h * path[ path.length-1 ][ 1 ] )
+		for ( let i = 0; i < path.length - 1; i++ ) ctx.arcTo( x + w * path[ i ][ 0 ], y + h * path[ i ][ 1 ], x + w * path[ i+1 ][ 0 ], y + h * path[ i+1 ][ 1 ], r )
+		ctx.arcTo( x + w * path[ path.length-1 ][ 0 ], y + h * path[ path.length-1 ][ 1 ], x + w * path[ 0 ][ 0 ], y + h * path[ 0 ][ 1 ], r )
+		ctx.closePath( )
 
 	}
 
@@ -685,41 +666,41 @@ export function drawCanvas ( newTime ) {
 
 
 			/*
-			let separates = [ ]
-			for ( let childnode of node.children ) {
-				let canvas = //new OffscreenCanvas( W, H )
-					document.createElement( 'canvas' )
-				canvas.width = W, canvas.height = H
-				prop.ctx = canvas.getContext( '2d' )
-				separates.push( prop.ctx )
-				draw( childnode, prop )
-			}
-
-			let buf = new Float64Array( W * H * 4 )
-
-			for ( let ctx of separates ) {
-				let data = ctx.getImageData( 0, 0, W, H ).data
-				for ( let i = 0; i < data.length; i +=4 ) {
-					let r = data[ i ], g = data[ i + 1 ], b = data[ i + 2 ], a = data[ i + 3 ] / 255
-					buf[ i ] += r * a, buf[ i + 1 ] += g * a, buf[ i + 2 ] += b * a, buf[ i + 3 ] += a
+				let separates = [ ]
+				for ( let childnode of node.children ) {
+					let canvas = //new OffscreenCanvas( W, H )
+						document.createElement( 'canvas' )
+					canvas.width = W, canvas.height = H
+					prop.ctx = canvas.getContext( '2d' )
+					separates.push( prop.ctx )
+					draw( childnode, prop )
 				}
-			}
 
-			for ( let i = 0; i < buf.length; i +=4 ) {
-				let r = buf[ i ], g = buf[ i + 1 ], b = buf[ i + 2 ], a = buf[ i + 3 ]
-				if ( a > 1 ) { buf[ i ] /= a, buf[ i + 1 ] /= a, buf[ i + 2 ] /= a, buf[ i + 3 ] = 255 }
-				else buf[ i + 3 ] *= 255
-			}
+				let buf = new Float64Array( W * H * 4 )
 
-			let image = new ImageData( new Uint8ClampedArray( buf ), W )
+				for ( let ctx of separates ) {
+					let data = ctx.getImageData( 0, 0, W, H ).data
+					for ( let i = 0; i < data.length; i +=4 ) {
+						let r = data[ i ], g = data[ i + 1 ], b = data[ i + 2 ], a = data[ i + 3 ] / 255
+						buf[ i ] += r * a, buf[ i + 1 ] += g * a, buf[ i + 2 ] += b * a, buf[ i + 3 ] += a
+					}
+				}
 
-			let canvas2 = //new OffscreenCanvas( W, H )
-				document.createElement( 'canvas' )
-			canvas2.width = W, canvas2.height = H
-			let ctx2 = canvas2.getContext( '2d' )
-			ctx2.putImageData( image, 0, 0 )
+				for ( let i = 0; i < buf.length; i +=4 ) {
+					let r = buf[ i ], g = buf[ i + 1 ], b = buf[ i + 2 ], a = buf[ i + 3 ]
+					if ( a > 1 ) { buf[ i ] /= a, buf[ i + 1 ] /= a, buf[ i + 2 ] /= a, buf[ i + 3 ] = 255 }
+					else buf[ i + 3 ] *= 255
+				}
 
-			ctx.drawImage( canvas2 , 0, 0 )
+				let image = new ImageData( new Uint8ClampedArray( buf ), W )
+
+				let canvas2 = //new OffscreenCanvas( W, H )
+					document.createElement( 'canvas' )
+				canvas2.width = W, canvas2.height = H
+				let ctx2 = canvas2.getContext( '2d' )
+				ctx2.putImageData( image, 0, 0 )
+
+				ctx.drawImage( canvas2 , 0, 0 )
 			*/
 
 		}
@@ -737,13 +718,8 @@ export function onPoint ( { type, x, y } ) {
 	layerRoot.dirty = true
 	//$.log( 'event', type, x, y )
 
-	let list = drawHRCanvas( )
-
-	let d = HRCtx.getImageData( 0, 0, W, H ).data
-	let i = ( x + y * W ) * 4
-	let id = d[ i ] * 256**2 + d[ i + 1 ] * 256 + d[ i + 2 ]
-
-	let node = list[ id ]
+	let node = isPointInPath( x, y )
+	//$.log( node && node.name )
 	if ( ! node ) return
 
 	//$.log( type, id, node )
@@ -813,27 +789,25 @@ export function onPoint ( { type, x, y } ) {
 function refreshCanvasSize( ) {
 
 	let wrapper = DPCanvas.parentElement
-	let { width, height } = DPCanvas.getBoundingClientRect( )
+	let { width } = DPCanvas.getBoundingClientRect( )
 	if ( W != width ) {
 		//if ( width * 9 > height * 16 ) width = height * 16 / 9 | 0
-		DPCanvas.width = HRCanvas.width = W = width | 0
-		DPCanvas.height = HRCanvas.height = H = W * 9 / 16 + .5 | 0
+		DPCanvas.width  = W = width | 0
+		DPCanvas.height = H = W * 9 / 16 + .5 | 0
 		//wrapper.style.width = `${ W }px`
 		wrapper.style.height = `${ H }px`
 	}
 
 }
-function drawHRCanvas( ) {
+function isPointInPath( x, y ) {
 
 	refreshCanvasSize( )
 
-	HRCtx.clearRect( 0, 0, W, H )
+	let target = searchPointIn( layerRoot, { x: 0, y: 0, w: W, h: H } )
+	ctx.beginPath( )
+	return target
 
-	let listenerModeList = [ ]
-
-	drawHR( layerRoot, { x: 0, y: 0, w: W, h: H }, 0 )
-
-	function drawHR ( node, base, id ) {
+	function searchPointIn ( node, base ) {
 
 		let prop = {
 			x: base.x + node.x * base.w,
@@ -842,27 +816,29 @@ function drawHRCanvas( ) {
 			h: base.h * node.h,
 		}
 
-		if (  ! node.o ) return id
-		if ( node.listenerMode ) {
+		if ( ! node.o ) return null
 
-			listenerModeList[ ++id ] = node
-			//HRCtx.save( )
-			node.drawHR( prop, `rgb(${ id/256**2|0 }, ${ (id/256|0)%256 }, ${ id%256 })` )
-			//HRCtx.restore( )
-			//$.log( 'draw', id, node, listenerModeList )
+		let target = null
+
+		node.drawPath( prop )
+		if ( ctx.isPointInPath( x, y ) ) {	
+
+			if ( node.listenerMode ) target = node
+			for ( let childnode of node.children ) {
+				let res = searchPointIn( childnode, prop )
+				if ( res ) target = res
+			}
+		
 		}
 
-		for ( let childnode of node.children ) { id = drawHR( childnode, prop, id ) }
+		return target
 
-		return id
 	}
-
-	return listenerModeList
 
 }
 
-
-function setShadow ( { offset, alpha = .9, blur = 5 } ) {
+  
+ function setShadow ( { offset, alpha = .9, blur = 5 } ) {
 	ctx.shadowOffsetX = ctx.shadowOffsetY = offset
 	ctx.shadowColor = `rgba( 0, 0, 0, ${ alpha } )`
 	ctx.shadowBlur = blur

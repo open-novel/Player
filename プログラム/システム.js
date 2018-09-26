@@ -41,7 +41,7 @@ async function play ( ctx, mode, installEvent, option ) {
 	let sound = 'off'
 	if ( mode != 'install' ) {
 
-	let text = 'openノベルプレイヤー v1.0γ_012   18/09/26\\n' +
+	let text = 'openノベルプレイヤー v1.0γ_016   18/09/26\\n' +
 		( $.TEST.mode ? `  *${ $.TEST.mode } test mode*\\n` : '　\\n' ) +
 		( option.pwa ? '【 PWA Mode 】\\n' : '' )
 
@@ -160,7 +160,7 @@ async function playSystemOpening ( mode ) {
 
 	WHILE: while ( true ) {
 
-		Action.sysMessage( `【${ title }】\\n開始メニュー`, 100 )
+		Action.sysMessage( `作品名：『 ${ title || '--------' } 』\\n開始メニュー`, 100 )
 		let sel = await Action.sysChoices( menuList, { backLabel: '戻る' } )
 		$.log( sel )
 
