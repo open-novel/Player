@@ -41,7 +41,7 @@ async function play ( ctx, mode, installEvent, option ) {
 	let sound = 'off'
 	if ( mode != 'install' ) {
 
-	let text = 'openノベルプレイヤー v1.0γ_017   18/09/26\\n' +
+	let text = 'openノベルプレイヤー v1.0γ_019   18/09/27\\n' +
 		( $.TEST.mode ? `  *${ $.TEST.mode } test mode*\\n` : '　\\n' ) +
 		( option.pwa ? '【 PWA Mode 】\\n' : '' )
 
@@ -86,10 +86,11 @@ async function play ( ctx, mode, installEvent, option ) {
 		if ( mode == 'install' ) return
 
 		await Action.initAction( settings )
-		Action.setMenuVisible( false )
-		if ( res == 'error' ) await Action.sysMessage( '問題が発生しました', 50 )
-		else await Action.sysMessage( '再生が終了しました', 50 )
-
+		
+		Action.setMenuVisible( true )
+		if ( res == 'error' ) Action.sysMessage( '問題が発生しました', 50 )
+		else Action.sysMessage( '再生が終了しました', 50 )
+		await Action.sysChoices( [ ], { backLabel: '作品選択へ' } )
 
 	}
 }
@@ -143,9 +144,9 @@ async function playSystemOpening ( mode ) {
 
 	if ( mode == 'install' ) {
 		let success = await installScenario( index, 'リンクから' )
-		if ( success ) Action.sysMessage( 'インストールが完了しました', 100 )
+		if ( success == $.Token.success ) Action.sysMessage( 'インストールが完了しました', 100 )
 		else Action.sysMessage( 'インストールできませんでした', 100 )
-		await Action.sysChoices( [ ], { backLabel: '戻る' } )
+		await Action.sysChoices( [ ], { backLabel: 'リセットする' } )
 		location.hash = ''
 		location.reload( )
 		await $.neverDone
@@ -349,7 +350,7 @@ async function installScenario ( index, sel ) {
 					files = await unpackFile( data.file )
 				} break
 				default: {
-					return $.Token.back
+					return $.Token.failure
 				}
 			}
 
