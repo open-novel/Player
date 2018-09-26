@@ -37,7 +37,7 @@ export async function play ( settings, state, _others = others ) {
 
 	let startScenario = String( settings[ '開始シナリオ' ] || title )
 
-	let text = await DB.getFile( `${ origin }/${ title }/シナリオ/${ startScenario }` )
+	let text = await DB.getFile( `${ origin }${ title }/シナリオ/${ startScenario }` )
 
 	let scenario = await Scenario.parse( text, startScenario )
 
