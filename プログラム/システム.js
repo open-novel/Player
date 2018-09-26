@@ -41,7 +41,7 @@ async function play ( ctx, mode, installEvent, option ) {
 	let sound = 'off'
 	if ( mode != 'install' ) {
 
-	let text = 'openノベルプレイヤー v1.0γ_021   18/09/27\\n' +
+	let text = 'openノベルプレイヤー v1.0γ_022   18/09/27\\n' +
 		( $.TEST.mode ? `  *${ $.TEST.mode } test mode*\\n` : '　\\n' ) +
 		( option.pwa ? '【 PWA Mode 】\\n' : '' )
 
@@ -240,7 +240,7 @@ async function showSysMenu ( ) {
 
 		case $.Token.back:
 		case $.Token.close:
-			return
+			return sel
 
 		case 'データ使用状況': {
 
@@ -299,7 +299,7 @@ async function installScenario ( index, sel ) {
 
 		case $.Token.back:
 		case $.Token.close:
-			return $.Token.back
+			return sel
 
 		case 'フォルダから': {
 
