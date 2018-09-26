@@ -121,7 +121,7 @@ async function playSystemOpening ( mode ) {
 
 	let cho = await Action.sysChoices( titleList, { menuType: 'open' } )
 
-	if ( cho == $.Token.menu ) {
+	if ( cho == $.Token.close ) {
 		await showSysMenu( )
 		return playSystemOpening( mode )
 	}
@@ -160,14 +160,14 @@ async function playSystemOpening ( mode ) {
 
 	WHILE: while ( true ) {
 
-		Action.sysMessage( '開始メニュー', 100 )
+		Action.sysMessage( `【${ title }】\\n開始メニュー`, 100 )
 		let sel = await Action.sysChoices( menuList, { backLabel: '戻る' } )
 		$.log( sel )
 
 		SWITCH: switch ( sel ) {
 
-			case null:
-			case $.Token.menu:
+			case $.Token.back:
+			case $.Token.close:
 				break WHILE
 
 			case '初めから':
@@ -176,8 +176,9 @@ async function playSystemOpening ( mode ) {
 			case '続きから': {
 
 				let state = await Action.showSaveLoad( { title, isLoad: true, settings, others } )
-				if ( state === $.Token.cancel ) break SWITCH
-				if ( state === $.Token.menu ) return playSystemOpening( mode )
+				if ( state === $.Token.back ) break SWITCH
+				if ( state === $.Token.close ) break WHILE
+				$.assert( typeof state == 'object' )
 				return Action.play( settings, state, others )
 				//return playSystemOpening( mode )
 
@@ -186,8 +187,9 @@ async function playSystemOpening ( mode ) {
 
 				let jump = await Action.showMarkLoad( { settings } )
 				//let jump = prompt( '開始先を次の形式で入力してください\nシナリオ名#マーク名', '#' )
-				if ( jump === null || jump == $.Token.cancel ) break SWITCH
-				if ( jump == $.Token.menu ) break WHILE
+				if ( jump == $.Token.back ) break SWITCH
+				if ( jump == $.Token.close ) break WHILE
+				$.assert( typeof jump == 'string' )
 				others.jump = jump.split( '#' )
 				return Action.play( settings, null, others )
 
@@ -195,11 +197,16 @@ async function playSystemOpening ( mode ) {
 			case 'インストール': {
 
 				let success = await installScenario( index )
-				if ( success === null ) break SWITCH
-				if ( success ) await Action.sysMessage( 'インストールが完了しました', 100 )
-				else {
+				$.assert( $.isToken( success ) )
+				if ( success == $.Token.back ) break SWITCH
+				if ( success == $.Token.close ) break WHILE
+				if ( success == $.Token.success ) {
+					Action.sysMessage( 'インストールが完了しました', 100 )
+					await Action.sysChoices( [ ], { backLabel: '戻る' } )
+				}
+				if ( success == $.Token.failure ) {
 					Action.sysMessage( 'インストールできませんでした', 100 )
-					Action.sysChoices( [ ], { backLabel: '戻る' } )
+					await Action.sysChoices( [ ], { backLabel: '戻る' } )
 				}
 				return playSystemOpening( mode )
 
@@ -229,8 +236,8 @@ async function showSysMenu ( ) {
 
 	SWITCH: switch ( sel ) {
 
-		case null:
-		case $.Token.menu:
+		case $.Token.back:
+		case $.Token.close:
 			return
 
 		case 'データ使用状況': {
@@ -249,8 +256,8 @@ async function showSysMenu ( ) {
 
 				let choices =  persisted ? [ ] : [ 'データの永続的な保存をリクエストする' ]
 				let sel = await Action.sysChoices( choices, { backLabel: '戻る', color: 'green' } )
-				if ( sel === null ) break SWITCH
-				if ( sel == $.Token.menu ) return
+				if ( sel === $.Token.back ) break SWITCH
+				if ( sel == $.Token.close ) return
 				if ( sel == 'データの永続的な保存をリクエストする' ) {
 					let success = await navigator.storage.persist( )
 					if ( success ) location.reload( )
@@ -288,14 +295,16 @@ async function installScenario ( index, sel ) {
 
 	switch ( sel ) {
 
-		case null:
-		case $.Token.menu:
-			return null
+		case $.Token.back:
+		case $.Token.close:
+			return $.Token.back
 
 		case 'フォルダから': {
 
 			Action.sysMessage( 'フォルダを選んで下さい' )
 			files = await fileSelect( { folder: true } )
+			if ( files == $.Token.back ) return installScenario( index )
+			if ( $.isToken( files ) ) return files
 			origin = 'local/'
 
 		} break
@@ -303,8 +312,8 @@ async function installScenario ( index, sel ) {
 
 			Action.sysMessage( 'Zipファイルを選んで下さい' )
 			files = await fileSelect( )
-			if ( files == null ) return null
-			if ( ! files ) return false
+			if ( files == $.Token.back ) return installScenario( index )
+			if ( $.isToken( files ) ) return files
 			files = await unpackFile( files[ 0 ] )
 			origin = 'local/'
 
@@ -315,7 +324,7 @@ async function installScenario ( index, sel ) {
 			+'\\n作品のリンクをクリックするとここへインストールできます' )
 
 			await Action.sysChoices( [ ], { backLabel: '戻る' } )
-			return null
+			return $.Token.back
 
 
 		} break
@@ -323,23 +332,23 @@ async function installScenario ( index, sel ) {
 
 			Action.sysMessage( 'ダウンロード中……' )
 			let data = await player.on( 'install', true )
-			if ( ! data ) return false
+			if ( ! data ) return $.Token.failure
 			if ( data.url ) origin = new URL( data.url ).origin + '/'
 			switch ( data.type ) {
 				case 'install-folder': {
-					if ( ! data.title ) return false
+					if ( ! data.title ) return $.Token.failure
 					files = await collectScenarioFiles( data ).catch( e => {
 						$.hint( '取得できないファイルがありました' )
 						$.error( e )
-						return false
+						return $.Token.failure
 					} )
 				} break
 				case 'install-packed': {
-					if ( ! data.file ) return false
+					if ( ! data.file ) return $.Token.failure
 					files = await unpackFile( data.file )
 				} break
 				default: {
-					return null
+					return $.Token.back
 				}
 			}
 
@@ -347,13 +356,13 @@ async function installScenario ( index, sel ) {
 		default : throw 'UnEx'
 	}
 
-	if ( ! files ) return false
+	if ( ! files ) return $.Token.failure
 
 
 	async function unpackFile ( zip ) {
-		if ( ! zip ) return null
+		if ( ! zip ) return $.Token.failure
 		let data = ( await Archive.unpackFile( zip ) ).data
-		if ( ! data ) return null
+		if ( ! data ) return $.Token.failure
 		return data.map( f => new File( [ f.data ], f.name, { type: f.type } ) )
 	}
 
@@ -450,8 +459,9 @@ async function installScenario ( index, sel ) {
 		let files = await (new Action.Trigger).stepOr(
 			player.on( 'file' ), Action.sysChoices( [ ], { backLabel: '戻る' } )
 		)
-		if ( files != null ) return Array.from( files )
-		else return null
+		if ( $.isToken( files ) ) return files
+		if ( files ) return Array.from( files )
+		else return $.Token.failure
 	}
 
 	Action.sysMessage( 'インストールしています……' )
@@ -515,7 +525,7 @@ async function installScenario ( index, sel ) {
 
 	//$.log( firstScnario )
 
-	return true
+	return $.Token.success
 
 }
 

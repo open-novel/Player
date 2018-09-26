@@ -27,10 +27,14 @@ export const info	= logEnabled ? console.info .bind( console ) : NOP
 export const warn	= logEnabled ? console.warn .bind( console ) : NOP
 export const error	= logEnabled ? console.error.bind( console ) : NOP
 export const hint	= console.info.bind( console )
+export const assert = console.assert.bind( console )
+
 
 export const Token = [
-	'back', 'next', 'cancel', 'menu'
-].reduce( ( obj, key ) => { obj[ key ] = Symbol( ); return obj }, { } )
+	'back', 'next', 'close', 'success', 'failure'
+].reduce( ( obj, key ) => { obj[ key ] = Symbol( key ); return obj }, Object.create( null ) )
+
+export function isToken ( val ) { return !! Object.values( Token ).includes( val ) }
 
 
 export const neverDone = new Promise( NOP )

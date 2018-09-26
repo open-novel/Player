@@ -130,9 +130,9 @@ export async function showSaveLoad ( { layer, title, isLoad = false, color } ) {
 		if ( isLoad && page == totalPageNo - 1 ) nextLabel = 'オート'
 
 		let index = await sysChoices( choices, { backLabel, currentLabel, nextLabel, color } )
-		if ( index === null ) page --
+		if ( index === $.Token.back ) page --
 		else if ( index == $.Token.next ) page ++
-		else if ( index == $.Token.menu ) return index
+		else if ( index == $.Token.close ) return $.Token.close
 		else {
 			if ( isLoad ) {
 				return await DB.loadState( title, index )
@@ -143,7 +143,7 @@ export async function showSaveLoad ( { layer, title, isLoad = false, color } ) {
 			}
 		}
 	}
-	return $.Token.cancel
+	return $.Token.back
 }
 
 
@@ -151,7 +151,7 @@ export async function showMarkLoad ( { settings } ) {
 
 	let markList = settings.marks
 
-	if ( ( ! markList ) || ( ! markList.length ) ) return $.Token.cancel
+	if ( ( ! markList ) || ( ! markList.length ) ) return $.Token.back
 
 	let page = 1
 	let visibleTileNo = 10
@@ -185,12 +185,13 @@ export async function showMarkLoad ( { settings } ) {
 		let nextLabel = page < totalPageNo ? nextName : ''
 
 		let mark = await sysChoices( choices, { backLabel, currentLabel, nextLabel, rowLen: 5 } )
-		if ( mark === null ) page --
+		if ( mark === $.Token.back ) page --
 		else if ( mark == $.Token.next ) page ++
-		else if ( mark == $.Token.menu ) return mark
+		else if ( mark == $.Token.close ) return $.Token.close
 		else return `${ name }#${ mark }`
 	}
-	return $.Token.cancel
+
+	return $.Token.back
 }
 
 
@@ -214,8 +215,8 @@ async function showMenu ( layer ) {
 
 	SWITCH: switch ( type ) {
 
-		case null:
-		case $.Token.menu:
+		case $.Token.back:
+		case $.Token.close:
 
 		break;
 		case 'セーブ': {
@@ -227,7 +228,7 @@ async function showMenu ( layer ) {
 
 			let state = await showSaveLoad( { title, settings, isLoad: true, color: 'green' } )
 			$.log( state )
-			if ( state != $.Token.cancel ) {
+			if ( state != $.Token.back ) {
 				stateList = [ state ]
 				return init( )
 			}
@@ -246,8 +247,8 @@ async function showMenu ( layer ) {
 					'Pawoo (Pixiv)': 'pawoo.net/share',
 				} ).map( ( [ key, value ] ) => ( { label: key, value } ) )
 				let type = await sysChoices( choices, { rowLen: 5, backLabel: '戻る', color: 'green' } )
-				if ( type === null ) break WHILE
-				if ( type == $.Token.menu ) break SWITCH
+				if ( type === $.Token.back ) break WHILE
+				if ( type == $.Token.close ) break SWITCH
 				if ( type == 'capture' ) {
 					capture = ! capture
 					continue WHILE
@@ -274,7 +275,7 @@ async function showMenu ( layer ) {
 
 			let choices = [ '本当に終了する' ].map( label => ( { label } ) )
 			let type = await sysChoices( choices, { rowLen: 4, backLabel: '戻る', color: 'green' } )
-			if ( type != null ) {
+			if ( type != $.Token.back ) {
 				stateList.length = 0
 				return init( )
 			}
@@ -674,7 +675,7 @@ export async function showChoices ( { layer, choices, inputBox = layer.menuSubBo
 		textArea.set( label )
 	}
 
-	if ( menuEnebled ) nextClicks.push( layer.on( 'menu' ).then( ( ) => $.Token.menu ) )
+	if ( menuEnebled ) nextClicks.push( layer.on( 'menu' ).then( ( ) => $.Token.close ) )
 
 	let { backButton, nextButton } = layer
 
@@ -689,7 +690,7 @@ export async function showChoices ( { layer, choices, inputBox = layer.menuSubBo
 	if ( backLabel ) {
 		layer.backLabel.set( backLabel )
 		backButton.show( )
-		nextClicks.push( backButton.on( 'click' ).then( ( ) => null ) )
+		nextClicks.push( backButton.on( 'click' ).then( ( ) => $.Token.back ) )
 	}
 
 	if ( currentLabel ) {
