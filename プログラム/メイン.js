@@ -115,7 +115,7 @@ async function main( ) {
 	} )
 
 	window.addEventListener( 'message', e => {
-		Player.onMessage( Object.assign( { port: e.ports[ 0 ] } ), e.data )
+		Player.onMessage( Object.assign( { port: e.ports[ 0 ] }, e.data ) )
 	} )
 
 	if ( window.opener ) {
