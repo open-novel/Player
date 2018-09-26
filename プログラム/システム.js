@@ -41,7 +41,7 @@ async function play ( ctx, mode, installEvent, option ) {
 	let sound = 'off'
 	if ( mode != 'install' ) {
 
-	let text = 'openノベルプレイヤー v1.0γ_019   18/09/27\\n' +
+	let text = 'openノベルプレイヤー v1.0γ_020   18/09/27\\n' +
 		( $.TEST.mode ? `  *${ $.TEST.mode } test mode*\\n` : '　\\n' ) +
 		( option.pwa ? '【 PWA Mode 】\\n' : '' )
 
@@ -67,7 +67,7 @@ async function play ( ctx, mode, installEvent, option ) {
 					Action.sysMessage(
 						'ブラウザの準備が整っていなかったため'
 						+'\\nインストールできませんでした' )
-					await $.timeout( 3000 )
+					await Action.sysChoices( [ ], { backLabel: '戻る' } )
 				}
 				continue WHILE
 			}
