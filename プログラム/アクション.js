@@ -219,6 +219,7 @@ async function showMenu ( layer ) {
 
 			case $.Token.back:
 			case $.Token.close:
+				break WHILE
 
 			break;
 			case 'セーブ': {

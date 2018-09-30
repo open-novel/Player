@@ -467,6 +467,7 @@ function initLayer ( ) {
 					}
 				]
 			},
+
 			{
 				type: GroupNode, name: 'menuBox', listenerMode: 'block',
 				//fill: 'rgba( 255, 255, 255, 0 )',
@@ -735,7 +736,7 @@ export function onPoint ( { type, x, y } ) {
 
 		switch ( type ) {
 			case 'move': {
-				if( pointer.delete( node ) ) break
+				if ( pointer.delete( node ) ) break
 				node.fire( 'enter' )
 				node.forcused = true
 
@@ -751,7 +752,7 @@ export function onPoint ( { type, x, y } ) {
 			case 'up': {
 				node.fire( 'up' )
 				node.pushed = false
-				if( pointer.delete( node ) ) {
+				if ( pointer.delete( node ) ) {
 					let time = timers.get( node ).get( )
 					if ( time < 500 ) node.fire( 'click' )
 					else { layerRoot.fire( 'menu' ); break W }
