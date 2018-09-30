@@ -3,8 +3,6 @@ These codes are licensed under CC0.
 http://creativecommons.org/publicdomain/zero/1.0
 */
 
-export let TEST = { mode: '' }
-
 //const metaurl = import.meta.url  // eslint-disable-line-parsing
 //const baseurl = new URL( '../', metaurl ).href  // eslint-disable-line
 const baseurl = new URL( '/Player/', location.href ).href
@@ -21,7 +19,7 @@ function checkLogEnabled( ) {
 }
 
 const NOP = ( ) => { }
-window.logBuffer = [ ]
+
 export const log	= logEnabled ? console.log  .bind( console ) : NOP
 export const info	= logEnabled ? console.info .bind( console ) : NOP
 export const warn	= logEnabled ? console.warn .bind( console ) : NOP
@@ -30,11 +28,17 @@ export const hint	= console.info.bind( console )
 export const assert = console.assert.bind( console )
 
 
+export let Experiments = { VR: false }
+
+
 export const Token = [
 	'back', 'next', 'close', 'success', 'failure'
 ].reduce( ( obj, key ) => { obj[ key ] = Symbol( key ); return obj }, Object.create( null ) )
 
 export function isToken ( val ) { return !! Object.values( Token ).includes( val ) }
+
+
+export function clone ( obj ) { return JSON.parse( JSON.stringify( obj ) ) }
 
 
 export const neverDone = new Promise( NOP )

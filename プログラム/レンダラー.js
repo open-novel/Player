@@ -148,7 +148,7 @@ class Node {
 
 		let parent = this.parent
 		this.remove( )
-		let node = new this.constructor( Object.assign( { }, this ) )
+		let node = new this.constructor( this )
 		parent.append( node )
 		return node
 
@@ -157,7 +157,7 @@ class Node {
 	fire ( type ) {
 
 		//$.log( 'fire', type )
-		if ( type == 'click' && this.event ) layerRoot.fire( this.event )
+		if ( type == 'click' && this.event ) onAction( this.event )
 		this.awaiter.fire( type, true )
 
 	}
@@ -210,7 +210,7 @@ export class RectangleNode extends Node {
 
 	draw ( { x, y, w, h, c } ) {
 
-		let { fill, shadow, forcused, pushed, listenerMode } = this
+		let { fill, shadow, forcused, pushed } = this
 		if ( ! fill && c ) fill = c
 
 		let offset = H * .01
@@ -220,7 +220,7 @@ export class RectangleNode extends Node {
 				ctx.filter = 'brightness(50%)'
 			} else {
 				if ( shadow ) setShadow( { offset, alpha: .5 } )
-				if ( forcused && listenerMode == 'opaque' ) ctx.filter = 'brightness(150%)'
+				if ( forcused ) ctx.filter = 'brightness(150%)'
 			}
 
 			ctx.fillStyle = fill
@@ -236,10 +236,10 @@ export class RectangleNode extends Node {
 
 		let { pushed } = this
 
-		let offset = H * .01
+		const r = H * .02, offset = H * .01
+		
 		if ( pushed ) { x += offset / 2, y += offset / 2 }
 
-		const r = 10
 		ctx.beginPath( )
 		ctx.moveTo( x, y )
 		ctx.arcTo( x + w, y, x + w, y + h, r )
@@ -257,7 +257,8 @@ export class PolygonNode extends Node {
 
 	draw ( { x, y, w, h, c } ) {
 
-		let { fill, shadow, forcused, pushed, listenerMode } = this
+		let { fill, shadow, forcused, pushed } = this
+
 		if ( ! fill && c ) fill = c
 
 		if ( fill ) {
@@ -265,7 +266,7 @@ export class PolygonNode extends Node {
 				ctx.filter = 'brightness(50%)'
 			} else {
 				if ( shadow ) setShadow( { offset: H * .01, alpha: .5 } )
-				if ( forcused && listenerMode == 'opaque' ) ctx.filter = 'brightness(150%)'
+				if ( forcused ) ctx.filter = 'brightness(150%)'
 			}
 
 			ctx.fillStyle = fill
@@ -282,7 +283,7 @@ export class PolygonNode extends Node {
 
 		const { path, pushed } = this
 
-		const r = 10, offset = H * .01
+		const r = H * .015, offset = H * .01
 		if ( pushed ) { x += offset / 2, y += offset / 2 }
 
 		ctx.beginPath( )
@@ -350,7 +351,9 @@ export class DecoTextNode extends Node {
 
 	add ( deco ) { this.decoList.push( deco ); layerRoot.dirty = true }
 
-	clear ( ) { this.decoList.length = 0; layerRoot.dirty = true }
+	put ( list ) { this.decoList = list; layerRoot.dirty = true }
+
+	clear ( ) { this.decoList = [ ]; layerRoot.dirty = true }
 
 	draw ( { x, y, w, h } ) {
 
@@ -458,25 +461,23 @@ function initLayer ( ) {
 				]
 			},
 			{
-				type: GroupNode, name: 'inputBox',
-				//fill: 'rgba( 255, 255, 255, 0 )',
+				type: RectangleNode, name: 'logBox', listenerMode: 'opaque',
+				o: 0, x: .1, y: .04, w: .8, h: .65, fill: 'rgba( 50, 50, 50, .9 )',
 				children: [
 					{
-						type: RectangleNode, name: 'inputSubBox', listenerMode: 'block',
-						o: 0, x: .1, y: .04, w: .8, h: .65,
-					}
-				]
-			},
-
-			{
-				type: GroupNode, name: 'menuBox', listenerMode: 'block',
-				//fill: 'rgba( 255, 255, 255, 0 )',
-				children: [
-					{
-						type: RectangleNode, name: 'menuSubBox',
-						o: 0, x: .1, y: .04, w: .8, h: .65,
+						type: DecoTextNode, name: 'logArea',
+						x: .05, w: .9, y: .05, size: .05, fill: 'rgba( 255, 255, 200, .9 )'
 					},
 				]
+			},
+			{
+				type: RectangleNode, name: 'inputBox', listenerMode: 'block',
+				o: 0, x: .1, y: .04, w: .8, h: .65,
+			},
+			{
+				type: RectangleNode, name: 'menuBox', listenerMode: 'block',
+				o: 0, x: .1, y: .04, w: .8, h: .65,
+
 			},
 			{
 				type: GroupNode, name: 'buttonGroup',
@@ -545,9 +546,9 @@ function initLayer ( ) {
 
 	colorProfile = {
 		blue: {
-			$subBox: 'rgba( 75, 75, 100, .5 )',
-			inputSubBox: '$subBox',
-			menuSubBox: '$subBox',
+			$box: 'rgba( 75, 75, 100, .5 )',
+			inputBox: '$box',
+			menuBox: '$box',
 			$button: 'rgba( 100, 100, 255, .8 )',
 			backButton: '$button',
 			nextButton: '$button',
@@ -559,9 +560,9 @@ function initLayer ( ) {
 			choiceText: 'rgba( 255, 255, 255, .9 )'
 		},
 		green: {
-			$subBox: 'rgba( 75, 100, 85, .5 )',
-			inputSubBox: '$subBox',
-			menuSubBox: '$subBox',
+			$box: 'rgba( 75, 100, 85, .5 )',
+			inputBox: '$box',
+			menuBox: '$box',
 			$button: 'rgba( 75, 200, 100, .8 )',
 			backButton: '$button',
 			nextButton: '$button',
@@ -579,6 +580,15 @@ function initLayer ( ) {
 }
 
 
+
+export async function requestVR( ) { 
+	let disp = navigator.getVRDisplays ? await navigator.getVRDisplays( )[ 0 ] : null
+	if ( ! disp ) return $.Token.failure
+	disp.requestPresent( [ { source: ctx.canvas } ] )
+	return $.Token.success
+
+}
+
 let oldTime = performance.now( )
 export function drawCanvas ( newTime ) {
 
@@ -595,7 +605,7 @@ export function drawCanvas ( newTime ) {
 		//ctx.fillColor = 'rgba( 0, 0, 0, 1 )'
 		ctx.clearRect( 0, 0, W, H )
 
-		if ( $.TEST.mode != 'VR' ) {
+		if ( ! $.Experiments.VR ) {
 			draw( layerRoot, { ctx, x: 0, y: 0, w: W, h: H, o: 1 } )
 		} else {
 			ctx.save( )
@@ -711,13 +721,20 @@ export function drawCanvas ( newTime ) {
 }
 
 
+
+export function onAction ( type ) {
+
+	return onPoint( { type, x: W/2, y: H/2  } )
+
+}
+
+
 let pointers = { }, timers = new WeakMap
 export function onPoint ( { type, x, y } ) {
 
 	if ( ! ctx ) return
 
 	layerRoot.dirty = true
-	//$.log( 'event', type, x, y )
 
 	let node = isPointInPath( x, y )
 	//$.log( node && node.name )
@@ -730,7 +747,6 @@ export function onPoint ( { type, x, y } ) {
 	W: do {
 
 		if ( ! node.listenerMode ) continue
-		if ( node.listenerMode == 'block' ) break
 
 		newPointer.add( node )
 
@@ -738,7 +754,8 @@ export function onPoint ( { type, x, y } ) {
 			case 'move': {
 				if ( pointer.delete( node ) ) break
 				node.fire( 'enter' )
-				node.forcused = true
+				if ( node.listenerMode && node.listenerMode != 'block' )
+					node.forcused = true
 
 			} break
 			case 'down': {
@@ -755,15 +772,16 @@ export function onPoint ( { type, x, y } ) {
 				if ( pointer.delete( node ) ) {
 					let time = timers.get( node ).get( )
 					if ( time < 500 ) node.fire( 'click' )
-					else { layerRoot.fire( 'menu' ); break W }
+					else { onAction( 'menu' ); break W }
 				}
 			} break
 			default : {
-				$.error( '期待されていない値' )
+				$.log( 'event', type, node.name, x, y )
+				node.fire( type )
 			}
 		}
 
-		if ( node.listenerMode == 'opaque' ) break
+		if ( node.listenerMode == 'opaque' || node.listenerMode == 'block' ) break
 
 	} while ( node = node.parent )
 

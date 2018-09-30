@@ -11,7 +11,7 @@ import * as DB from './データベース.js'
 
 
 
-let nowLayer, settings, trigger, others, stateList = [ ]
+let nowLayer, settings, trigger, others, stateList = [ ], messageLog = [ ]
 
 
 export async function init ( _settings = settings ) {
@@ -23,7 +23,8 @@ export async function init ( _settings = settings ) {
 	if ( oldLayer ) oldLayer.fire( 'dispose' )
 	trigger = new Trigger
 	layer.on( 'menu' ).then( ( ) => showMenu( layer ) )
-	setMenuVisible( false, layer )
+	layer.on( 'back' ).then( ( ) => showLog( layer ) )
+	messageLog = [ ]
 	await Sound.initSound( settings )
 
 }
@@ -73,8 +74,10 @@ const frame = new $.Awaiter
 const action = new $.Awaiter
 export function onAction ( type ) {
 
-	$.log( type )
-	action.fire( type, true )
+	//$.log( type )
+	//action.fire( type, true )
+	Renderer.onAction( type )
+
 }
 
 
@@ -82,7 +85,8 @@ export async function onPoint ( { type, button, x, y } ) {
 
 	if ( button == 'middle' ) return
 	if ( button == 'right' ) {
-		if ( type == 'up' ) nowLayer.fire( 'menu' )
+		if ( type == 'up' ) //nowLayer.fire( 'menu' )
+			Renderer.onAction( 'menu' )
 		return
 	}
 	Renderer.onPoint( { type, x, y } )
@@ -97,21 +101,13 @@ export class Trigger {
 	stepOr ( ...awaiters ) {
 		if ( isOldLayer( this.layer ) ) return $.neverRun( )
 		return Promise.race(
-			[ this.layer.on( 'click' ), action.on( 'next' ), ...awaiters ] )
+			[ this.layer.on( 'click' ), this.layer.on( 'next' ), ...awaiters ] )
 	}
 	stepOrFrameupdate ( ) { return this.stepOr( frame.on( 'update' ) ) }
 	stepOrTimeout ( ms ) { return this.stepOr( $.timeout( ms ) ) }
 
 }
 
-
-export function setMenuVisible ( flag, layer = nowLayer ) {
-
-	layer.menuSubBox.removeChildren( )
-	if ( flag ) layer.menuBox.show( )
-	else layer.menuBox.hide( )
-
-}
 
 
 export async function showSaveLoad ( { layer, title, isLoad = false, color } ) {
@@ -195,21 +191,50 @@ export async function showMarkLoad ( { settings } ) {
 }
 
 
+async function showLog ( layer ) {
+
+	let title = settings.title
+	if ( ! title ) return
+	
+	let { logBox, logArea } = layer
+
+	logArea.clear( )
+	logBox.show( )
+	let log = $.clone( messageLog )
+	for ( let [ i, decoList ] of log.entries( ) ) {
+		let preRow = i == 0 ? 0 : log[ i - 1 ][ log[ i - 1 ].length - 1 ].row + 1
+		for ( let deco of decoList ) deco.row += preRow
+	}
+	
+
+	logArea.put( log.flat( ) )
+
+	$.log( log.flat( ), logArea )
+
+	await sysChoices( [ ], {
+		backLabel: '戻る', color: 'green', currentLabel: '※実装途中です※'
+	} )
+
+	logBox.hide( )
+	layer.on( 'back' ).then( ( ) => showLog( layer ) )
+
+
+}
+
+
 async function showMenu ( layer ) {
 
 	let title = settings.title
 	if ( ! title ) return
 
-	setMenuVisible( true, layer )
-
 	//layer.on( 'menu' ).then( ( ) => closeMenu( layer ) )
-
-	let choices = [ 'セーブ', 'ロード', 'シェアする', '終了する' ].map( label => ( { label } ) )
-
 
 	WHILE: while ( true ) {
 
-		let type = await sysChoices( choices, { rowLen: 4, backLabel: '戻る', color: 'green' } )
+		let type = await sysChoices(
+			[ 'セーブ', 'ロード', '会話ログ', 'シェアする', '終了する' ],
+			{ rowLen: 4, backLabel: '戻る', color: 'green' }
+		)
 
 		let page = 1
 
@@ -241,7 +266,13 @@ async function showMenu ( layer ) {
 				return init( )
 
 			} break
-			case 'シェアする': {
+			case '会話ログ': {
+
+				showLog( layer )
+				break WHILE
+
+			} break
+			case 'シェア': {
 
 				let capture = false, hiquality = false
 				WHILE2: while ( true ) {
@@ -279,7 +310,7 @@ async function showMenu ( layer ) {
 				}
 
 			} break
-			case '終了する': {
+			case '終了': {
 
 				let choices = [ '本当に終了する' ].map( label => ( { label } ) )
 				let type = await sysChoices( choices, { rowLen: 4, backLabel: '戻る', color: 'green' } )
@@ -290,11 +321,12 @@ async function showMenu ( layer ) {
 
 			} break
 			default: $.error( 'UnEx' )
+
 		}
 	}
 
 	//layer.fire( 'menu' )
-	setMenuVisible( false, layer )
+
 	layer.on( 'menu' ).then( ( ) => showMenu( layer ) )
 
 }
@@ -307,9 +339,11 @@ export function isOldLayer ( layer ) {
 }
 
 
-export function sysMessage ( text, speed = Infinity ) {
+export function sysMessage ( text, speed = 100 ) {
 	return showMessage ( nowLayer, '', text, speed )
 }
+
+
 
 
 export async function showMessage ( layer, name, text, speed ) {
@@ -334,14 +368,15 @@ export async function showMessage ( layer, name, text, speed ) {
 	let len = decoList.length
 	let index = 0
 
+	let decoListPure = decoList.filter( deco => !! deco.text )
 
+	messageLog.push( decoListPure )
 
 	let time = new $.Time
 
-	if ( speed == Infinity ) {
-		for ( let deco of decoList ) messageArea.add( deco )
+	if ( speed == Infinity ) messageArea.put( decoListPure )
 
-	} else loop: while ( true ) {
+	else loop: while ( true ) {
 
 		let interrupt = await trigger.stepOrFrameupdate( )
 
@@ -640,10 +675,10 @@ export async function sysChoices ( choices, opt ) {
 }
 
 export async function scenarioChoices ( layer, choices ) {
-	return showChoices( { layer, choices, inputBox: layer.inputSubBox, menuType: 'open', menuEnebled: false } )
+	return showChoices( { layer, choices, inputBox: layer.inputBox, menuType: 'open', menuEnebled: false } )
 }
 
-export async function showChoices ( { layer, choices, inputBox = layer.menuSubBox, rowLen = 4,
+export async function showChoices ( { layer, choices, inputBox = layer.menuBox, rowLen = 4,
 	backLabel = '', currentLabel = '', nextLabel = '', menuType = 'close', menuEnebled = true,
 	color = 'blue' } ) {
 
@@ -665,7 +700,7 @@ export async function showChoices ( { layer, choices, inputBox = layer.menuSubBo
 
 		let choiceBox = new Renderer.RectangleNode( {
 			name: 'choiceBox',
-			x, y, w, h, listenerMode: 'opaque',
+			x, y, w, h, listenerMode: 'listen',
 			//disabled,
 			//fill:  'rgba( 0, 225, 255, 1 )',
 			sound: ! disabled
@@ -682,13 +717,15 @@ export async function showChoices ( { layer, choices, inputBox = layer.menuSubBo
 
 		if ( ! disabled ) nextClicks.push( choiceBox.on( 'click' ).then( ( ) => value ) )
 		textArea.set( label )
+
 	}
 
-	if ( menuEnebled ) nextClicks.push( layer.on( 'menu' ).then( ( ) => $.Token.close ) )
+	if ( menuEnebled ) nextClicks.push( inputBox.on( 'menu' ).then( ( ) => $.Token.close ) )
 
 	let { backButton, nextButton } = layer
 
 	inputBox.prop( 'color', color )
+	inputBox.fill = len != 0 ? '' : 'rgba(0,0,0,0)'
 	layer.buttonGroup.prop( 'color', color )
 
 
@@ -718,8 +755,8 @@ export async function showChoices ( { layer, choices, inputBox = layer.menuSubBo
 		layer.menuLabels[ menuType ].prop( 'o', 1 )
 	}
 
-	if ( len != 0 ) inputBox.show( )
-	let val = await Promise.race( nextClicks )
+	inputBox.show( )
+	let val = await Promise.race( nextClicks ).finally( $.log )
 
 	layer.backLabel.clear( )
 	layer.currentLabel.clear( )
@@ -743,3 +780,4 @@ export async function showChoices ( { layer, choices, inputBox = layer.menuSubBo
 
 export { playBGM, stopBGM, setMainVolume } from './サウンド.js'
 export { getFileList, getMarkList } from './シナリオ.js'
+export { requestVR } from './レンダラー.js'

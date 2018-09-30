@@ -17,17 +17,6 @@ async function init ( { ctx, mode, installEvent, option } ) {
 
 async function play ( { ctx, mode, installEvent, option } ) {
 
-	if ( mode == 'VR' ) {
-		mode = ''
-		$.TEST.mode = 'VR'
-		let btn = document.createElement( 'button' )
-		btn.innerText = 'into VR'
-		document.body.appendChild( btn )
-		btn.onclick = async ( ) => {
-			let disp = await navigator.getVRDisplays( )[ 0 ]
-			disp.requestPresent( [ { source: ctx.canvas } ] )
-		}
-	}
 
 	//let settings = await $.fetchFile( 'json', './プログラム/設定.json' )
 	let settings = { }
@@ -41,17 +30,13 @@ async function play ( { ctx, mode, installEvent, option } ) {
 	let sound = 'off'
 	if ( mode != 'install' ) {
 
-	let text = 'openノベルプレイヤー v1.0γ_031   18/09/30\\n' +
-		( $.TEST.mode ? `  *${ $.TEST.mode } test mode*\\n` : '　\\n' ) +
+	let text = 'openノベルプレイヤー v1.0γ_039   18/09/30\\n' +
 		( option.pwa ? '【 PWA Mode 】\\n' : '' )
-
-		option.pwa = false
 
 
 		WHILE: while ( true ) {
 
-			Action.sysMessage( text )
-			Action.setMenuVisible( true )
+			Action.sysMessage( text, Infinity )
 
 			let list = [
 				{ label: '🔊　サウンドONで開始する ', value: 'on' },
@@ -77,7 +62,8 @@ async function play ( { ctx, mode, installEvent, option } ) {
 				
 			} else {
 				Action.sysMessage(
-					'ブラウザの準備が整っていないか、\\n既に登録済みのため登録できませんでした' )
+					'ブラウザに認められなかったため登録できませんでした\\n' +
+					'（既に登録済みの可能性もあります）' )
 				await Action.sysChoices( [ ], { backLabel: '戻る' } )
 			}
 				continue WHILE
@@ -91,7 +77,6 @@ async function play ( { ctx, mode, installEvent, option } ) {
 
 	if ( sound == 'on' ) Action.setMainVolume( 1 )
 	else Action.setMainVolume( 0 )
-	//Action.setMenuVisible( false )
 
 	while ( true ) {
 
@@ -100,9 +85,8 @@ async function play ( { ctx, mode, installEvent, option } ) {
 
 		await Action.initAction( settings )
 		
-		Action.setMenuVisible( true )
-		if ( res == 'error' ) Action.sysMessage( '問題が発生しました', 50 )
-		else Action.sysMessage( '再生が終了しました', 50 )
+		if ( res == 'error' ) Action.sysMessage( '問題が発生しました' )
+		else Action.sysMessage( '再生が終了しました' )
 		await Action.sysChoices( [ ], { backLabel: '作品選択へ' } )
 
 	}
@@ -112,10 +96,9 @@ async function play ( { ctx, mode, installEvent, option } ) {
 async function playSystemOpening ( mode ) {
 
 	//await Action.sysBGImage( './画像/背景.png' )
-	Action.setMenuVisible( true )
 	// インストール済み作品リストをロード
-	if ( mode == 'install' )  Action.sysMessage( 'インストール先を選んで下さい', 50 )
-	else Action.sysMessage( '開始する作品を選んで下さい', 50 )
+	if ( mode == 'install' )  Action.sysMessage( 'インストール先を選んで下さい' )
+	else Action.sysMessage( '開始する作品を選んで下さい' )
 
 	//let titleList = $.parseSetting(
 	//	await $.fetchFile( 'text', '../作品/設定.txt' )
@@ -157,8 +140,8 @@ async function playSystemOpening ( mode ) {
 
 	if ( mode == 'install' ) {
 		let success = await installScenario( index, 'リンクから' )
-		if ( success == $.Token.success ) Action.sysMessage( 'インストールが完了しました', 100 )
-		else Action.sysMessage( 'インストールできませんでした', 100 )
+		if ( success == $.Token.success ) Action.sysMessage( 'インストールが完了しました' )
+		else Action.sysMessage( 'インストールできませんでした' )
 		await Action.sysChoices( [ ], { backLabel: 'リセットする' } )
 		location.hash = ''
 		location.reload( )
@@ -175,7 +158,7 @@ async function playSystemOpening ( mode ) {
 
 	WHILE: while ( true ) {
 
-		Action.sysMessage( `作品名：『 ${ title || '--------' } 』\\n開始メニュー`, 100 )
+		Action.sysMessage( `作品名：『 ${ title || '--------' } 』\\n開始メニュー` )
 		let sel = await Action.sysChoices( menuList, { backLabel: '戻る' } )
 		$.log( sel )
 
@@ -216,11 +199,11 @@ async function playSystemOpening ( mode ) {
 				if ( success == $.Token.back ) break SWITCH
 				if ( success == $.Token.close ) break WHILE
 				if ( success == $.Token.success ) {
-					Action.sysMessage( 'インストールが完了しました', 100 )
+					Action.sysMessage( 'インストールが完了しました' )
 					await Action.sysChoices( [ ], { backLabel: '作品選択へ' } )
 				}
 				if ( success == $.Token.failure ) {
-					Action.sysMessage( 'インストールできませんでした', 100 )
+					Action.sysMessage( 'インストールできませんでした' )
 					await Action.sysChoices( [ ], { backLabel: '作品選択へ' } )
 				}
 				return playSystemOpening( mode )
@@ -242,13 +225,12 @@ async function showSysMenu ( ) {
 
 	WHILE: while ( true ) {
 
-		Action.sysMessage( 'システムメニュー', 100 )
+		Action.sysMessage( 'システムメニュー' )
 
-		let menuList = [ 'データ使用状況' ].map( label => ( { label } ) )
-
-		$.disableChoiceList( [ ], menuList )
-
-		let sel = await Action.sysChoices( menuList, { backLabel: '戻る', color: 'green' } )
+		
+		let sel = await Action.sysChoices(
+			[ 'データ保存状況', '実験機能' ], { backLabel: '戻る', color: 'green' }
+		)
 
 		$.log( sel )
 
@@ -256,32 +238,33 @@ async function showSysMenu ( ) {
 
 			case $.Token.back:
 			case $.Token.close:
-				return sel
+				break WHILE
 
-			case 'データ使用状況': WHILE2: while ( true ) {
+			case 'データ保存状況': WHILE2: while ( true ) {
 
 				let { usage, quota } = await navigator.storage.estimate( )
 				let  persisted = await navigator.storage.persisted( )
-				let ratio = ( 100 * usage / quota / 1024 / 1024 ).toFixed( )
+				let ratio = ( 100 * usage / quota ).toFixed( )
 				usage = ( usage / 1024 / 1024 / 1024 ).toFixed( 1 )
 				quota = ( quota / 1024 / 1024 / 1024 ).toFixed( 1 )
 
 
 				Action.sysMessage(
-					`データ保存状況：　${ quota }GB割当済　${ usage }GB使用済　利用率${ ratio }％\\n`+
+					`データ保存状況：　${ quota }GB割当済　${ usage }GB使用済　使用率${ ratio }％\\n`+
 					`ブラウザ判断での突然の消去の可能性：　${ persisted ? '無し' : '有り' }`
+					, Infinity
 				)
 
 				let choices =  persisted ? [ ] : [ 'データの永続的な保存をリクエストする' ]
 				let sel = await Action.sysChoices( choices, { backLabel: '戻る', color: 'green' } )
-				if ( sel === $.Token.back ) break SWITCH
+				if ( sel == $.Token.back ) break SWITCH
 				if ( sel == $.Token.close ) break WHILE
 				if ( sel == 'データの永続的な保存をリクエストする' ) {
 					let success = await navigator.storage.persist( )
 					if ( success ) {
 						Action.sysMessage(
 							'次回起動時からデータが永続的に保存されるようになりました\\n' +
-							'（自然と消えることが無いだけでユーザー操作では削除できます）' +
+							'（自然と消えることが無いだけでユーザー操作では削除できます）\\n' +
 							'変更を反映させるためにプレイヤーをリセットしてください'
 						) 
 						await Action.sysChoices( [ ], { backLabel: 'リセットする', color: 'green' } )
@@ -290,19 +273,40 @@ async function showSysMenu ( ) {
 					} else {
 						Action.sysMessage(
 							'データの永続的な保存が認められませんでした\\n' +
-							'プレイヤーをPWAとして登録すると認められるかもしれません'
+							'（プレイヤーをアプリとして登録すると認められる可能性があります）'
 						) 
 						let sel = await Action.sysChoices( [
 							//'PWAとして登録する', '❔　PWAとは'
 						], { backLabel: '戻る', color: 'green' } )
-						if ( sel === $.Token.back ) continue WHILE2
+						if ( sel == $.Token.back ) continue WHILE2
 						if ( sel == $.Token.close ) break WHILE
 					}
 
 				}
 
 			} break
+			case '実験機能': WHILE2: while ( true ) {
 
+				Action.sysMessage(
+					'クリックで各機能の有効無効を切り替えられます'
+				)
+
+				let sel = await Action.sysChoices( [
+
+					{ label: `VR　(現在${ $.Experiments.VR ? '有効' : '無効' })`, value: 'VR' }
+
+				], { backLabel: '戻る', color: 'green' } )
+
+				if ( sel == $.Token.back ) break WHILE2
+				if ( sel == $.Token.close ) break WHILE
+
+				if  ( sel == 'VR' ) {
+					$.Experiments.VR = ! $.Experiments.VR
+					if ( $.Experiments.VR ) await Action.requestVR( )
+				}
+			}
+
+			break
 			default: throw 'UnEx'
 
 		}
@@ -328,7 +332,7 @@ async function installScenario ( index, sel ) {
 	}
 	$.log( sel )
 
-	//Action.setMenuVisible( false )
+
 
 	let files, origin = 'unknown/'
 

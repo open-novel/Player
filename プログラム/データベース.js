@@ -45,8 +45,8 @@ function on ( req, option ) {
 		ok = _ok
 		req.onsuccess = ( ) => ok( req.result )
 		req.oncomplete = ( ) => ok( req.result )
-		req.onerror = ( ) => ng( req.errorCode )
-		req.onabort = ( ) => ng( 'ablort' )
+		req.onerror = ( ) => ng( req.error )
+		req.onabort = ( ) => ng( 'aborted' )
 	} )
 
 }
@@ -103,6 +103,7 @@ export async function saveFiles ( data ) {
 	await on( ts )
 }
 
+
 export async function loadFile ( path ) {
 
 	let type = 'File'
@@ -111,7 +112,6 @@ export async function loadFile ( path ) {
 	$.log( `Load${ type }`, path, data )
 	return data
 }
-
 
 
 //const　cacheMap = new Map
