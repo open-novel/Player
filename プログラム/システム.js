@@ -30,7 +30,7 @@ async function play ( { ctx, mode, installEvent, option } ) {
 	let sound = 'off'
 	if ( mode != 'install' ) {
 
-	let text = 'openノベルプレイヤー v1.0γ_051   18/10/08\\n' +
+	let text = 'openノベルプレイヤー v1.0γ_052   18/10/09\\n' +
 		( option.pwa ? '【 PWA Mode 】\\n' : '' )
 
 
@@ -295,18 +295,18 @@ async function showSysMenu ( ) {
 
 				let sel = await Action.sysChoices( [
 
-					// async function * ( ) {
-					// 	if ( ! navigator.getVRDisplays ) return yield { label: `VR　(サポートされていません)`, disabled: true }
-					// 	yield { label: `VR　(デバイスの状態を確認中……)`, disabled: true }
-					// 	let disp = ( await navigator.getVRDisplays( ) )[ 0 ]
-					// 	VR.display = disp
-					// 	$.log( disp )
-					// 	if ( ! disp ) return yield { label: `VR　(デバイスが見つかりません)`, disabled: true }
-					// 	//if ( ! disp.isConnected ) return yield { label: `VR　(「${disp.displayName}」を接続してください)`, disabled: true }
-					// 	//if ( ! disp.isPresenting ) return yield { label: `VR　(現在ON：表示中)`, value: 'VR' }
-					// 	if ( VR.failureNum ) return yield { label: `VR　(現在OFF:失敗${ VR.failureNum }回)`, value: 'VR' }	
-					// 	return yield { label: `VR　(現在OFF)`, value: 'VR' }						
-					// }
+					async function * ( ) {
+						if ( ! navigator.getVRDisplays ) return yield { label: `VR　(サポートされていません)`, disabled: true }
+						yield { label: `VR　(デバイスの状態を確認中……)`, disabled: true }
+						let disp = ( await navigator.getVRDisplays( ) )[ 0 ]
+						VR.display = disp
+						$.log( disp )
+						if ( ! disp ) return yield { label: `VR　(デバイスが見つかりません)`, disabled: true }
+						//if ( ! disp.isConnected ) return yield { label: `VR　(「${disp.displayName}」を接続してください)`, disabled: true }
+						//if ( ! disp.isPresenting ) return yield { label: `VR　(現在ON：表示中)`, value: 'VR' }
+						if ( VR.failureNum ) return yield { label: `VR　(現在OFF:失敗${ VR.failureNum }回)`, value: 'VR' }	
+						return yield { label: `VR　(現在OFF)`, value: 'VR' }						
+					}
 
 				], { backLabel: '戻る', color: 'green' } )
 
