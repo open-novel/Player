@@ -12,19 +12,21 @@ import * as DB from './データベース.js'
 
 
 let nowLayer, settings, trigger, others, stateList = [ ], messageLog = [ ]
+let imageAnimes = [ ]
+
 
 
 export async function init ( _settings = settings ) {
 
 	settings = _settings
-	Object.values( cache ).forEach( map => { if ( map.clear ) map.clear( ) } )
+	//Object.values( cache ).forEach( map => { if ( map.clear ) map.clear( ) } )
 	let oldLayer = nowLayer
 	let layer = nowLayer = await Renderer.initRanderer( settings )
 	if ( oldLayer ) oldLayer.fire( 'dispose' )
 	trigger = new Trigger
 	layer.on( 'menu' ).then( ( ) => showMenu( layer ) )
 	layer.on( 'back' ).then( ( ) => showLog( layer ) )
-	messageLog = [ ]
+	messageLog = [ ], imageAnimes = [ ]
 	await Sound.initSound( settings )
 
 }
@@ -48,6 +50,7 @@ export async function play ( settings, state, _others = others ) {
 
 	do {
 		await Promise.race( [ Scenario.play( nowLayer, state, others ), nowLayer.on( 'dispose' ) ] )
+		Array.from( document.querySelectorAll( 'img' ), elm => elm.remove( ) )
 	} while ( state = stateList.shift( ) )
 
 }
@@ -62,11 +65,15 @@ export let { target: initAction, register: nextInit } = new $.AwaitRegister( ini
 
 const frame = new $.Awaiter
 ;( ( ) => {
+	let oldTime = performance.now( )
 	loop( )
-	function loop ( time ) {
-		Renderer.drawCanvas( time )
-		requestAnimationFrame( loop )
+	function loop ( newTime ) {
+		let must = imageAnimes.length > 0 || newTime - oldTime >= 500
+		Renderer.drawCanvas( must )
+		animateImages( newTime )
 		frame.fire( 'update' )
+		oldTime = newTime
+		requestAnimationFrame( loop )
 	}
 } ) ( )
 
@@ -272,7 +279,7 @@ async function showMenu ( layer ) {
 				break WHILE
 
 			} break
-			case 'シェア': {
+			case 'シェアする': {
 
 				let capture = false, hiquality = false
 				WHILE2: while ( true ) {
@@ -310,7 +317,7 @@ async function showMenu ( layer ) {
 				}
 
 			} break
-			case '終了': {
+			case '終了する': {
 
 				let choices = [ '本当に終了する' ].map( label => ( { label } ) )
 				let type = await sysChoices( choices, { rowLen: 4, backLabel: '戻る', color: 'green' } )
@@ -432,41 +439,6 @@ function decoText ( text ) {
 }
 
 
-const cache = {
-	file: new Map,
-	blob: new WeakMap,
-}
-
-async function getFile ( path ) {
-	let blob = cache.file.get( path )
-	if ( ! blob ) {
-		blob = await DB.getFile( path )
-		cache.file.set( path, blob )
-	}
-	return blob
-}
-
-function getImage ( blob ) {
-	return new Promise( ( ok, ng ) => {
-		let img = new Image
-		let url = cache.blob.get( blob )
-		if ( ! url ) {
-			url = URL.createObjectURL( blob )
-			cache.blob.set( blob, url )
-		}
-		img.onload = ( ) => {
-			if ( img.decode ) img.decode( ).then( ( ) => ok( img ), ng )
-			else ok( img )
-		}
-		img.onerror = ng
-		img.style.width = '0px'
-		img.style.height = '0px'
-		document.body.append( img )
-		img.src = url
-	} )
-}
-
-
 
 class ProgressTimer extends $.Awaiter {
 
@@ -556,6 +528,52 @@ export function removePortraits ( layer ) {
 
 
 
+async function setAnime ( image, xml ) {
+	let animates = Array.from( xml.querySelectorAll( 'animate' ), element => {
+		let dur = element.getAttribute( 'dur' )
+		if ( ! dur ) return null
+		dur = dur.match( /^(\d+)(ms|s)$/i )
+		if ( ! dur ) return null
+		let duration = dur[ 2 ] == 's' ? dur[ 1 ] * 1000 : +dur[ 1 ]
+		let values = ( element.getAttribute( 'values' ) || '' ).split( ';' )
+		if ( values.length == 0 ) return null
+		return { element, values, duration }
+	} ).filter( obj => !! obj )
+	imageAnimes.push( { xml, animates, image, baseTime: performance.now( ) } )
+}
+
+function animateImages ( time ) {
+
+	for ( let { xml, animates, image, baseTime } of imageAnimes ) {
+
+		let msec = time - baseTime
+
+		// Array.from( xml.querySelectorAll( 'animate' ), elm => {
+		// 	let begin = +( elm.getAttribute( 'begin' ) || '' ).match( /\d+|/ )[ 0 ] || 0 
+		// 	let end = +( elm.getAttribute( 'end' ) || '' ).match( /\d+|/ )[ 0 ] || 0
+		// 	elm.setAttribute( 'begin', begin - sec + 's' )
+		// 	if ( end ) elm.setAttribute( 'end', end - sec + 's' )
+		// } )
+
+		for ( let { element, values, duration } of animates ) {
+
+			
+			let index = ( ( msec / duration ) % 1 ) * values.length | 0
+			//$.log( duration, msec / duration, index, values )
+			element.setAttribute( 'values', values[ index ] )
+		}
+
+		let text = new XMLSerializer( ).serializeToString( xml )
+		let blob = new Blob( [ text ], { type: 'image/svg+xml' } )
+		//$.log( blob )
+		$.getImage( blob ).then( img => image.prop( 'img', img ) )
+
+	}
+	
+
+}
+
+
 async function showImage ( targetGroup, path, pos, kind ) {
 
 	let eff = effects[ kind ]
@@ -568,8 +586,27 @@ async function showImage ( targetGroup, path, pos, kind ) {
 	$.log( 'show???', eff.enabled )
 	let type = await eff.on( 'type', true )
 
-	let blob = await getFile( path )
-	let img = await getImage( blob )
+	let img, xml
+
+	let blob = await $.getFile( path )
+	if ( blob.type.includes( 'svg+xml' ) ) {
+		xml =  new DOMParser( ).parseFromString( await ( new Response( blob ).text( ) ) ,'image/svg+xml' )
+	}
+
+	img = await $.getImage( blob )
+
+	if ( ! xml ) {
+		img.className = 'tempImg_' + targetGroup.name
+		document.body.append( img )
+	} else {
+
+		$.log( xml )
+		if ( ! window.xml ) window.xml = [ ]
+		window.xml.push( xml )
+
+	}
+
+
 
 	$.log( 'show', type, eff, targetGroup.name )
 
@@ -591,6 +628,8 @@ async function showImage ( targetGroup, path, pos, kind ) {
 			oldPos = Object.assign( { }, image )
 		} break
 	}
+
+	if ( xml && image ) setAnime( image, xml )
 
 	$.log( { x, y, w, h, pos, oldPos, image } )
 
@@ -645,6 +684,8 @@ async function removeImages ( targetGroup, kind ) {
 
 	$.log( 'remv', type, eff, targetGroup.name )
 
+	Array.from( document.querySelectorAll( '.tempImg_' + targetGroup.name ), elm => elm.remove( ) )
+
 	switch ( type ) {
 		case 'フェード': {
 
@@ -664,6 +705,7 @@ async function removeImages ( targetGroup, kind ) {
 				if ( prog == 1 ) break
 			}
 			for ( let image of children ) { image.remove( ) }
+			//imageAnimes.length = 0
 		} break
 	}
 
@@ -693,34 +735,56 @@ export async function showChoices ( { layer, choices, inputBox = layer.menuBox, 
 
 	for ( let i = 0; i < len; i++ ) {
 		let cho = choices[ i ]
-		let { label, value = label, disabled = false } =
-			( typeof cho == 'object' ) ? cho : { label: cho }
+		let { label = '', value = label, disabled = false } =
+			( cho === Object( cho ) ) ? cho : { label: cho }
+		if ( ! label ) disabled = true
 		let row = i % rowLen, col = i / rowLen | 0
 		let [ x, y ] = [ m / 2 + ( w + m / 2 ) * col, m + ( h + m ) * row ]
 
 		let choiceBox = new Renderer.RectangleNode( {
 			name: 'choiceBox',
 			x, y, w, h, listenerMode: 'listen',
-			//disabled,
+			disabled,
 			//fill:  'rgba( 0, 225, 255, 1 )',
 			sound: ! disabled
 		} )
 		inputBox.append( choiceBox )
-		if ( disabled ) choiceBox.fill = 'rgba( 200, 200, 255, .5 )'
 
 		let textArea = new Renderer.TextNode( {
 			name: 'choiceText',
 			size: .7, y: .05, pos: 'center'
 		} )
 		choiceBox.append( textArea )
-		if ( disabled ) textArea.fill = 'rgba( 255, 255, 255, .5 )'
 
-		if ( ! disabled ) nextClicks.push( choiceBox.on( 'click' ).then( ( ) => value ) )
+		let cliced = ( ) => {
+			if ( ! choiceBox.disabled ) return value
+			else return choiceBox.on( 'click' ).then( cliced )
+		}
+
+		nextClicks.push( choiceBox.on( 'click' ).then( cliced ) )
 		textArea.set( label )
+
+		//$.log( cho )
+		if ( typeof cho == 'function' ) observe( )
+
+		async function observe( ) {
+			for await ( let obj of cho( ) ) {
+				$.log( 'obj', obj )
+				;( { label = '', value = undefined, disabled = false } = obj )
+				textArea.set( obj.label )
+				value = obj.value
+				choiceBox.disabled = disabled
+			}
+		}
 
 	}
 
-	if ( menuEnebled ) nextClicks.push( inputBox.on( 'menu' ).then( ( ) => $.Token.close ) )
+	let onMenu = ( ) => {
+		if ( menuEnebled ) return $.Token.close
+		layer.fire( 'menu' )
+		return inputBox.on( 'menu' ).then( onMenu )
+	}
+	nextClicks.push( inputBox.on( 'menu' ).then( onMenu ) )
 
 	let { backButton, nextButton } = layer
 
@@ -776,8 +840,23 @@ export async function showChoices ( { layer, choices, inputBox = layer.menuBox, 
 
 }
 
-
+export async function presentVR ( flag ) {
+	let VR = $.Settings.VR
+	if ( flag ) {
+		//let { run } = await import( './VR.js' )
+		//let glCanvas = run( settings.ctx.canvas )
+		//$.log( glCanvas )
+		// return new Promise ( ok => {
+		// 	document.body.onclick = () => {
+		// 		ok ( VR.display.requestPresent( [ { source: glCanvas } ] ) )
+		// 		document.body.onclick = null
+		// 	}
+		// } )
+		return VR.display.requestPresent( [ { source: settings.ctx.canvas } ] ) 
+	} else {
+		return VR.display.exitPresent( )
+	}
+}
 
 export { playBGM, stopBGM, setMainVolume } from './サウンド.js'
 export { getFileList, getMarkList } from './シナリオ.js'
-export { requestVR } from './レンダラー.js'

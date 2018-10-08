@@ -30,7 +30,7 @@ async function play ( { ctx, mode, installEvent, option } ) {
 	let sound = 'off'
 	if ( mode != 'install' ) {
 
-	let text = 'openノベルプレイヤー v1.0γ_039   18/09/30\\n' +
+	let text = 'openノベルプレイヤー v1.0γ_048   18/10/08\\n' +
 		( option.pwa ? '【 PWA Mode 】\\n' : '' )
 
 
@@ -291,18 +291,37 @@ async function showSysMenu ( ) {
 					'クリックで各機能の有効無効を切り替えられます'
 				)
 
+				let VR = $.Settings.VR
+
 				let sel = await Action.sysChoices( [
 
-					{ label: `VR　(現在${ $.Experiments.VR ? '有効' : '無効' })`, value: 'VR' }
+					async function * ( ) {
+						if ( ! navigator.getVRDisplays ) return yield { label: `VR　(サポートされていません)`, disabled: true }
+						yield { label: `VR　(デバイスの状態を確認中……)`, disabled: true }
+						let disp = ( await navigator.getVRDisplays( ) )[ 0 ]
+						VR.display = disp
+						$.log( disp )
+						if ( ! disp ) return yield { label: `VR　(デバイスが見つかりません)`, disabled: true }
+						//if ( ! disp.isConnected ) return yield { label: `VR　(「${disp.displayName}」を接続してください)`, disabled: true }
+						//if ( ! disp.isPresenting ) return yield { label: `VR　(現在ON：表示中)`, value: 'VR' }
+						if ( VR.failureNum ) return yield { label: `VR　(現在OFF:失敗${ VR.failureNum }回)`, value: 'VR' }	
+						return yield { label: `VR　(現在OFF)`, value: 'VR' }						
+					}
 
 				], { backLabel: '戻る', color: 'green' } )
 
 				if ( sel == $.Token.back ) break WHILE2
 				if ( sel == $.Token.close ) break WHILE
 
+
 				if  ( sel == 'VR' ) {
-					$.Experiments.VR = ! $.Experiments.VR
-					if ( $.Experiments.VR ) await Action.requestVR( )
+					let res = await $.trying( Action.presentVR( VR.enabled = ! VR.enabled ) )
+					if ( res == $.Token.failure ) {
+						VR.failureNum = ( VR.failureNum || 0 ) + 1
+						VR.enabled = false
+					} else {
+						VR.failure = false						
+					}
 				}
 			}
 

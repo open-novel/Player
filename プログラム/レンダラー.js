@@ -208,7 +208,7 @@ export class GroupNode extends Node {
 
 export class RectangleNode extends Node {
 
-	draw ( { x, y, w, h, c } ) {
+	draw ( { x, y, w, h, c, disabled } ) {
 
 		let { fill, shadow, forcused, pushed } = this
 		if ( ! fill && c ) fill = c
@@ -216,6 +216,7 @@ export class RectangleNode extends Node {
 		let offset = H * .01
 
 		if ( fill ) {
+			if ( disabled ) fill = 'rgba( 200, 200, 200, .5 )'
 			if ( pushed ) {
 				ctx.filter = 'brightness(50%)'
 			} else {
@@ -255,13 +256,14 @@ export class RectangleNode extends Node {
 
 export class PolygonNode extends Node {
 
-	draw ( { x, y, w, h, c } ) {
+	draw ( { x, y, w, h, c, disabled } ) {
 
 		let { fill, shadow, forcused, pushed } = this
 
 		if ( ! fill && c ) fill = c
 
 		if ( fill ) {
+			if ( disabled ) fill = 'rgba( 200, 200, 200, .5 )'
 			if ( pushed ) {
 				ctx.filter = 'brightness(50%)'
 			} else {
@@ -310,9 +312,12 @@ export class TextNode extends Node {
 
 	clear ( ) { this.prop( 'text', '' ) }
 
-	draw ( { x, y, w, h, c } ) {
+	draw ( { x, y, w, h, c, disabled } ) {
+
 		let { fill, shadow, text, size, pos, rotate } = this
 		if ( ! fill && c ) fill = c
+
+		if ( disabled ) fill = 'rgba( 255, 255, 255, .5 )'
 
 		ctx.font = `${ h * size }px "Hiragino Kaku Gothic ProN", Meiryo`
 		//ctx.textBaseline = 'top'
@@ -581,38 +586,29 @@ function initLayer ( ) {
 
 
 
-export async function requestVR( ) { 
-	let disp = navigator.getVRDisplays ? await navigator.getVRDisplays( )[ 0 ] : null
-	if ( ! disp ) return $.Token.failure
-	disp.requestPresent( [ { source: ctx.canvas } ] )
-	return $.Token.success
-
-}
-
-let oldTime = performance.now( )
-export function drawCanvas ( newTime ) {
+export function drawCanvas ( must ) {
 
 	if ( ! ctx ) return
 
 	layerRoot.fire( 'update' )
 
-	if ( layerRoot.dirty || ( newTime - oldTime ) >= 100 ) {
-
-		oldTime = newTime
+	if ( layerRoot.dirty || must ) {
 
 		refreshCanvasSize( )
 
 		//ctx.fillColor = 'rgba( 0, 0, 0, 1 )'
 		ctx.clearRect( 0, 0, W, H )
 
-		if ( ! $.Experiments.VR ) {
-			draw( layerRoot, { ctx, x: 0, y: 0, w: W, h: H, o: 1 } )
+		let base = { ctx, x: 0, y: 0, w: W, h: H, o: 1, disabled: false }
+
+		if ( ! $.Settings.VR.enabled ) {
+			draw( layerRoot, base )
 		} else {
 			ctx.save( )
 			ctx.scale( 0.5, 1 )
-			draw( layerRoot, { ctx, x: 0, y: 0, w: W, h: H, o: 1 } )
+			draw( layerRoot, base )
 			ctx.translate( W, 0 )
-			draw( layerRoot, { ctx, x: 0, y: 0, w: W, h: H, o: 1 } )
+			draw( layerRoot, base )
 			ctx.restore( )
 		}
 
@@ -640,6 +636,7 @@ export function drawCanvas ( newTime ) {
 			h: base.h * node.h,
 			o: base.o * node.o,
 			color, c,
+			disabled: node.disabled !== undefined ? node.disabled : base.disabled
 		}
 
 		//$.log( node.name, prop )
@@ -665,7 +662,7 @@ export function drawCanvas ( newTime ) {
 
 			let data = prop.ctx.getImageData( 0, 0, W, H ).data
 
-			for ( let i = 0; i < data.length; i +=4 ) {
+			for ( let i = 0; i < data.length; i += 4 ) {
 				let a = data[ i + 3 ] / 255
 				if ( a > 0.5 ) a =  1 - ( 1 - a ) ** 4
 				data[ i + 3 ] = a * 255

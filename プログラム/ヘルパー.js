@@ -28,7 +28,7 @@ export const hint	= console.info.bind( console )
 export const assert = console.assert.bind( console )
 
 
-export let Experiments = { VR: false }
+export let Settings = { VR: { enabled: false } }
 
 
 export const Token = [
@@ -42,6 +42,11 @@ export function clone ( obj ) { return JSON.parse( JSON.stringify( obj ) ) }
 
 
 export const neverDone = new Promise( NOP )
+
+
+export const trying = promise => promise.then( ( ) => Token.success, err => {
+	error( err ); return Token.failure } )
+
 
 export async function fetchFile ( name, type = 'blob' ) {
 	return ( await fetch( new URL( name, baseurl ) ) )[ type ]( )
@@ -73,6 +78,40 @@ export function normalizePos ( obj ) {
 		}
 	}
 }
+
+
+const fileCache = new Map
+const blobCache = new WeakMap
+
+
+export async function getFile ( path ) {
+	let blob = fileCache.get( path )
+	if ( ! blob ) {
+		blob = await DB.getFile( path )
+		fileCache.set( path, blob )
+	}
+	return blob
+}
+
+export function getImage ( blob ) {
+	return new Promise( ( ok, ng ) => {
+		let img = new Image
+		let url = blobCache.get( blob )
+		if ( ! url ) {
+			url = URL.createObjectURL( blob )
+			blobCache.set( blob, url )
+		}
+		img.onload = ( ) => {
+			if ( img.decode ) img.decode( ).then( ( ) => ok( img ), ng )
+			else ok( img )
+		}
+		img.onerror = ng
+		img.style.width = '0px'
+		img.style.height = '0px'
+		img.src = url
+	} )
+}
+
 
 export function download ( blob, title ) {
 	let link = document.createElement( 'a' )
