@@ -529,7 +529,9 @@ export function removePortraits ( layer ) {
 
 
 async function setAnime ( image, xml ) {
-	let animates = Array.from( xml.querySelectorAll( 'animate' ), element => {
+	let animates = Array.from( xml.querySelectorAll(
+		'animate,  animateColor, animateMotion, animateTransform'
+	), element => {
 		let dur = element.getAttribute( 'dur' )
 		if ( ! dur ) return null
 		dur = dur.match( /^(\d+)(ms|s)$/i )
