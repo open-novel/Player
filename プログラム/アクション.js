@@ -598,14 +598,8 @@ async function showImage ( targetGroup, path, pos, kind ) {
 	img = await $.getImage( blob )
 
 	if ( ! xml ) {
-		img.className = 'tempImg_' + targetGroup.name
-		document.body.append( img )
-	} else {
-
-		$.log( xml )
-		if ( ! window.xml ) window.xml = [ ]
-		window.xml.push( xml )
-
+		//img.className = 'tempImg_' + targetGroup.name
+		//document.body.append( img )
 	}
 
 
@@ -686,7 +680,7 @@ async function removeImages ( targetGroup, kind ) {
 
 	$.log( 'remv', type, eff, targetGroup.name )
 
-	Array.from( document.querySelectorAll( '.tempImg_' + targetGroup.name ), elm => elm.remove( ) )
+	//Array.from( document.querySelectorAll( '.tempImg_' + targetGroup.name ), elm => elm.remove( ) )
 
 	switch ( type ) {
 		case 'フェード': {
