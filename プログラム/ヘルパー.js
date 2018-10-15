@@ -6,8 +6,8 @@ http://creativecommons.org/publicdomain/zero/1.0
 //const metaurl = import.meta.url  // eslint-disable-line-parsing
 //const baseurl = new URL( '../', metaurl ).href  // eslint-disable-line
 
-export const channel = localStorage.playerChannnel || ''
-let base = channel == 'Dev' ? '/Player_Dev/' : channel == 'Loc' ? '/' : '/Player/'
+export const channel = localStorage.playerChannel || ''
+let base = channel == 'Dev' ? '/Player_Dev/' : channel.includes( 'Loc' ) ? '/' : '/Player/'
 export const baseurl = new URL( base, location.href ).href
 
 import * as DB from './データベース.js'
@@ -26,11 +26,11 @@ const NOP = ( ) => { }
 export const log	= logEnabled ? console.log  .bind( console ) : NOP
 export const info	= logEnabled ? console.info .bind( console ) : NOP
 export const warn	= logEnabled ? console.warn .bind( console ) : NOP
-export const error	= logEnabled ? console.error.bind( console ) : NOP
+export const error = logEnabled ? console.error.bind( console ) : NOP
 export const hint	= console.info.bind( console )
 export const assert = console.assert.bind( console )
 
-
+log( baseurl )
 export let Settings = { VR: { enabled: false } }
 
 

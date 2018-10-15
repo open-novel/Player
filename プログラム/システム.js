@@ -19,7 +19,7 @@ async function play ( { ctx, mode, installEvent, option } ) {
 
 
 	//let settings = await $.fetchFile( 'json', './プログラム/設定.json' )
-	let settings = { }
+	let settings = $.parseSetting( await $.fetchFile( '/プログラム/設定.txt', 'text' ) )
 	settings.ctx = ctx
 	//Object.assign( setting, systemSetting )
 	$.log( settings )
@@ -30,7 +30,9 @@ async function play ( { ctx, mode, installEvent, option } ) {
 	let sound = 'off'
 	if ( mode != 'install' ) {
 
-	let text = 'openノベルプレイヤー v1.0γ_052  patch2  18/10/15\\n' +
+
+
+	let text = `openノベルプレイヤー   ${ settings[ 'バージョン' ][ 0 ] }${ $.channel.includes( 'Dev' ) ? '(開発版)' : '' }  ${ settings[ '更新年月日' ][ 0 ] } \\n` +
 		( option.pwa ? '【 PWA Mode 】\\n' : '' )
 
 
@@ -229,7 +231,7 @@ async function showSysMenu ( ) {
 
 
 		let sel = await Action.sysChoices(
-			[ 'データ保存状況', '実験機能' ], { backLabel: '戻る', color: 'green' }
+			[ '受信チャンネル設定', 'データ保存状況', '実験機能' ], { backLabel: '戻る', color: 'green' }
 		)
 
 		$.log( sel )
@@ -239,6 +241,34 @@ async function showSysMenu ( ) {
 			case $.Token.back:
 			case $.Token.close:
 				break WHILE
+
+			case '受信チャンネル設定': {
+				Action.sysMessage(
+					'プレイヤーの受信チャンネルを選択してください\\n' +
+					'安定版：　通常はこちらを選択してください\\n' +
+					'開発版：　安定版より約１周間早く新機能を試せますが不安定です\\n'
+				)
+				let isStable = ! $.cannel
+				let sel = await Action.sysChoices(
+					[
+						{ label: '安定版' + ( isStable ? '（📡受信中）' : '　　　　　　' ) , value: '安定版' },
+						{ label: '開発版' + ( isStable ? '　　　　　　'　 : '（📡受信中）' ), value: '開発版' }
+					], { backLabel: '戻る', color: 'green' }
+				)
+
+				if ( sel == $.Token.back ) break SWITCH
+				if ( sel == $.Token.close ) break WHILE
+				localStorage.playerChannnel = ( sel == '安定版' ) ? '' : 'Dev'
+
+				Action.sysMessage(
+					'次回起動時から【' + sel + '】を受信するよう設定しました\\n' +
+					'変更を反映させるためにプレイヤーをリセットしてください'
+				)
+				await Action.sysChoices( [ ], { backLabel: 'リセットする', color: 'green' } )
+
+
+
+			} break
 
 			case 'データ保存状況': WHILE2: while ( true ) {
 
@@ -288,7 +318,7 @@ async function showSysMenu ( ) {
 			case '実験機能': WHILE2: while ( true ) {
 
 				Action.sysMessage(
-					'クリックで各機能の有効無効を切り替えられます'
+					'クリックで各機能を設定できます'
 				)
 
 				let VR = $.Settings.VR
@@ -306,22 +336,80 @@ async function showSysMenu ( ) {
 						//if ( ! disp.isPresenting ) return yield { label: `VR　(現在ON：表示中)`, value: 'VR' }
 						if ( VR.failureNum ) return yield { label: `VR　(現在OFF:失敗${ VR.failureNum }回)`, value: 'VR' }
 						return yield { label: `VR　(現在OFF)`, value: 'VR' }
-					}
+					},
+					'投げ銭（寄付金）イメージテスト'
 
 				], { backLabel: '戻る', color: 'green' } )
 
 				if ( sel == $.Token.back ) break WHILE2
 				if ( sel == $.Token.close ) break WHILE
 
+				switch ( sel ) {
+					case 'VR': {
+						let res = await $.trying( Action.presentVR( VR.enabled = ! VR.enabled ) )
+						if ( res == $.Token.failure ) {
+							VR.failureNum = ( VR.failureNum || 0 ) + 1
+							VR.enabled = false
+						} else {
+							VR.failure = false
+						}
+					} break
+					case '投げ銭（寄付金）イメージテスト': {
+						let methods = [{
+							supportedMethods: [ 'basic-card' ],
+							data: {
+								supportedNetworks: [ 'visa', 'mastercard', 'jcb' ],
+								supportedTypes: ['credit', 'debit']
+							}
+						}]
 
-				if  ( sel == 'VR' ) {
-					let res = await $.trying( Action.presentVR( VR.enabled = ! VR.enabled ) )
-					if ( res == $.Token.failure ) {
-						VR.failureNum = ( VR.failureNum || 0 ) + 1
-						VR.enabled = false
-					} else {
-						VR.failure = false
-					}
+						let details = {
+							displayItems: [{
+								label: 'クリエイターに寄付する',
+								amount: { currency: 'JPN', value: '100' }
+							}],
+							total: {
+								label: 'Total',
+								amount: { currency: 'JPN', value: '100' }
+							}
+						}
+
+						Action.sysMessage(
+							'テストのため実際に課金されることはありません\\n' +
+							'支払い情報・その他個人情報などがこのツールを通じて\\n' +
+							'保存・送信されることはありません\\n'
+						)
+
+
+						let req = new PaymentRequest( methods, details )
+						let res = await req.show( ).catch( ( ) => null )
+
+						if ( ! res ) Action.sysMessage( '支払いがキャンセルされました' )
+						else {
+
+							for ( let i = 0; i <= 12; i ++ ) {
+								Action.sysMessage(
+									'支払い処理中' + '.'.repeat( i ) + '\\n' +
+									'（テストのため実際には課金処理は行われていません）'
+									, Infinity
+								)
+								await $.timeout( 200 )
+							}
+							await res.complete( )
+							Action.sysMessage(
+								'支払いが完了しました\\n' +
+								'（テストのため実際には課金処理は行われていません）'
+							)
+
+						}
+
+						await Action.sysChoices( [ ], { backLabel: '戻る' } )
+
+
+						console.log( res )
+
+					} break
+
 				}
 			}
 
