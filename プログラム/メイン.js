@@ -33,7 +33,7 @@ async function main( ) {
 		height: 540,
 	} )
 
-	Array.from( wrapper.childNodes, node => node.remove( ) )
+	wrapper.innerHTML = ''
 
 	wrapper.appendChild( player )
 	player.appendChild( canvas )

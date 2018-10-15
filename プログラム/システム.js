@@ -248,11 +248,11 @@ async function showSysMenu ( ) {
 					'安定版：　通常はこちらを選択してください\\n' +
 					'開発版：　安定版より約１周間早く新機能を試せますが不安定です\\n'
 				)
-				let isStable = ! $.cannel
+				let isStable = ! $.channel
 				let sel = await Action.sysChoices(
 					[
-						{ label: '安定版' + ( isStable ? '（📡受信中）' : '　　　　　　' ) , value: '安定版' },
-						{ label: '開発版' + ( isStable ? '　　　　　　'　 : '（📡受信中）' ), value: '開発版' }
+						{ label: '安定版' + ( isStable ? '（📡受信中）' : '　　　　　　' ), value: '安定版' },
+						{ label: '開発版' + ( isStable ? '　　　　　　' : '（📡受信中）' ), value: '開発版' }
 					], { backLabel: '戻る', color: 'green' }
 				)
 
