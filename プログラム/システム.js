@@ -19,7 +19,7 @@ async function play ( { ctx, mode, installEvent, option } ) {
 
 
 	//let settings = await $.fetchFile( 'json', './プログラム/設定.json' )
-	let settings = $.parseSetting( await $.fetchFile( '/プログラム/設定.txt', 'text' ) )
+	let settings = $.parseSetting( await $.fetchFile( './プログラム/設定.txt', 'text' ) )
 	settings.ctx = ctx
 	//Object.assign( setting, systemSetting )
 	$.log( settings )
