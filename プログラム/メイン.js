@@ -5,7 +5,7 @@ http://creativecommons.org/publicdomain/zero/1.0
 
 import * as $ from './ヘルパー.js'
 let Player
-if ( $.channel == 'Dev' && !import.meta.url.inclides( 'Player_Dev' ) )
+if ( $.channel == 'Dev' )
 	Player = import( '/Player_Dev/プログラム/システム.js' )
 else Player = import( './システム.js' )
 
