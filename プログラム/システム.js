@@ -258,15 +258,15 @@ async function showSysMenu ( ) {
 
 				if ( sel == $.Token.back ) break SWITCH
 				if ( sel == $.Token.close ) break WHILE
-				localStorage.playerChannnel = ( sel == '安定版' ) ? '' : 'Dev'
+				localStorage.playerChannel = ( sel == '安定版' ) ? '' : 'Dev'
 
 				Action.sysMessage(
 					'次回起動時から【' + sel + '】を受信するよう設定しました\\n' +
 					'変更を反映させるためにプレイヤーをリセットしてください'
 				)
 				await Action.sysChoices( [ ], { backLabel: 'リセットする', color: 'green' } )
-
-
+				location.reload( )
+				await $.neverDone
 
 			} break
 

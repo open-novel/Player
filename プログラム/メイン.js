@@ -4,10 +4,15 @@ http://creativecommons.org/publicdomain/zero/1.0
 */
 
 import * as $ from './ヘルパー.js'
-let Player
-if ( $.channel == 'Dev' )
-	Player = import( '/Player_Dev/プログラム/システム.js' )
-else Player = import( './システム.js' )
+// let Player
+// if ( $.channel == 'Dev' )
+// 	Player = import( '/Player_Dev/プログラム/システム.js' )
+// else Player = import( './システム.js' )
+
+import * as Player_Dev from '/Player_Dev/プログラム/システム.js'
+import * as Player_Sbl from './システム.js'
+
+const Player = $.channel == 'Dev' ? Player_Dev : Player_Sbl
 
 window.addEventListener( 'DOMContentLoaded', main )
 
@@ -15,10 +20,7 @@ let installEvent = new $.Deferred
 
 async function main( ) {
 
-
 	//Canvas要素の配置と準備
-	Player = await Player
-
 	const wrapper = document.querySelector( '#ONPWrapper' )
 
 	let option = JSON.parse( wrapper.dataset.onp || '{ }' )
