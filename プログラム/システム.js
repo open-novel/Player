@@ -30,7 +30,7 @@ async function play ( { ctx, mode, installEvent, option } ) {
 	let sound = 'off'
 	if ( mode != 'install' ) {
 
-	let text = 'openノベルプレイヤー v1.0γ_052  patch1  18/10/14\\n' +
+	let text = 'openノベルプレイヤー v1.0γ_052  patch2  18/10/15\\n' +
 		( option.pwa ? '【 PWA Mode 】\\n' : '' )
 
 
@@ -59,7 +59,7 @@ async function play ( { ctx, mode, installEvent, option } ) {
 					Action.sysMessage( '登録が拒否されました' )
 				}
 				await Action.sysChoices( [ ], { backLabel: '戻る' } )
-				
+
 			} else {
 				Action.sysMessage(
 					'ブラウザに認められなかったため登録できませんでした\\n' +
@@ -84,7 +84,7 @@ async function play ( { ctx, mode, installEvent, option } ) {
 		if ( mode == 'install' ) return
 
 		await Action.initAction( settings )
-		
+
 		if ( res == 'error' ) Action.sysMessage( '問題が発生しました' )
 		else Action.sysMessage( '再生が終了しました' )
 		await Action.sysChoices( [ ], { backLabel: '作品選択へ' } )
@@ -227,7 +227,7 @@ async function showSysMenu ( ) {
 
 		Action.sysMessage( 'システムメニュー' )
 
-		
+
 		let sel = await Action.sysChoices(
 			[ 'データ保存状況', '実験機能' ], { backLabel: '戻る', color: 'green' }
 		)
@@ -266,7 +266,7 @@ async function showSysMenu ( ) {
 							'次回起動時からデータが永続的に保存されるようになりました\\n' +
 							'（自然と消えることが無いだけでユーザー操作では削除できます）\\n' +
 							'変更を反映させるためにプレイヤーをリセットしてください'
-						) 
+						)
 						await Action.sysChoices( [ ], { backLabel: 'リセットする', color: 'green' } )
 						location.reload( )
 						await $.neverDone
@@ -274,7 +274,7 @@ async function showSysMenu ( ) {
 						Action.sysMessage(
 							'データの永続的な保存が認められませんでした\\n' +
 							'（プレイヤーをアプリとして登録すると認められる可能性があります）'
-						) 
+						)
 						let sel = await Action.sysChoices( [
 							//'PWAとして登録する', '❔　PWAとは'
 						], { backLabel: '戻る', color: 'green' } )
@@ -304,8 +304,8 @@ async function showSysMenu ( ) {
 						if ( ! disp ) return yield { label: `VR　(デバイスが見つかりません)`, disabled: true }
 						//if ( ! disp.isConnected ) return yield { label: `VR　(「${disp.displayName}」を接続してください)`, disabled: true }
 						//if ( ! disp.isPresenting ) return yield { label: `VR　(現在ON：表示中)`, value: 'VR' }
-						if ( VR.failureNum ) return yield { label: `VR　(現在OFF:失敗${ VR.failureNum }回)`, value: 'VR' }	
-						return yield { label: `VR　(現在OFF)`, value: 'VR' }						
+						if ( VR.failureNum ) return yield { label: `VR　(現在OFF:失敗${ VR.failureNum }回)`, value: 'VR' }
+						return yield { label: `VR　(現在OFF)`, value: 'VR' }
 					}
 
 				], { backLabel: '戻る', color: 'green' } )
@@ -320,7 +320,7 @@ async function showSysMenu ( ) {
 						VR.failureNum = ( VR.failureNum || 0 ) + 1
 						VR.enabled = false
 					} else {
-						VR.failure = false						
+						VR.failure = false
 					}
 				}
 			}

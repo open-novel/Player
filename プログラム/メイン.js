@@ -4,7 +4,7 @@ http://creativecommons.org/publicdomain/zero/1.0
 */
 
 import * as $ from './ヘルパー.js'
-import * as Player from './システム.js'
+let Player = $.channel == 'Dev' ? import( '/Player_Dev/プログラム/システム.js' ) : import( './システム.js' )
 
 window.addEventListener( 'DOMContentLoaded', main )
 
@@ -14,6 +14,7 @@ async function main( ) {
 
 
 	//Canvas要素の配置と準備
+	Player = await Player
 
 	const wrapper = document.querySelector( '#ONPWrapper' )
 
@@ -135,5 +136,6 @@ window.addEventListener( 'beforeinstallprompt', e => {
 } )
 
 let time = Date.now( )
-navigator.serviceWorker.register( `/サービス.js?t=${ time }` )
+if ( ! location.href.includes( '/Player' ) )
+	navigator.serviceWorker.register( `/サービス.js?t=${ time }` )
 //navigator.serviceWorker.register( `Player/サービス.js?t=${ time }`, { scope: '/Player/' } )
