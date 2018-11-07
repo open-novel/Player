@@ -6,7 +6,8 @@ http://creativecommons.org/publicdomain/zero/1.0
 //const metaurl = import.meta.url  // eslint-disable-line-parsing
 //const baseurl = new URL( '../', metaurl ).href  // eslint-disable-line
 
-export const channel = localStorage.playerChannel || ''
+export let channel = localStorage.playerChannel || ''
+if ( location.hostname.match( /localhost|\d+\.\d+\.\d+/ ) ) channel = 'Loc'
 let base = channel == 'Dev' ? '/Player_Dev/' : channel.includes( 'Loc' ) ? '/' : '/Player/'
 export const baseurl = new URL( base, location.href ).href
 

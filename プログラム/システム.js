@@ -14,8 +14,11 @@ async function init ( { ctx, mode, installEvent, option } ) {
 	await play( { ctx, mode, installEvent, option } )
 }
 
+let installEvent = null, option = { }
+async function play ( { ctx, mode, installEvent: event, option: opt } ) {
 
-async function play ( { ctx, mode, installEvent, option } ) {
+	installEvent = event
+	option = opt
 
 
 	//let settings = await $.fetchFile( 'json', './プログラム/設定.json' )
@@ -30,10 +33,8 @@ async function play ( { ctx, mode, installEvent, option } ) {
 	let sound = 'off'
 	if ( mode != 'install' ) {
 
-
-
-	let text = `openノベルプレイヤー   ${ settings[ 'バージョン' ][ 0 ] }${ $.channel.includes( 'Dev' ) ? '(開発版)' : '' }  ${ settings[ '更新年月日' ][ 0 ] } \\n` +
-		( option.pwa ? '【 PWA Mode 】\\n' : '' )
+		let text = `openノベルプレイヤー\\n \\n` +
+			`${ settings[ 'バージョン' ][ 0 ] }${ $.channel.includes( 'Dev' ) ? '(開発版)' : '' }  ${ settings[ '更新年月日' ][ 0 ] } \\n`
 
 
 		WHILE: while ( true ) {
@@ -41,44 +42,24 @@ async function play ( { ctx, mode, installEvent, option } ) {
 			Action.sysMessage( text, Infinity )
 
 			let list = [
-				{ label: '🔊　サウンドONで開始する ', value: 'on' },
-				{ label: '🔇　サウンドOFFで開始する', value: 'off' },
+				{ label: '🔊 音声ありで始める 🔊', value: 'on' },
+				{ label: '🔇 ミュートで始める 🔇', value: 'off' },
+				{ label: '🔰　チュートリアル　🔰', value: 'tutorial', disabled: true }
 			]
-			if ( ! option.pwa ) list.push(
-				{ label: '⏬　アプリとして登録する　', value: 'install' }
-			)
 
-			let select = await Action.sysChoices( list, { rowLen: 3, menuEnebled: false } )
-			if ( select == 'install' ) {
-			let result = await Promise.race( [ installEvent.promise, $.timeout( 1 ) ] )
-			if ( result ) {
-				let res = result.prompt( )
-				let choice = ( await result.userChoice ).outcome
-				$.log( choice )
-				if ( choice == 'accepted' ) {
-					Action.sysMessage( '登録が完了しました' )
-				} else {
-					Action.sysMessage( '登録が拒否されました' )
-				}
-				await Action.sysChoices( [ ], { backLabel: '戻る' } )
-
-			} else {
-				Action.sysMessage(
-					'ブラウザに認められなかったため登録できませんでした\\n' +
-					'（既に登録済みの可能性もあります）' )
-				await Action.sysChoices( [ ], { backLabel: '戻る' } )
-			}
-				continue WHILE
-			}
+			let promise = Action.sysChoices( list, { rowLen: 3, menuEnebled: false } )
+			Action.hideIcons( )
+			let select = await promise
 			sound = select
 			break WHILE
 		}
+
+
+
+		if ( sound == 'on' ) Action.setMainVolume( 1 )
+		else Action.setMainVolume( 0 )
+
 	}
-
-
-
-	if ( sound == 'on' ) Action.setMainVolume( 1 )
-	else Action.setMainVolume( 0 )
 
 	while ( true ) {
 
@@ -110,15 +91,41 @@ async function playSystemOpening ( mode ) {
 
 	$.log( titleList )
 
-	titleList = [ ...Array( 12 ).keys( ) ].map( i => {
-		let index = i + 1, settings = titleList[ index ] || { }, { title } = settings
-		return {
-			label: title ? title : '--------', value: { settings, index }
-		}
-	} )
+	let cho, page = 1
+	let noImage = await $.getImage( await $.fetchFile( './画像/画像なし.svg' ) )
 
+	while ( true ) {
 
-	let cho = await Action.sysChoices( titleList, { menuType: 'open' } )
+		let list = await Promise.all( [ ...Array( 6 ).keys( ) ].map( async i => {
+			return async function * ( ) {
+				let index = i + ( page - 1 ) * 6 + 1, settings = titleList[ index ] || { }, { title, origin } = settings
+				yield {
+					label: title ? title : '--------',
+					value: { settings, index },
+					bgimage: true
+				}
+				let file = title ? await $.getFile( `${ origin }${ title }/背景/サムネイル` ).catch( e => null ) : null
+				let image = file ? await $.getImage( file ) : noImage
+				yield {
+					label: title ? title : '--------',
+					value: { settings, index },
+					bgimage: image
+				}
+			}
+		} ) )
+
+		cho = await Action.sysChoices( list, {
+			rowLen: 2, menuType: 'open',
+			backLabel: ( page > 1 ? `ページ${ page - 1 }` : '' ),
+			currentLabel: `ページ${ page }`,
+			nextLabel: ( page < 5 ? `ページ${ page + 1 }` : '' ),
+		} )
+
+		if ( cho == $.Token.back ) page --
+		else if ( cho == $.Token.next ) page ++
+		else break
+
+	}
 
 	if ( cho == $.Token.close ) {
 		await showSysMenu( )
@@ -231,7 +238,22 @@ async function showSysMenu ( ) {
 
 
 		let sel = await Action.sysChoices(
-			[ '受信チャンネル設定', 'データ保存状況', '実験機能' ], { backLabel: '戻る', color: 'green' }
+			[
+				
+				'受信チャンネル設定',
+				'プレイヤーを登録する',
+				'データ保存状況確認',
+				{
+					label: '🔧　実験機能　🔨',
+					value: '実験機能'
+				},
+
+				{ label: '🔗公式サイト　', value: '公式サイトリンク' },
+				{ label: '🔗作品一覧　　', value: '作品一覧リンク' },
+				{ label: '🔗操作方法Wiki', value: '操作方法リンク' },
+				{ label: '🔗open2chスレ', value: '制作スレリンク' },
+
+			], { backLabel: '戻る', color: 'green', rowLen: 4 }
 		)
 
 		$.log( sel )
@@ -242,17 +264,26 @@ async function showSysMenu ( ) {
 			case $.Token.close:
 				break WHILE
 
+			case '公式サイトリンク': window.open( 'https://open-novel.github.io/source/' )
+			break
+			case '作品一覧リンク': window.open( 'https://github.com/open-novel/open-novel.github.io/wiki/作品リンク集/' )
+			break
+			case '操作方法リンク': window.open( 'https://github.com/open-novel/open-novel.github.io/wiki/' )
+			break
+			case '制作スレリンク': window.open( 'http://hayabusa.open2ch.net/test/read.cgi/news4vip/1537182605/l50' )
+			break
+
 			case '受信チャンネル設定': {
 				Action.sysMessage(
 					'プレイヤーの受信チャンネルを選択してください\\n' +
 					'安定版：　通常はこちらを選択してください\\n' +
-					'開発版：　安定版より約１周間早く新機能を試せますが不安定です\\n'
+					'開発版：　安定版より数週間早く新機能を試せますが不安定です\\n'
 				)
 				let isStable = ! $.channel
 				let sel = await Action.sysChoices(
 					[
-						{ label: '安定版' + ( isStable ? '（📡受信中）' : '　　　　　　' ), value: '安定版' },
-						{ label: '開発版' + ( isStable ? '　　　　　　' : '（📡受信中）' ), value: '開発版' }
+						{ label: '安定版' + ( isStable ? '（📡受信中）' : '　　　　　　' ), value: '安定版', disabled: isStable },
+						{ label: '開発版' + ( isStable ? '　　　　　　' : '（📡受信中）' ), value: '開発版', disabled: !isStable }
 					], { backLabel: '戻る', color: 'green' }
 				)
 
@@ -269,8 +300,28 @@ async function showSysMenu ( ) {
 				await $.neverDone
 
 			} break
+			case 'プレイヤーを登録する': {
+				let result = await Promise.race( [ installEvent.promise, $.timeout( 1 ) ] )
+				installEvent = null
+				if ( result ) {
+					let res = result.prompt( )
+					let choice = ( await result.userChoice ).outcome
+					$.log( choice )
+					if ( choice == 'accepted' ) {
+						Action.sysMessage( '登録が完了しました' )
+					} else {
+						Action.sysMessage( '登録が拒否されました' )
+					}
+					await Action.sysChoices( [ ], { backLabel: '戻る' } )
 
-			case 'データ保存状況': WHILE2: while ( true ) {
+				} else {
+					Action.sysMessage(
+						'ブラウザに認められなかったため登録できませんでした\\n' +
+						'（既に登録済みの可能性もあります）' )
+					await Action.sysChoices( [ ], { backLabel: '戻る' } )
+				}
+			} break
+			case 'データ保存状況確認': WHILE2: while ( true ) {
 
 				let { usage, quota } = await navigator.storage.estimate( )
 				let  persisted = await navigator.storage.persisted( )
@@ -326,7 +377,7 @@ async function showSysMenu ( ) {
 				let sel = await Action.sysChoices( [
 
 					async function * ( ) {
-						if ( ! navigator.getVRDisplays ) return yield { label: `VR　(サポートされていません)`, disabled: true }
+						if ( ! navigator.getVRDisplays ) return yield { label: `VR　(非対応環境です)`, disabled: true }
 						yield { label: `VR　(デバイスの状態を確認中……)`, disabled: true }
 						let disp = ( await navigator.getVRDisplays( ) )[ 0 ]
 						VR.display = disp
@@ -337,7 +388,11 @@ async function showSysMenu ( ) {
 						if ( VR.failureNum ) return yield { label: `VR　(現在OFF:失敗${ VR.failureNum }回)`, value: 'VR' }
 						return yield { label: `VR　(現在OFF)`, value: 'VR' }
 					},
-					'投げ銭（寄付金）イメージテスト'
+					// {
+					// 	label: self.PaymentRequest ? '投げ銭（寄付金）イメージテスト' : '投げ銭テスト　（非対応環境です）',
+					// 	value: '投げ銭',
+					// 	disabled: ! self.PaymentRequest
+					// }
 
 				], { backLabel: '戻る', color: 'green' } )
 
@@ -354,7 +409,7 @@ async function showSysMenu ( ) {
 							VR.failure = false
 						}
 					} break
-					case '投げ銭（寄付金）イメージテスト': {
+					case '投げ銭': {
 						let methods = [{
 							supportedMethods: [ 'basic-card' ],
 							data: {
@@ -376,7 +431,7 @@ async function showSysMenu ( ) {
 
 						Action.sysMessage(
 							'テストのため実際に課金されることはありません\\n' +
-							'支払い情報・その他個人情報などがこのツールを通じて\\n' +
+							'支払い情報・その他個人情報などがこのツールを通して\\n' +
 							'保存・送信されることはありません\\n'
 						)
 
@@ -387,9 +442,10 @@ async function showSysMenu ( ) {
 						if ( ! res ) Action.sysMessage( '支払いがキャンセルされました' )
 						else {
 
-							for ( let i = 0; i <= 12; i ++ ) {
+							for ( let i = 0; i <= 15; i ++ ) {
 								Action.sysMessage(
 									'支払い処理中' + '.'.repeat( i ) + '\\n' +
+									' \\n' +
 									'（テストのため実際には課金処理は行われていません）'
 									, Infinity
 								)
@@ -398,15 +454,18 @@ async function showSysMenu ( ) {
 							await res.complete( )
 							Action.sysMessage(
 								'支払いが完了しました\\n' +
+								' \\n' +
 								'（テストのため実際には課金処理は行われていません）'
 							)
 
 						}
 
-						await Action.sysChoices( [ ], { backLabel: '戻る' } )
-
-
 						console.log( res )
+
+						let sel = await Action.sysChoices( [ ], { backLabel: '戻る' } )
+						if ( sel == $.Token.back ) continue WHILE2
+						if ( sel == $.Token.close ) break WHILE
+
 
 					} break
 
@@ -433,7 +492,7 @@ async function installScenario ( index, sel ) {
 	if ( ! sel ) {
 		Action.sysMessage( 'インストール方法を選んで下さい', 100 )
 
-		let menuList = [ 'フォルダから', 'Zipファイルから', 'Webから' ].map( label => ( { label } ) )
+		let menuList = [ '作品リストから', 'フォルダから', 'Zipファイルから' ].map( label => ( { label } ) )
 
 		sel = await Action.sysChoices( menuList, { backLabel: '戻る' } )
 	}
@@ -449,6 +508,17 @@ async function installScenario ( index, sel ) {
 		case $.Token.close:
 			return sel
 
+		case '作品リストから': {
+
+			Action.sysMessage( '作品を公開しているWebサイトで'
+			+'\\n作品リンクをクリックするとインストールできます' )
+			window.open( 'https://github.com/open-novel/open-novel.github.io/wiki/作品リンク集' )
+
+			await Action.sysChoices( [ ], { backLabel: '戻る' } )
+			return $.Token.back
+
+
+		} break
 		case 'フォルダから': {
 
 			Action.sysMessage( 'フォルダを選んで下さい' )
@@ -466,16 +536,6 @@ async function installScenario ( index, sel ) {
 			if ( $.isToken( files ) ) return files
 			files = await unpackFile( files[ 0 ] )
 			origin = 'local/'
-
-		} break
-		case 'Webから': {
-
-			Action.sysMessage( 'openノベルプレイヤー向けに作品を公開しているサイトで'
-			+'\\n作品のリンクをクリックするとここへインストールできます' )
-
-			await Action.sysChoices( [ ], { backLabel: '戻る' } )
-			return $.Token.back
-
 
 		} break
 		case 'リンクから': {
@@ -603,12 +663,13 @@ async function installScenario ( index, sel ) {
 		let input = document.createElement( 'input' )
 		input.type = 'file'
 		input.webkitdirectory = folder
-		input.onchange = ( ) => player.fire( 'file', input.files )
+		let { promise, resolve } = new $.Deferred
+		input.onchange = ( ) => resolve( input.files )
 		input.click( )
 
-		let files = await (new Action.Trigger).stepOr(
-			player.on( 'file' ), Action.sysChoices( [ ], { backLabel: '戻る' } )
-		)
+		let files = await Promise.race( [
+			promise, Action.sysChoices( [ ], { backLabel: '戻る' } )
+		] )
 		if ( $.isToken( files ) ) return files
 		if ( files ) return Array.from( files )
 		else return $.Token.failure

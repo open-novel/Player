@@ -18,7 +18,13 @@ async function init ( opt ) {
 
 	ctx = opt.ctx || ctx
 	DPCanvas = ctx.canvas
+	setCtxOptions( )
 	return await initLayer( )
+}
+
+function setCtxOptions ( ) {
+	ctx.imageSmoothingEnabled = true
+	ctx.imageSmoothingQuality = 'high'
 }
 
 export function toBlob( hiquality ) {
@@ -169,13 +175,13 @@ class Node {
 	}
 
 
-	show ( duration ) {
+	show ( duration, max ) {
 
-		return anime( this, 'show', duration )
+		return anime( this, 'show', duration, max )
 
 	}
 
-	hide ( duration ) {
+	hide ( duration) {
 
 		return anime( this, 'hide', duration )
 
@@ -238,7 +244,7 @@ export class RectangleNode extends Node {
 		let { pushed } = this
 
 		const r = H * .02, offset = H * .01
-		
+
 		if ( pushed ) { x += offset / 2, y += offset / 2 }
 
 		ctx.beginPath( )
@@ -336,6 +342,11 @@ export class TextNode extends Node {
 
 		if ( fill ) {
 			if( shadow ) setShadow( { offset: b } )
+
+			ctx.strokeStyle = 'rgba( 127, 127, 127, .5 )'
+			ctx.lineWidth = h * size * .1
+			ctx.strokeText( text, x, y + h * size, w - b )
+
 			ctx.fillStyle = fill
 			ctx.fillText( text, x, y + h * size, w - b )
 
@@ -362,28 +373,76 @@ export class DecoTextNode extends Node {
 
 	draw ( { x, y, w, h } ) {
 
-		let preRow = 0, xBuf = 0
+		let preRow = 0, xBuf = 0, yBuf = 0, yMax = 0
 
-		for ( let { text, mag = 1, bold = false, color: fill = this.fill, row = 0 } of this.decoList ) {
-			if ( preRow != row ) xBuf = 0
-			preRow = row
+		for ( let {
+			text, mag = 1, bold = false, color: fill = this.fill, width, row = 0
+		} of this.decoList ) {
+			$.assert( preRow <= row )
+			while ( preRow < row ) {
+				yBuf += yMax * 1.5
+				xBuf = 0, yMax = 1
+				preRow ++
+			}
+
 			let size = this.size * mag
 			ctx.font = `${ bold ? 'bold' : '' } ${ h * size }px "Hiragino Kaku Gothic ProN", Meiryo`
 			//ctx.textBaseline = 'top'
 
-			let b = ( h *  size )  * .025 + 2.5
+			let b = h *  size * .025 + 2.5
 
 			setShadow( { offset: b } )
-			ctx.fillStyle = fill
-			ctx.fillText( text, x + xBuf, y + ( row * h * size * 1.4 ) + h * size / 2 )
-			let metrics = ctx.measureText( text )
-			xBuf += metrics.width
 
+			ctx.strokeStyle = 'rgba( 0, 0, 0, .5 )'
+			ctx.lineWidth = h * size * .2
+			ctx.strokeText( text, x + xBuf, y + yBuf + h * size / 2 )
+
+			ctx.fillStyle = fill
+			ctx.fillText( text, x + xBuf, y + yBuf + h * size / 2 )
+
+			xBuf += ctx.measureText( text ).width
+			if ( yMax < h * size ) yMax = h * size
 
 		}
 
-
 	}
+
+	static measureWidth ( deco ) {
+
+		let { text, mag = 1, bold = false } = deco
+		if ( ! text ) return 0
+		ctx.font = `${ bold ? 'bold' : '' } ${ 100 * mag }px "Hiragino Kaku Gothic ProN", Meiryo`
+		return ctx.measureText( text ).width / 100
+	}
+
+
+	static measureTextLine ( decoList ) {
+
+		let preRow = 0, xBuf = 0, yBuf = 0, yMax = 0
+		let res = [ ]
+
+		for ( let { text, mag = 1, bold = false, color: fill = this.fill, row = 0 } of decoList ) {
+			if ( preRow != row ) {
+				yBuf += yMax
+				res.push( [ xBuf / 100, yBuf ] )
+				xBuf = yMax = 0
+			}
+			preRow = row
+			ctx.font = `${ bold ? 'bold' : '' } ${ 100 * mag }px "Hiragino Kaku Gothic ProN", Meiryo`
+			//ctx.textBaseline = 'top'
+
+			ctx.fillStyle = fill
+			let metrics = ctx.measureText( text )
+			xBuf += metrics.width
+			if ( yMax < mag ) yMax = mag
+		}
+
+		yBuf += yMax
+		res.push( [ xBuf / 100, yBuf ] )
+
+		return res
+	}
+
 
 }
 
@@ -398,8 +457,20 @@ export class ImageNode extends Node {
 	}
 
 	draw ( { ctx, x, y, w, h } ) {
-		let { img, fill } = this
-		if ( img ) ctx.drawImage( img, x, y, w, h )
+		let { img, fill, clip, pushed } = this
+		if ( clip ) {
+			const r = H * .02, offset = H * .01
+			if ( pushed ) { x += offset / 2, y += offset / 2 }
+			ctx.beginPath( )
+			ctx.moveTo( x, y )
+			ctx.arcTo( x + w, y, x + w, y + h, r )
+			ctx.arcTo( x + w, y + h, x, y + h, r )
+			ctx.arcTo( x, y + h, x, y, r )
+			ctx.arcTo( x, y, x + w, y, r )
+			ctx.closePath( )
+			ctx.clip( )
+		}
+		if ( Object( img ) === img ) ctx.drawImage( img, x, y, w, h )
 		else if ( fill ) {
 			ctx.fillStyle = fill
 			ctx.fillRect( x, y, w, h )
@@ -457,11 +528,11 @@ function initLayer ( ) {
 				children: [
 					{
 						type: DecoTextNode, name: 'nameArea',
-						x: .05, w: .1, y: .2, size: .175, fill: 'rgba( 255, 255, 200, .9 )'
+						x: .05, w: .1, y: .18, size: .175, fill: 'rgba( 255, 255, 220, 1 )'
 					},
 					{
 						type: DecoTextNode, name: 'messageArea',
-						x: .2, w: .75, y: .2, size: .175, fill: 'rgba( 255, 255, 200, .9 )'
+						x: .2, w: .75, y: .18, size: .175, fill: 'rgba( 255, 255, 220, 1 )'
 					},
 				]
 			},
@@ -504,7 +575,7 @@ function initLayer ( ) {
 					},
 					{
 						type: TextNode, name: 'currentLabel',
-						x: 0.45, y: 0.68, w: .1, h: .3,
+						x: 0.45, y: 0.69, w: .1, h: .3,
 						pos: 'center', size: .15
 					},
 					{
@@ -520,20 +591,20 @@ function initLayer ( ) {
 					{
 						type: PolygonNode, name: 'menuButton', listenerMode: 'opaque',
 						fill: 'rgba( 255, 200, 200, .25 )', event: 'menu',
-						path: [ [ .005, .80 ], [ .005, .99 ], [ .133, .99 ] ], sound: true
+						path: [ [ .005, .74 ], [ .005, .99 ], [ .142, .99 ] ], sound: true
 					},
 					{
 						type: GroupNode, name: 'menuLabels',
 						children: [
 							{
 								type: TextNode, name: 'open', o: 1,
-								y: .785, w: .175, fill: 'rgba( 255, 255, 255, .5 )', text: 'open menu',
-								pos: 'center', size: .037, rotate: 40
+								y: .74, w: .2, fill: 'rgba( 255, 255, 255, .5 )', text: 'open menu',
+								pos: 'center', size: .04, rotate: 45
 							},
 							{
 								type: TextNode, name: 'close', o: 0,
-								y: .785, w: .175, fill: 'rgba( 255, 255, 255, .5 )', text: 'close menu',
-								pos: 'center', size: .037, rotate: 40
+								y: .74, w: .2, fill: 'rgba( 255, 255, 255, .5 )', text: 'close menu',
+								pos: 'center', size: .04, rotate: 45
 							},
 							{
 								type: TextNode, name: 'top', o: 0,
@@ -554,28 +625,28 @@ function initLayer ( ) {
 			$box: 'rgba( 75, 75, 100, .5 )',
 			inputBox: '$box',
 			menuBox: '$box',
-			$button: 'rgba( 100, 100, 255, .8 )',
+			$button: 'rgba( 100, 100, 255, .9 )',
 			backButton: '$button',
 			nextButton: '$button',
-			$label: 'rgba( 100, 100, 255, .8 )',
+			$label: 'rgba( 150, 150, 255, .9 )',
 			backLabel: '$label',
 			currentLabel: '$label',
 			nextLabel: '$label',
-			choiceBox: 'rgba( 100, 100, 255, .8 )',
+			choiceBox: 'rgba( 100, 100, 255, .9 )',
 			choiceText: 'rgba( 255, 255, 255, .9 )'
 		},
 		green: {
 			$box: 'rgba( 75, 100, 85, .5 )',
 			inputBox: '$box',
 			menuBox: '$box',
-			$button: 'rgba( 75, 200, 100, .8 )',
+			$button: 'rgba( 75, 200, 100, .9 )',
 			backButton: '$button',
 			nextButton: '$button',
-			$label: 'rgba( 75, 200, 100, .8 )',
+			$label: 'rgba( 75, 200, 100, .9 )',
 			backLabel: '$label',
 			currentLabel: '$label',
 			nextLabel: '$label',
-			choiceBox: 'rgba( 75, 200, 100, .8 )',
+			choiceBox: 'rgba( 75, 200, 100, .9 )',
 			choiceText: 'rgba( 255, 200, 255, .9 )'
 		}
 	}
@@ -768,7 +839,7 @@ export function onPoint ( { type, x, y } ) {
 				node.pushed = false
 				if ( pointer.delete( node ) ) {
 					let time = timers.get( node ).get( )
-					if ( time < 500 ) node.fire( 'click' )
+					if ( time <= 2000 ) node.fire( 'click' )
 					else { onAction( 'menu' ); break W }
 				}
 			} break
@@ -837,14 +908,14 @@ function isPointInPath( x, y ) {
 		let target = null
 
 		node.drawPath( prop )
-		if ( ctx.isPointInPath( x, y ) ) {	
+		if ( ctx.isPointInPath( x, y ) ) {
 
 			if ( node.listenerMode ) target = node
 			for ( let childnode of node.children ) {
 				let res = searchPointIn( childnode, prop )
 				if ( res ) target = res
 			}
-		
+
 		}
 
 		return target
@@ -853,7 +924,7 @@ function isPointInPath( x, y ) {
 
 }
 
-  
+
  function setShadow ( { offset, alpha = .9, blur = 5 } ) {
 	ctx.shadowOffsetX = ctx.shadowOffsetY = offset
 	ctx.shadowColor = `rgba( 0, 0, 0, ${ alpha } )`

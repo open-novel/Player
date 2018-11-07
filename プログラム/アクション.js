@@ -78,7 +78,7 @@ const frame = new $.Awaiter
 } ) ( )
 
 
-const action = new $.Awaiter
+//const action = new $.Awaiter
 export function onAction ( type ) {
 
 	//$.log( type )
@@ -123,7 +123,7 @@ export async function showSaveLoad ( { layer, title, isLoad = false, color } ) {
 	while ( page > 0 ) {
 
 		let start = ( page - 1 ) * visibleTileNo
-		let choices = await $.getSaveChoices ( { title, start: ( isLoad && page == totalPageNo ) ? 1000 : start, num: visibleTileNo, isLoad } )
+		let choices = await $.getSaveChoices( { title, start: ( isLoad && page == totalPageNo ) ? 1000 : start, num: visibleTileNo, isLoad } )
 
 		let backLabel = page > 1 ? `ページ ${ page - 1 }` : '戻る'
 		let currentLabel = `ページ ${ page }`
@@ -202,7 +202,7 @@ async function showLog ( layer ) {
 
 	let title = settings.title
 	if ( ! title ) return
-	
+
 	let { logBox, logArea } = layer
 
 	logArea.clear( )
@@ -212,7 +212,7 @@ async function showLog ( layer ) {
 		let preRow = i == 0 ? 0 : log[ i - 1 ][ log[ i - 1 ].length - 1 ].row + 1
 		for ( let deco of decoList ) deco.row += preRow
 	}
-	
+
 
 	logArea.put( log.flat( ) )
 
@@ -239,7 +239,7 @@ async function showMenu ( layer ) {
 	WHILE: while ( true ) {
 
 		let type = await sysChoices(
-			[ 'セーブ', 'ロード', '会話ログ', 'シェアする', '終了する' ],
+			[ 'セーブ', 'ロード', '会話ログ', 'シェアする', '会話欄非表示', '終了する' ],
 			{ rowLen: 4, backLabel: '戻る', color: 'green' }
 		)
 
@@ -305,9 +305,11 @@ async function showMenu ( layer ) {
 					let url = `https://${ type }?text=`+ encodeURIComponent(
 						`『${ title }』をプレイしています。\nby Openノベルプレイヤー https://open-novel.github.io` )
 					window.open( url )
+					//layer.conversationBox.prop( 'o', 0 )
 					if ( capture ) {
 						layer.menuBox.prop( 'o', 0 )
 						layer.buttonGroup.prop( 'o', 0 )
+						layer.iconGroup.prop( 'o', 0 )
 						Renderer.drawCanvas( )
 						$.download( await Renderer.toBlob( hiquality ), title )
 						layer.menuBox.prop( 'o', 1 )
@@ -315,6 +317,15 @@ async function showMenu ( layer ) {
 					}
 					break WHILE2
 				}
+
+			} break
+			case '会話欄非表示': {
+
+				let p = sysChoices( [ ], { } )
+				nowLayer.conversationBox.hide( )
+				nowLayer.iconGroup.hide( )
+				await p
+				nowLayer.conversationBox.show( )
 
 			} break
 			case '終了する': {
@@ -356,7 +367,6 @@ export function sysMessage ( text, speed = 100 ) {
 export async function showMessage ( layer, name, text, speed ) {
 
 	let nameArea = layer.nameArea.reborn( ), messageArea = layer.messageArea.reborn( )
-	nameArea.clear( ), messageArea.clear( )
 
 	if ( name.length == 0 && text.length == 0 ) {
 		layer.conversationBox.hide( )
@@ -365,79 +375,147 @@ export async function showMessage ( layer, name, text, speed ) {
 	layer.conversationBox.show( )
 
 
+	nameArea.clear( )
+	for ( let deco of ( decoText( name )[ 0 ] || [ ] ).filter( deco => !! deco.text ) ) nameArea.add( deco )
 
-	for ( let deco of decoText( name ) ) nameArea.add( deco )
+	for ( let decoList of decoText( text ) ) {
 
-	let decoList = decoText( text )
+		messageArea.clear( )
+		//$.log( decoList )
 
-	//$.log( decoList )
+		let len = decoList.length
+		let index = 0
 
-	let len = decoList.length
-	let index = 0
+		let decoListPure = decoList.filter( deco => !! deco.text )
 
-	let decoListPure = decoList.filter( deco => !! deco.text )
+		messageLog.push( decoListPure )
 
-	messageLog.push( decoListPure )
+		let time = new $.Time
 
-	let time = new $.Time
+		if ( speed == Infinity ) messageArea.put( decoListPure )
 
-	if ( speed == Infinity ) messageArea.put( decoListPure )
+		else loop: while ( true ) {
 
-	else loop: while ( true ) {
+			let interrupt = await trigger.stepOrFrameupdate( )
 
-		let interrupt = await trigger.stepOrFrameupdate( )
+			let to = interrupt ? len : speed * time.get( ) / 1000 | 0
 
-		let to = interrupt ? len : speed * time.get( ) / 1000 | 0
-
-		for ( ; index < to && index < len; index ++ ) {
-			let deco = decoList[ index ], wait = deco.wait || 0
-			if ( wait ) {
-				index ++
-				time.pause( )
-				await trigger.stepOrTimeout( wait / speed * 1000 )
-				time.resume( )
-				continue loop
+			for ( ; index < to && index < len; index ++ ) {
+				let deco = decoList[ index ], wait = deco.wait || 0
+				if ( wait ) {
+					index ++
+					time.pause( )
+					await trigger.stepOrTimeout( wait / speed * 1000 )
+					time.resume( )
+					continue loop
+				}
+				messageArea.add( deco )
 			}
-			messageArea.add( deco )
+
+			if ( to >= len ) break
 		}
 
-		if ( to >= len ) break
-	}
+		await trigger.step( )
 
-	await trigger.step( )
+	}
 
 }
 
 
 function decoText ( text ) {
 
-	let decoList = [ ]
+	//$.log( 'texts', text )
 
-	let mag = 1, bold = false, color = undefined, row = 0
+	let decoList = [ ], decoLines = [ ], decoPages = [ ], overBuf = [ ]
 
+	let mag = 1, bold = false, color = undefined
+	let width = 0, height = 0, hMax = 1
+
+	decoLines.push( decoList )
 	for ( let unit of ( text.match( /\\\w(\[[\w.]+\])?|./gu ) || [ ] ) ) {
 		let magic = unit.match( /\\(\w)\[?([\w.]+)?\]?/ )
 		if ( magic ) {
 			let [ , type, val ] = magic
 			switch ( type ) {
-						case 'w': decoList.push( { wait: val || Infinity } )
-				break;	case 'n': row ++
+							case 'w': decoList.push( { wait: val || Infinity } )
+				break;	case 'n': { decoList = [ ], decoLines.push( decoList ) }
 				break;	case 'b': bold = true
 				break;	case 'B': bold = false
 				break;	case 'c': color = val
+				break;	case 'C': color = undefined
 				break;	case 's': mag = val
+				break;	case 'S': mag = 1
 				break;	default : $.warn( `"${ type }" このメタ文字は未実装です`　)
 			}
 		} else {
-			decoList.push( { text: unit, mag, bold, color, row } )
+			let deco = { text: unit, mag, bold, color }
+			deco.width = Renderer.DecoTextNode.measureWidth( deco )
+			decoList.push( deco )
 		}
 
 	}
 
-	return decoList
+	//$.log( 'lines', [ ...decoLines ] )
+
+	decoLines = decoLines.flatMap( decoList => {
+		let lines = [ ]
+		while ( decoList.length ) {
+
+			let lineWidth = 0
+			let line = [ ], lastMatch = null
+			lines.push( line )
+
+			X: while ( decoList.length ) {
+				if ( lineWidth > 32 ) {
+					let temp = [ ]
+
+					if ( lastMatch ) while ( true ) {
+						let deco = line.pop( )
+						if ( deco == lastMatch ) break
+						temp.unshift( deco )
+					} else while ( lineWidth > 30 ) {
+						let deco = line.pop( )
+						temp.unshift( deco )
+						lineWidth -= deco.width || 0
+					}
+					for ( let deco of temp.reverse( ) ) decoList.unshift( deco )
+					break X
+				}
+				let deco = decoList.shift( )
+				line.push( deco )
+				lineWidth += deco.width || 0
+				let chars = [ ... ',.!?)]、。！？）」』' ]
+				if ( lineWidth > 20 && deco.text && chars.includes( deco.text ) ) {
+					lastMatch = deco
+				}
+			}
+		}
+
+		return lines
+	} )
+
+	//$.log( 'lines', [ ...decoLines ] )
+
+	while ( decoLines.length ) {
+		let page = [ ], pageHeight = 0
+
+		X: while ( decoLines.length ) {
+			let line = decoLines.shift( )
+			pageHeight += line.reduce( ( max, deco ) => Math.max( max, deco.mag || 0 ), 0 )
+			if ( page.length > 0 && pageHeight > 3.3 ) {
+				decoLines.unshift( line )
+				break X
+			} else page.push( line )
+		}
+		page = page.map( ( line, row ) => line.map( deco => ( { ...deco, row } ) ) ).flat( )
+		decoPages.push( page )
+	}
+
+	$.log( 'pages', [ ...decoPages ] )
+
+	return decoPages
 
 }
-
 
 
 class ProgressTimer extends $.Awaiter {
@@ -551,7 +629,7 @@ function animateImages ( time ) {
 		let msec = time - baseTime
 
 		// Array.from( xml.querySelectorAll( 'animate' ), elm => {
-		// 	let begin = +( elm.getAttribute( 'begin' ) || '' ).match( /\d+|/ )[ 0 ] || 0 
+		// 	let begin = +( elm.getAttribute( 'begin' ) || '' ).match( /\d+|/ )[ 0 ] || 0
 		// 	let end = +( elm.getAttribute( 'end' ) || '' ).match( /\d+|/ )[ 0 ] || 0
 		// 	elm.setAttribute( 'begin', begin - sec + 's' )
 		// 	if ( end ) elm.setAttribute( 'end', end - sec + 's' )
@@ -559,7 +637,7 @@ function animateImages ( time ) {
 
 		for ( let { element, values, duration } of animates ) {
 
-			
+
 			let index = ( ( msec / duration ) % 1 ) * values.length | 0
 			//$.log( duration, msec / duration, index, values )
 			element.setAttribute( 'values', values[ index ] )
@@ -571,7 +649,7 @@ function animateImages ( time ) {
 		$.getImage( blob ).then( img => image.prop( 'img', img ) )
 
 	}
-	
+
 
 }
 
@@ -708,6 +786,10 @@ async function removeImages ( targetGroup, kind ) {
 }
 
 
+export function hideIcons ( ) {
+	nowLayer.iconGroup.prop( 'o', 0 )
+}
+
 export async function sysChoices ( choices, opt ) {
 	return showChoices(  Object.assign( { layer: nowLayer, choices }, opt ) )
 }
@@ -731,7 +813,7 @@ export async function showChoices ( { layer, choices, inputBox = layer.menuBox, 
 
 	for ( let i = 0; i < len; i++ ) {
 		let cho = choices[ i ]
-		let { label = '', value = label, disabled = false } =
+		let { label = '', value = label, disabled = false, bgimage = null } =
 			( cho === Object( cho ) ) ? cho : { label: cho }
 		if ( ! label ) disabled = true
 		let row = i % rowLen, col = i / rowLen | 0
@@ -741,14 +823,21 @@ export async function showChoices ( { layer, choices, inputBox = layer.menuBox, 
 			name: 'choiceBox',
 			x, y, w, h, listenerMode: 'listen',
 			disabled,
-			//fill:  'rgba( 0, 225, 255, 1 )',
+			fill: bgimage ? 'rgba( 127, 127, 127, 1 )' : '',
 			sound: ! disabled
 		} )
 		inputBox.append( choiceBox )
 
+		let image  = new Renderer.ImageNode( {
+			name: 'bgimage', img: bgimage, o: .75, clip: true, listenerMode: 'listen'
+		} )
+		choiceBox.append( image )
+
 		let textArea = new Renderer.TextNode( {
 			name: 'choiceText',
-			size: .7, y: .05, pos: 'center'
+			size: bgimage ? .35 : .7,
+			y: bgimage ? .55 : .05,
+			pos: 'center'
 		} )
 		choiceBox.append( textArea )
 
@@ -766,10 +855,14 @@ export async function showChoices ( { layer, choices, inputBox = layer.menuBox, 
 		async function observe( ) {
 			for await ( let obj of cho( ) ) {
 				$.log( 'obj', obj )
-				;( { label = '', value = undefined, disabled = false } = obj )
+				;( { label = '', value = undefined, disabled = false, bgimage = null } = obj )
 				textArea.set( obj.label )
 				value = obj.value
 				choiceBox.disabled = disabled
+				image.img = bgimage
+				textArea.prop( 'size', bgimage ? .35 : .7 )
+				textArea.prop( 'y', bgimage ? .55 : .05 )
+				//if ( Object( bgimage ) === bgimage ) image.show( )
 			}
 		}
 
@@ -811,6 +904,7 @@ export async function showChoices ( { layer, choices, inputBox = layer.menuBox, 
 
 
 	if ( menuEnebled ) {
+		layer.iconGroup.show( )
 		layer.menuLabels.children.forEach( label => label.prop( 'o', 0 ) )
 		layer.menuLabels[ menuType ].prop( 'o', 1 )
 	}
@@ -831,7 +925,7 @@ export async function showChoices ( { layer, choices, inputBox = layer.menuBox, 
 		layer.menuLabels.children.forEach( label => label.prop( 'o', 0 ) )
 		layer.menuLabels.open.prop( 'o', 1 )
 	}
-	
+
 	return val
 
 }
@@ -848,7 +942,7 @@ export async function presentVR ( flag ) {
 		// 		document.body.onclick = null
 		// 	}
 		// } )
-		return VR.display.requestPresent( [ { source: settings.ctx.canvas } ] ) 
+		return VR.display.requestPresent( [ { source: settings.ctx.canvas } ] )
 	} else {
 		return VR.display.exitPresent( )
 	}

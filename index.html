@@ -4,7 +4,7 @@ These codes are licensed under CC0.
 http://creativecommons.org/publicdomain/zero/1.0
 -->
 
-<meta charset="UTF-8">
+<meta charset="utf-8">
 <meta name="theme-color" content="#6464ff">
 <meta name="viewport" content="initial-scale=1.0, user-scalable=no">
 <link rel="icon" type="image/png" href="/Player/画像/アイコン192.png">
@@ -20,7 +20,7 @@ http://creativecommons.org/publicdomain/zero/1.0
 
 <style> * { user-select: none; } </style>
 
-<script type=module src="/Player/プログラム/メイン.js"></script>
+<script nomodule> alert( '※お使いの実行環境は本プレイヤーに対応しておりません※\n\n※モダンブラウザ最新版をお使い下さい※' ) </script>
 <script type=module src="/プログラム/メイン.js"></script>
 
-<div id="ONPWrapper" data-onp='{ "pwa": true }'></div>
+<div id="ONPWrapper">読み込み中...<br><br>設定変更後起動できなくなった場合は<br><a href="javascript:localStorage.clear();location.reload()">設定リセット</a>をお試しください</div>

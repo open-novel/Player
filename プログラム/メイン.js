@@ -38,7 +38,7 @@ async function main( ) {
 	wrapper.appendChild( player )
 	player.appendChild( canvas )
 
-	if ( option.pwa ) {
+	if ( true || option.pwa ) {
 
 		Object.assign( document.body.style, {
 			backgroundColor: 'black',
