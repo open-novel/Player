@@ -234,12 +234,12 @@ async function showSysMenu ( ) {
 
 	WHILE: while ( true ) {
 
-		Action.sysMessage( 'システムメニュー' )
+		Action.sysMessage( '各種設定を行ったり関連Webサイトに跳ぶことができます' )
 
 
 		let sel = await Action.sysChoices(
 			[
-				
+
 				'受信チャンネル設定',
 				'プレイヤーを登録する',
 				'データ保存状況確認',

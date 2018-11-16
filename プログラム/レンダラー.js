@@ -222,6 +222,9 @@ export class RectangleNode extends Node {
 		let offset = H * .01
 
 		if ( fill ) {
+
+			this.drawPath( { x, y, w, h } )
+
 			if ( disabled ) fill = 'rgba( 200, 200, 200, .5 )'
 			if ( pushed ) {
 				ctx.filter = 'brightness(50%)'
@@ -229,9 +232,13 @@ export class RectangleNode extends Node {
 				if ( shadow ) setShadow( { offset, alpha: .5 } )
 				if ( forcused ) ctx.filter = 'brightness(150%)'
 			}
+			if ( forcused ) {
+				ctx.lineWidth = H * .02
+				ctx.strokeStyle = 'rgba( 255, 255, 220, .5 )'
+				ctx.stroke( )
+			}
 
 			ctx.fillStyle = fill
-			this.drawPath( { x, y, w, h } )
 			ctx.fill( )
 
 		}
@@ -248,7 +255,7 @@ export class RectangleNode extends Node {
 		if ( pushed ) { x += offset / 2, y += offset / 2 }
 
 		ctx.beginPath( )
-		ctx.moveTo( x, y )
+		ctx.moveTo( x + w / 2, y )
 		ctx.arcTo( x + w, y, x + w, y + h, r )
 		ctx.arcTo( x + w, y + h, x, y + h, r )
 		ctx.arcTo( x, y + h, x, y, r )
@@ -274,7 +281,7 @@ export class PolygonNode extends Node {
 				ctx.filter = 'brightness(50%)'
 			} else {
 				if ( shadow ) setShadow( { offset: H * .01, alpha: .5 } )
-				if ( forcused ) ctx.filter = 'brightness(150%)'
+				if ( forcused ) ctx.filter = 'brightness(200%)'
 			}
 
 			ctx.fillStyle = fill
@@ -373,10 +380,10 @@ export class DecoTextNode extends Node {
 
 	draw ( { x, y, w, h } ) {
 
-		let preRow = 0, xBuf = 0, yBuf = 0, yMax = 0
+		let preRow = -1, xBuf = 0, yBuf = 0, yMax = 0
 
 		for ( let {
-			text, mag = 1, bold = false, color: fill = this.fill, width, row = 0
+			text, mag = 1, bold = false, color: fill = this.fill, row = 0
 		} of this.decoList ) {
 			$.assert( preRow <= row )
 			while ( preRow < row ) {
@@ -390,7 +397,6 @@ export class DecoTextNode extends Node {
 			//ctx.textBaseline = 'top'
 
 			let b = h *  size * .025 + 2.5
-
 			setShadow( { offset: b } )
 
 			ctx.strokeStyle = 'rgba( 0, 0, 0, .5 )'
@@ -528,7 +534,7 @@ function initLayer ( ) {
 				children: [
 					{
 						type: DecoTextNode, name: 'nameArea',
-						x: .05, w: .1, y: .18, size: .175, fill: 'rgba( 255, 255, 220, 1 )'
+						x: .05, w: .1, y: .18, size: .175, fill: 'rgba( 255, 255, 220, 1 )',
 					},
 					{
 						type: DecoTextNode, name: 'messageArea',
@@ -598,17 +604,17 @@ function initLayer ( ) {
 						children: [
 							{
 								type: TextNode, name: 'open', o: 1,
-								y: .74, w: .2, fill: 'rgba( 255, 255, 255, .5 )', text: 'open menu',
+								y: .74, w: .2, fill: 'rgba( 255, 255, 255, .9 )', text: 'open menu',
 								pos: 'center', size: .04, rotate: 45
 							},
 							{
 								type: TextNode, name: 'close', o: 0,
-								y: .74, w: .2, fill: 'rgba( 255, 255, 255, .5 )', text: 'close menu',
+								y: .74, w: .2, fill: 'rgba( 255, 255, 255, .9 )', text: 'close menu',
 								pos: 'center', size: .04, rotate: 45
 							},
 							{
 								type: TextNode, name: 'top', o: 0,
-								y: .86, w: .1, fill: 'rgba( 255, 255, 255, .5 )', text: '🔝\uFE0E',
+								y: .86, w: .1, fill: 'rgba( 255, 255, 255, .9 )', text: '🔝\uFE0E',
 								pos: 'center', size: .125
 							},
 						]
