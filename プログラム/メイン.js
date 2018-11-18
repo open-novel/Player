@@ -93,7 +93,6 @@ async function main( ) {
 			if ( e.button > 3 ) return
 			let button = [ 'left' ,'middle', 'right' ] [ e.button ]
 			Player.onPointerEvent( { type, button, x: e.offsetX, y: e.offsetY } )
-			$.log( e )
 		}, true )
 	}
 
