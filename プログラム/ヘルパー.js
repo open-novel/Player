@@ -196,12 +196,6 @@ export function parseSetting ( text ) {
 	return setting
 }
 
-
-export function neverRun ( ) {
-	return new Deferred( ).promise
-}
-
-
 export class Awaiter {
 
 	fire ( key, value ) {
