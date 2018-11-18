@@ -512,7 +512,7 @@ async function installScenario ( index, sel ) {
 			let res = await installByScenarioList( )
 			if ( res == $.Token.back ) return installScenario( index )
 			if ( res == $.Token.close ) return $.Token.close
-			if ( $.isToken( files ) ) return files
+			if ( $.isToken( res ) ) return res
 			return $.Token.success
 
 		} break
@@ -548,9 +548,9 @@ async function installScenario ( index, sel ) {
 					if ( ! data.title ) return $.Token.failure
 					files = await collectScenarioFiles( data ).catch( e => {
 						$.hint( '取得できないファイルがありました' )
-						$.error( e )
 						return $.Token.failure
 					} )
+
 				} break
 				case 'install-packed': {
 					if ( ! data.file ) return $.Token.failure
@@ -565,7 +565,9 @@ async function installScenario ( index, sel ) {
 		default : throw 'UnEx'
 	}
 
+	$.log( files )
 	if ( ! files ) return $.Token.failure
+	if ( $.isToken( files ) ) return files
 
 	async function installByScenarioList ( ) {
 
@@ -695,7 +697,7 @@ async function installScenario ( index, sel ) {
 
 		let cacheMap = new Map
 
-		let doneCount = 0, fetchCount = 0
+		let doneCount = 0, fetchCount = 0, failure = false
 
 		function getFile( path, type ) {
 
@@ -730,7 +732,7 @@ async function installScenario ( index, sel ) {
 					ng( )
 				} )
 
-			} ).then( f => { ++doneCount; showCount( ); return f } ).finally( ( ) => { done = true } )
+			} ).then( f => { ++doneCount; showCount( ); return f }, ( ) => { failure = true } ).finally( ( ) => { done = true } )
 
 		}
 
@@ -748,6 +750,7 @@ async function installScenario ( index, sel ) {
 		await getFile( '背景/サムネイル', 'image' ).catch( ( ) => null )
 
 		doneCount = fetchCount = 2
+		failure = false
 
 		async function getScenario( path ) {
 			let file = await getFile( path, 'text' )
@@ -763,7 +766,8 @@ async function installScenario ( index, sel ) {
 
 		port.close( )
 
-		return [ ...cacheMap ].map( ( [ name, f ] ) => new File( [ f ], title + '/' + name, { type: f.type }  ) )
+		return failure ? $.Token.failure :
+			[ ...cacheMap ].map( ( [ name, f ] ) => new File( [ f ], title + '/' + name, { type: f.type }  ) )
 
 	}
 
@@ -784,14 +788,18 @@ async function installScenario ( index, sel ) {
 		else return $.Token.failure
 	}
 
+
+
+	//////
+	
+	if ( ! files.every ) return $.Token.failure
+
 	Action.sysMessage( 'インストールしています……' )
 
 	//window.files = files
 
 	let settingFile
 	let dataMap = new Map
-
-
 
 	let title = ''
 	if ( files.every( ( file ) => {
