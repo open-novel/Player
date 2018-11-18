@@ -147,9 +147,10 @@ async function playSystemOpening ( mode ) {
 		let success = await installScenario( index, 'リンクから' )
 		if ( success == $.Token.success ) Action.sysMessage( 'インストールが完了しました' )
 		else Action.sysMessage( 'インストールできませんでした' )
-		await Action.sysChoices( [ ], { backLabel: '作品選択へ' } )
+		await Action.sysChoices( [ ], { backLabel: 'トップへ' } )
 		location.hash = ''
-		return playSystemOpening( { mode: undefined } )
+		location.reload( )
+		await $.neverDone
 
 	}
 	// シナリオ開始メニュー表示
