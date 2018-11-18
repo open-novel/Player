@@ -242,7 +242,7 @@ async function showSysMenu ( ) {
 					value: '実験機能'
 				},
 
-				{ label: '🔗公式サイト　', value: '公式サイトリンク' },
+				{ label: '🔗ホームページ', value: '公式サイトリンク' },
 				{ label: '🔗作品一覧　　', value: '作品一覧リンク' },
 				{ label: '🔗操作方法Wiki', value: '操作方法リンク' },
 				{ label: '🔗open2chスレ', value: '制作スレリンク' },

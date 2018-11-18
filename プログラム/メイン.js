@@ -92,7 +92,8 @@ async function main( ) {
 			e.preventDefault( ), e.stopPropagation( )
 			if ( e.button > 3 ) return
 			let button = [ 'left' ,'middle', 'right' ] [ e.button ]
-			Player.onPointerEvent( { type, button, x: e.layerX, y: e.layerY } )
+			Player.onPointerEvent( { type, button, x: e.offsetX, y: e.offsetY } )
+			$.log( e )
 		}, true )
 	}
 
