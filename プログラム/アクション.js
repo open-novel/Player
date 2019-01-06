@@ -207,20 +207,65 @@ async function showLog ( layer ) {
 
 	logArea.clear( )
 	logBox.show( )
-	let log = $.clone( messageLog )
-	for ( let [ i, decoList ] of log.entries( ) ) {
-		let preRow = i == 0 ? 0 : log[ i - 1 ][ log[ i - 1 ].length - 1 ].row + 1
-		for ( let deco of decoList ) deco.row += preRow
+
+
+	let logLength =  messageLog.length
+
+	let page = logLength - 1, pageHistory = [ page ]
+
+	WHILE: while ( true ) {
+
+		pageHistory.push( page )
+
+		let log = [ ], height = 0
+
+		while ( true ) {
+			let decoLines = messageLog[ page ]
+			height += decoLines.height
+			log.unshift( decoLines )
+			if ( page == 0 ) break
+			if ( height + messageLog[ page - 1 ].height > 13 ) break
+			page --
+		}
+
+		let offset = 0
+		log = log.map( ( decoList, i ) => {
+			let baseRow = decoList[ 0 ].row
+			return decoList.map( deco => {
+				if ( baseRow != deco.row ) {
+					offset += deco.row - baseRow
+					baseRow = deco.row
+				}
+				return ( { ...deco, row: i + offset } )
+			} )
+		} )
+
+		$.log( log )
+
+		logArea.put( log.flat( ) )
+
+
+		let cho = await sysChoices( [ ], {
+			color: 'green',
+			currentLabel: '会話ログ',
+			backLabel: pageHistory[ pageHistory.length - 1 ] == logLength - 1 ? '戻る' : '最新へ' ,
+			nextLabel: page == 0 ? undefined : '過去へ',
+		} )
+
+		if ( cho == $.Token.back ) {
+			if ( pageHistory[ pageHistory.length - 1 ] == logLength - 1 ) break WHILE
+			page = pageHistory[ pageHistory.length - 2 ]
+			pageHistory.pop( )
+			pageHistory.pop( )
+			continue WHILE
+		}
+		if ( cho == $.Token.next ) {
+			continue WHILE
+		}
+		if ( cho == $.Token.close ) break WHILE
+
+
 	}
-
-
-	logArea.put( log.flat( ) )
-
-	$.log( log.flat( ), logArea )
-
-	await sysChoices( [ ], {
-		backLabel: '戻る', color: 'green', currentLabel: '※実装途中です※'
-	} )
 
 	logBox.hide( )
 	layer.on( 'back' ).then( ( ) => showLog( layer ) )
@@ -239,7 +284,7 @@ async function showMenu ( layer ) {
 	WHILE: while ( true ) {
 
 		let type = await sysChoices(
-			[ 'セーブ', 'ロード', '会話ログ', 'シェアする', '会話欄非表示', '終了する' ],
+			[ 'セーブ', 'ロード', '会話ログ', 'シェア', 'オート', 'スキップ', '会話欄非表示', '終了する' ],
 			{ rowLen: 4, backLabel: '戻る', color: 'green' }
 		)
 
@@ -279,7 +324,7 @@ async function showMenu ( layer ) {
 				break WHILE
 
 			} break
-			case 'シェアする': {
+			case 'シェア': {
 
 				let capture = false, hiquality = false
 				WHILE2: while ( true ) {
@@ -317,6 +362,38 @@ async function showMenu ( layer ) {
 					}
 					break WHILE2
 				}
+
+			} break
+			case 'オート': {
+
+				( async ( ) => {
+
+					let skipping = true
+					layer.on( 'menu' ).then( ( ) => { skipping = false } )
+					while ( skipping ) {
+						layer.fire( 'next' )
+						await $.timeout( 1000 )
+					}
+
+				} )( )
+
+				break WHILE
+
+			} break
+			case 'スキップ': {
+
+				( async ( ) => {
+
+					let skipping = true
+					layer.on( 'menu' ).then( ( ) => { skipping = false } )
+					while ( skipping ) {
+						layer.fire( 'next' )
+						await $.timeout( 1 )
+					}
+
+				} )( )
+
+				break WHILE
 
 			} break
 			case '会話欄非表示': {
@@ -387,6 +464,8 @@ export async function showMessage ( layer, name, text, speed ) {
 		let index = 0
 
 		let decoListPure = decoList.filter( deco => !! deco.text )
+
+		decoListPure.height = decoList.height
 
 		messageLog.push( decoListPure )
 
@@ -508,6 +587,7 @@ function decoText ( text ) {
 			} else page.push( line )
 		}
 		page = page.map( ( line, row ) => line.map( deco => ( { ...deco, row } ) ) ).flat( )
+		page.height = pageHeight
 		decoPages.push( page )
 	}
 

@@ -14,13 +14,12 @@ export const baseurl = new URL( base, location.href ).href
 import * as DB from './データベース.js'
 
 
-let logEnabled
-checkLogEnabled( )
 
-function checkLogEnabled( ) {
-	logEnabled = !! localStorage.logEnabled
-	setTimeout( checkLogEnabled, 1000 )
-}
+export let Settings = { VR: { enabled: false }, TesterMode: !! localStorage.TesterMode }
+
+
+let logEnabled = Settings.TesterMode
+localStorage.DoNotAnalytic = Settings.TesterMode ? 'Yes' : ''
 
 const NOP = ( ) => { }
 
@@ -32,7 +31,7 @@ export const hint	= console.info.bind( console )
 export const assert = console.assert.bind( console )
 
 log( baseurl )
-export let Settings = { VR: { enabled: false } }
+
 
 
 export const Token = [

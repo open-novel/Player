@@ -39,7 +39,9 @@ async function play ( { ctx, mode, installEvent: event, option: opt } ) {
 	let sound = 'off'
 	if ( mode != 'install' ) {
 
-		let text = `openノベルプレイヤー\\n \\n` +
+		let text =
+			`openノベルプレイヤー` +
+			( $.Settings.TesterMode ? '　★テスターモード★' : '' ) + `\\n \\n` +
 			`${ settings[ 'バージョン' ][ 0 ] }${ $.channel.includes( 'Dev' ) ? '(開発版)' : '' }  ${ settings[ '更新年月日' ][ 0 ] } \\n`
 
 
@@ -367,9 +369,14 @@ async function showSysMenu ( ) {
 					'クリックで各機能を設定できます'
 				)
 
-				let VR = $.Settings.VR
+				let { VR, TesterMode } = $.Settings
 
 				let sel = await Action.sysChoices( [
+
+					{
+						label: `テスターモード　（現在${ TesterMode ? 'ON ' : 'OFF' }）`,
+						value: 'テスターモード'
+					},
 
 					async function * ( ) {
 						if ( ! navigator.getVRDisplays ) return yield { label: `VR　(非対応環境です)`, disabled: true }
@@ -395,6 +402,27 @@ async function showSysMenu ( ) {
 				if ( sel == $.Token.close ) break WHILE
 
 				switch ( sel ) {
+					case 'テスターモード': {
+						Action.sysMessage(
+							'テスターモードが有効だと以下の効果があります\\n' +
+							'・詳細なログをコンソールに表示\\n' +
+							'・アクセス解析を無効'
+						)
+						let choiceList = [ { label: 'ONにする' }, { label: 'OFFにする' } ]
+						$.disableChoiceList( [ ( TesterMode ? 'ON' : 'OFF' ) + 'にする'  ], choiceList )
+						let sel = await Action.sysChoices( choiceList, { backLabel: '戻る' } )
+						if ( sel == $.Token.back ) continue WHILE2
+						if ( sel == $.Token.close ) break WHILE
+						TesterMode = ! TesterMode
+						localStorage.TesterMode = TesterMode ? 'Yes' : ''
+						Action.sysMessage(
+							'次回起動時からテスターモードが【' + ( TesterMode ? 'ON' : 'OFF' ) + '】になるよう設定しました\\n' +
+							'変更を反映させるためにプレイヤーをリセットしてください'
+						)
+						await Action.sysChoices( [ ], { backLabel: 'リセットする', color: 'green' } )
+						location.reload( )
+						await $.neverDone
+					} break
 					case 'VR': {
 						let res = await $.trying( Action.presentVR( VR.enabled = ! VR.enabled ) )
 						if ( res == $.Token.failure ) {
@@ -791,7 +819,7 @@ async function installScenario ( index, sel ) {
 
 
 	//////
-	
+
 	if ( ! files.every ) return $.Token.failure
 
 	Action.sysMessage( 'インストールしています……' )
