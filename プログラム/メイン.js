@@ -101,7 +101,7 @@ async function main( ) {
 			if ( type == 'start' ) type = 'down'
 			if ( type == 'end'   ) type = 'up'
 			let t = e.touches[ 0 ] 
-			Player.onPointerEvent( { type, button: 'left', x: t.clientX, y: e.clientY } )
+			Player.onPointerEvent( { type, button: 'left', x: t.clientX, y: t.clientY } )
 		}, true )
 	}
 
