@@ -100,8 +100,8 @@ async function main( ) {
 			e.preventDefault( ), e.stopImmediatePropagation( )
 			if ( type == 'start' ) type = 'down'
 			if ( type == 'end'   ) type = 'up'
-			let t = e.touches[ 0 ] 
-			Player.onPointerEvent( { type, button: 'left', x: t.clientX, y: t.clientY } )
+			let x = e.layerX || e.touches[ 0 ].clientX, y = e.layerY || e.touches[ 0 ].clientY  
+			Player.onPointerEvent( { type, button: 'left', x, y } )
 		}, true )
 	}
 
