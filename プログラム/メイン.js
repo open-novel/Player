@@ -85,16 +85,27 @@ async function main( ) {
 
 	let ctx = canvas.getContext( '2d' )
 
-	let captureEventTypes = [ 'down', 'up', 'move' ]
 
-	for ( let type of captureEventTypes ) {
+	for ( let type of [ 'down', 'up', 'move' ] ) {
 		canvas.addEventListener( `pointer${ type }`, e => {
-			e.preventDefault( ), e.stopPropagation( )
+			e.preventDefault( ), e.stopImmediatePropagation( )
 			if ( e.button > 3 ) return
 			let button = [ 'left' ,'middle', 'right' ] [ e.button ]
 			Player.onPointerEvent( { type, button, x: e.offsetX, y: e.offsetY } )
 		}, true )
 	}
+
+	for ( let type of [ 'start', 'end', 'move' ] ) {
+		canvas.addEventListener( `touch${ type }`, e => {
+			e.preventDefault( ), e.stopImmediatePropagation( )
+			if ( type == 'start' ) type = 'down'
+			if ( type == 'end'   ) type = 'up'	
+			Player.onPointerEvent( { type, button: 'left', x: e.offsetX, y: e.offsetY } )
+		}, true )
+	}
+
+
+
 
 	canvas.addEventListener( 'contextmenu', e => e.preventDefault( ) )
 
