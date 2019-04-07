@@ -8,6 +8,7 @@ import * as DB from './データベース.js'
 
 
 let ctx, out, bgmSource, gain
+if ( ! window.AudioContext ) window.AudioContext = window.webkitAudioContext
 ctx = new AudioContext
 out = ctx.createGain( )
 setMainVolume( 0 )
@@ -51,7 +52,9 @@ export async function playSysEffect ( name ) {
 			bufferCache.set( name, ab )
 		}
 		let source = ctx.createBufferSource( )
-		source.buffer = await ctx.decodeAudioData( ab.slice( ) )
+		source.buffer = await new Promise( ok =>
+			ctx.decodeAudioData( ab.slice( 0 ), ok )
+		)
 		source.connect( out )
 		source.onended = ( ) => source.disconnect( )
 		ary.push( source )
@@ -81,7 +84,9 @@ export async function playBGM ( path ) {
 	let ab = await promise
 	let source = ctx.createBufferSource( )
 	source.loop = true
-	source.buffer = await ctx.decodeAudioData( ab )
+	source.buffer = await new Promise( ok =>
+		ctx.decodeAudioData( ab, ok )
+	)
 	source.connect( out )
 
 	stopBGM( )

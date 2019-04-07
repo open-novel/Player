@@ -937,13 +937,13 @@ export async function showChoices ( { layer, choices, inputBox = layer.menuBox, 
 			for await ( let obj of cho( ) ) {
 				//$.log( 'obj', obj )
 				( { label = '', value = undefined, disabled = false, bgimage = null } = obj )
-				textArea.set( obj.label )
-				value = obj.value
+				textArea.set( label )
 				choiceBox.disabled = disabled
 				image.img = bgimage
 				textArea.prop( 'size', bgimage ? .35 : .7 )
 				textArea.prop( 'y', bgimage ? .55 : .05 )
 				//if ( Object( bgimage ) === bgimage ) image.show( )
+				//alert( label )
 			}
 		}
 

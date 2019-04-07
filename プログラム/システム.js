@@ -100,6 +100,9 @@ async function playSystemOpening ( mode ) {
 	$.log( titleList )
 
 	let noImage = await $.getImage( await $.fetchFile( './画像/画像なし.svg' ) )
+		.catch(
+			async ( ) => $.getImage( await $.fetchFile( './画像/画像なし.png' ) )
+		)
 
 	let cho = await Action.sysPageChoices( async function * ( index ) {
 		index += 1
@@ -108,7 +111,7 @@ async function playSystemOpening ( mode ) {
 		yield {
 			label: title ? title : '--------',
 			value: { settings, index },
-			bgimage: true
+			bgimage: false
 		}
 
 		let file = title ? await $.getFile( `${ origin }${ title }/背景/サムネイル` ).catch( e => null ) : null
@@ -119,6 +122,7 @@ async function playSystemOpening ( mode ) {
 			bgimage: image
 		}
 	}, { maxPages: 5, rowLen: 2, menuType: 'open' } )
+
 
 	if ( cho == $.Token.back ) {
 		location.reload( )
@@ -892,7 +896,7 @@ export let { target: initPlayer, register: nextInit } = new $.AwaitRegister( ini
 
 export function onPointerEvent ( { type, button, x, y } ) {
 
-	//$.log( { x, y } )
+	//$.log( type, button, x, y )
 	player.fire( 'pointer' )
 	Action.onPoint( { type, button, x, y } )
 }
