@@ -45,7 +45,7 @@ async function main( ) {
 			margin: '0',
 			textAlign: 'center',
 			width: '100vw',
-			height: '100vh',
+			height: '90vh',
 			overflow: 'hidden',
 		} )
 		Object.assign( player.style, {
@@ -58,7 +58,7 @@ async function main( ) {
 			margin: 'auto',
 			height: '56.25vw',
 			width: '177.78vh',
-			maxHeight: '100vh',
+			maxHeight: '90vh',
 			maxWidth: '100vw',
 		} )
 
@@ -100,7 +100,7 @@ async function main( ) {
 			e.preventDefault( ), e.stopImmediatePropagation( )
 			if ( type == 'start' ) type = 'down'
 			if ( type == 'end'   ) type = 'up'
-			let x = e.layerX || e.touches[ 0 ].clientX, y = e.layerY || e.touches[ 0 ].clientY  
+			let x = e.layerX || e.touches[ 0 ].clientX, y = e.layerY || e.touches[ 0 ].clientY
 			Player.onPointerEvent( { type, button: 'left', x, y } )
 		}, true )
 	}
