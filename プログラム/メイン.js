@@ -39,13 +39,15 @@ async function main( ) {
 	player.appendChild( canvas )
 
 	if ( true || option.pwa ) {
-
+		Object.assign( document.html.style, {
+			overflow: 'hidden',
+		} )
 		Object.assign( document.body.style, {
 			backgroundColor: 'black',
 			margin: '0',
 			textAlign: 'center',
 			width: '100vw',
-			height: '90vh',
+			height: '100vh',
 			overflow: 'hidden',
 		} )
 		Object.assign( player.style, {
@@ -58,7 +60,7 @@ async function main( ) {
 			margin: 'auto',
 			height: '56.25vw',
 			width: '177.78vh',
-			maxHeight: '90vh',
+			maxHeight: '100vh',
 			maxWidth: '100vw',
 		} )
 
