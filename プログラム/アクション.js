@@ -6,7 +6,7 @@ http://creativecommons.org/publicdomain/zero/1.0
 import * as $ from './ヘルパー.js'
 import * as Scenario from './シナリオ.js'
 import * as Renderer from './レンダラー.js'
-import * as Sound from './サウンド.js'
+import * as Media from './メディア.js'
 import * as DB from './データベース.js'
 
 
@@ -27,7 +27,7 @@ export async function init ( _settings = settings ) {
 	layer.on( 'menu' ).then( ( ) => showMenu( layer ) )
 	layer.on( 'back' ).then( ( ) => showLog( layer ) )
 	messageLog = [ ], imageAnimes = [ ]
-	await Sound.initSound( settings )
+	await Media.initMedia( settings )
 
 }
 
@@ -52,6 +52,22 @@ export async function play ( settings, state, _others = others ) {
 		await Promise.race( [ Scenario.play( nowLayer, state, others ), nowLayer.on( 'dispose' ) ] )
 		Array.from( document.querySelectorAll( 'img' ), elm => elm.remove( ) )
 	} while ( state = stateList.shift( ) )
+
+	await init( settings )
+
+	sysMessage( '再生が終了しました' )
+	let cho = await sysChoices( [
+		'最初から再生する',
+		//nagesenChk( '作者に投げ銭をする' ),
+	], { backLabel: '作品選択へ' } )
+	switch ( cho ) {
+		case '最初から再生する': {
+			return play( settings )
+		} break
+		case '作者に投げ銭をする': {
+			await nagesen( )
+		} break
+	}
 
 }
 
@@ -119,7 +135,7 @@ export class Trigger {
 
 export async function showSaveLoad ( { layer, title, isLoad = false, color } ) {
 	let page = 1
-	let visibleTileNo = 12, getTileNo = 24, totalPageNo = ( ( getTileNo / visibleTileNo ) | 0 ) + ( isLoad ? 1 : 0 )
+	let visibleTileNo = 9, getTileNo = 27, totalPageNo = ( ( getTileNo / visibleTileNo ) | 0 ) + ( isLoad ? 1 : 0 )
 	while ( page > 0 ) {
 
 		let start = ( page - 1 ) * visibleTileNo
@@ -132,7 +148,7 @@ export async function showSaveLoad ( { layer, title, isLoad = false, color } ) {
 		if ( isLoad && page == totalPageNo ) currentLabel = 'オート'
 		if ( isLoad && page == totalPageNo - 1 ) nextLabel = 'オート'
 
-		let index = await sysChoices( choices, { backLabel, currentLabel, nextLabel, color } )
+		let index = await sysChoices( choices, { backLabel, currentLabel, nextLabel, color, rowLen: 3 } )
 		if ( index === $.Token.back ) page --
 		else if ( index == $.Token.next ) page ++
 		else if ( index == $.Token.close ) return $.Token.close
@@ -276,16 +292,21 @@ async function showLog ( layer ) {
 
 async function showMenu ( layer ) {
 
-	let title = settings.title
+	let { title, origin } = settings
 	if ( ! title ) return
 
 	//layer.on( 'menu' ).then( ( ) => closeMenu( layer ) )
 
 	WHILE: while ( true ) {
 
+
 		let type = await sysChoices(
-			[ 'セーブ', 'ロード', '会話ログ', 'シェア', 'オート', 'スキップ', '会話欄非表示', '終了する' ],
-			{ rowLen: 4, backLabel: '戻る', color: 'green' }
+			[ 'セーブ', 'ロード', '会話ログ',
+			'オート', 'スキップ', '会話非表示',
+			'シェア',
+			nagesenChk( '投げ銭' ),
+			'終了する' ],
+			{ backLabel: '戻る', color: 'green' }
 		)
 
 		let page = 1
@@ -396,7 +417,17 @@ async function showMenu ( layer ) {
 				break WHILE
 
 			} break
-			case '会話欄非表示': {
+			case '投げ銭': {
+
+				settings[ '投げ銭コメント' ]
+
+				let cho = await nagesen( )
+				if ( cho == $.Token.back ) break SWITCH
+				if ( cho == $.Token.close ) break WHILE
+
+
+			} break
+			case '会話非表示': {
 
 				let p = sysChoices( [ ], { } )
 				nowLayer.conversationBox.hide( )
@@ -408,7 +439,7 @@ async function showMenu ( layer ) {
 			case '終了する': {
 
 				let choices = [ '本当に終了する' ].map( label => ( { label } ) )
-				let type = await sysChoices( choices, { rowLen: 4, backLabel: '戻る', color: 'green' } )
+				let type = await sysChoices( choices, { backLabel: '戻る', color: 'green' } )
 				if ( type == $.Token.back ) break SWITCH
 				if ( type == $.Token.close ) break WHILE
 				stateList.length = 0
@@ -427,7 +458,43 @@ async function showMenu ( layer ) {
 }
 
 
+export async function nagesen ( ) {
 
+	let { title, origin } = settings
+	let nofile, file = await $.getFile( `${ origin }${ title }/その他/投げ銭` ).catch( ( ) => null )
+	if ( ! file ) nofile = await $.fetchFile( './画像/画像なし.svg' )
+	let image = await $.getImage( file || nofile )
+
+	let label = ( settings[ '投げ銭コメント' ] || [ '' ] ).join( '\n' )
+
+	while ( true ) {
+
+		let cho = await sysChoices( [
+			{ label: '', bgimage: image },
+			{ label, textLine: 8 }
+		], {
+			backLabel: '戻る',
+			currentLabel: file ? '《投げ銭》' : '',
+			rowLen: 1
+		} )
+		if ( $.isToken( cho )  ) return cho
+		else $.download( image.src, '投げ銭用画像' )
+	}
+
+}
+
+function nagesenChk ( label ) {
+	return async function * ( ) {
+		let { title, origin } = settings
+		let disabled = true
+		yield { label, disabled }
+		disabled = ! (
+			settings[ '投げ銭コメント' ] ||
+			await $.getFile( `${ origin }${ title }/その他/投げ銭` ).catch( ( ) => null )
+		)
+		yield { label, value: label, disabled }
+	}
+}
 
 export function isOldLayer ( layer ) {
 	return layer != nowLayer
@@ -878,9 +945,11 @@ export async function scenarioChoices ( layer, choices ) {
 	return showChoices( { layer, choices, inputBox: layer.inputBox, menuType: 'open', menuEnebled: false } )
 }
 
-export async function showChoices ( { layer, choices, inputBox = layer.menuBox, rowLen = 4,
-	backLabel = '', currentLabel = '', nextLabel = '', menuType = 'close', menuEnebled = true,
-	color = 'blue' } ) {
+export async function showChoices ( {
+		layer, choices, inputBox = layer.menuBox, rowLen = 3,
+		backLabel = '', currentLabel = '', nextLabel = '',
+		menuType = 'close', menuEnebled = true, color = 'blue'
+	} ) {
 
 	let m = .05
 
@@ -893,32 +962,33 @@ export async function showChoices ( { layer, choices, inputBox = layer.menuBox, 
 
 	for ( let i = 0; i < len; i++ ) {
 		let cho = choices[ i ]
-		let { label = '', value = label, disabled = false, bgimage = null } =
+		let { label = '', value = label, disabled = false, bgimage = null, textLine = 1 } =
 			( cho === Object( cho ) ) ? cho : { label: cho }
-		if ( ! label ) disabled = true
+		//if ( ! label ) disabled = true
 		let row = i % rowLen, col = i / rowLen | 0
 		let [ x, y ] = [ m / 2 + ( w + m / 2 ) * col, m + ( h + m ) * row ]
 
 		let choiceBox = new Renderer.RectangleNode( {
 			name: 'choiceBox',
-			x, y, w, h, listenerMode: 'listen',
+			x, y, w, h, listenerMode: textLine == 1 ? 'listen' : undefined,
 			disabled,
-			fill: bgimage ? 'rgba( 127, 127, 127, 1 )' : '',
-			sound: ! disabled
+			fill: bgimage ? 'rgba( 127, 127, 127, 1 )' : textLine != 1 ? 'rgba( 0, 0, 0, 0 )' : '',
+			sound: ! disabled,
 		} )
 		inputBox.append( choiceBox )
 
 		let image  = new Renderer.ImageNode( {
-			name: 'bgimage', img: bgimage, o: .75, clip: true,
-			listenerMode: 'listen', sound: ! disabled
+			name: 'bgimage', img: bgimage, o: .9, clip: true, fixed: true,
+			listenerMode: 'listen', sound: ( ! disabled ) && textLine == 1,
 		} )
 		choiceBox.append( image )
 
 		let textArea = new Renderer.TextNode( {
 			name: 'choiceText',
-			size: bgimage ? .35 : .7,
-			y: bgimage ? .55 : .05,
-			pos: 'center'
+			size: bgimage ? .35 : .7 / textLine,
+			pos: textLine == 1 ? 'center' : undefined,
+			y: bgimage ? .55 : textLine == 1 ? .05 : 0,
+
 		} )
 		choiceBox.append( textArea )
 
@@ -1011,14 +1081,14 @@ export async function showChoices ( { layer, choices, inputBox = layer.menuBox, 
 
 }
 
-export async function sysPageChoices ( dataYielder, { maxPages = 5, rowLen = 4, menuType } ) {
+export async function sysPageChoices ( dataYielder, { maxPages, rowLen = 3, colLen = 3, menuType } ) {
 
 	let cho, page = 1
 
 	while ( true ) {
 
-		let list = await Promise.all( [ ...Array( rowLen * 3 ).keys( ) ].map( async i => {
-			let index = i + ( page - 1 ) * 6
+		let list = await Promise.all( [ ...Array( rowLen * colLen ).keys( ) ].map( async i => {
+			let index = i + ( page - 1 ) * rowLen * colLen
 			return ( ) => dataYielder( index )
 		} ) )
 
@@ -1057,5 +1127,10 @@ export async function presentVR ( flag ) {
 	}
 }
 
-export { playBGM, stopBGM, setMainVolume } from './サウンド.js'
+
+export function playBGV ( ...args ) {
+	return trigger.stepOr( Media.playBGV( ...args ) )
+}
+
+export { playSE, playBGM, stopBGM, stopBGV, setMainVolume } from './メディア.js'
 export { getFileList, getMarkList } from './シナリオ.js'

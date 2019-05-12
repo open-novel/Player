@@ -4,7 +4,7 @@ http://creativecommons.org/publicdomain/zero/1.0
 */
 
 import * as $ from './ヘルパー.js'
-import * as Sound from './サウンド.js'
+import * as Media from './メディア.js'
 
 let ctx = null
 let DPCanvas = null
@@ -88,7 +88,7 @@ class Node {
 			setSound( { node: this, type: 'click', name: 'クリック.ogg' } )
 			async function setSound ( { node, type, name } ) {
 				await node.on( type )
-				Sound.playSysEffect( name )
+				Media.playSysEffect( name )
 				setSound ( { node, type, name } )
 			}
 		}
@@ -217,7 +217,7 @@ export class RectangleNode extends Node {
 	draw ( { x, y, w, h, c, disabled } ) {
 
 		let { fill, shadow, forcused, pushed } = this
-		if ( ! fill && c ) fill = c
+		if ( ! fill ) fill = c
 
 		let offset = H * .01
 
@@ -337,7 +337,6 @@ export class TextNode extends Node {
 		ctx.textAlign = pos
 
 		//let b = h * size * .075
-		let b = ( h *  size )  * .025 + 2.5
 
 		if ( rotate ) {
 			ctx.translate( x, y )
@@ -348,14 +347,22 @@ export class TextNode extends Node {
 		if ( pos == 'center' ) x += w / 2
 
 		if ( fill ) {
-			if( shadow ) setShadow( { offset: b } )
 
 			ctx.strokeStyle = 'rgba( 127, 127, 127, .5 )'
-			ctx.lineWidth = h * size * .1
-			ctx.strokeText( text, x, y + h * size, w - b )
-
 			ctx.fillStyle = fill
-			ctx.fillText( text, x, y + h * size, w - b )
+
+			let line = 1, chunks = text.split( '\n' )
+
+			ctx.lineWidth = h * size * .1
+			let b = h *  size  * .025 + 2.5
+			if( shadow ) setShadow( { offset: b } )
+
+
+			for ( let chu of chunks ) {
+				ctx.strokeText( chu, x, y + h * size * line, w - b )
+				ctx.fillText( chu, x, y + h * size * line , w - b )
+				line +=1.15
+			}
 
 		}
 
@@ -463,7 +470,7 @@ export class ImageNode extends Node {
 	}
 
 	draw ( { ctx, x, y, w, h } ) {
-		let { img, fill, clip, pushed } = this
+		let { img, fill, clip, fixed, pushed } = this
 		if ( clip ) {
 			const r = H * .02, offset = H * .01
 			if ( pushed ) { x += offset / 2, y += offset / 2 }
@@ -476,10 +483,44 @@ export class ImageNode extends Node {
 			ctx.closePath( )
 			ctx.clip( )
 		}
-		if ( Object( img ) === img ) ctx.drawImage( img, x, y, w, h )
-		else if ( fill ) {
+		if ( Object( img ) === img ) {
+
+			if ( fixed ) {
+				let dwh = w / h, nwh = img.naturalWidth / img.naturalHeight
+				if ( dwh > nwh ) { x += ( w - h * nwh ) / 2, w = h * nwh }
+				if ( dwh < nwh ) { y += ( h - w / nwh ) / 2, h = w / nwh }
+			}
+
+			ctx.drawImage( img, x, y, w, h )
+		} else if ( fill ) {
 			ctx.fillStyle = fill
 			ctx.fillRect( x, y, w, h )
+		}
+
+	}
+
+}
+
+
+
+export class VideoNode extends Node {
+
+	constructor ( opt ) {
+		const def = { vdo: null }
+		opt = Object.assign( def, opt )
+		super ( opt )
+		//$.log( { x:this.x, y:this.y, w:this.w, h:this.h } )
+	}
+
+	draw ( { ctx, x, y, w, h } ) {
+		let vdo = Media.activeBGV
+		if ( ! vdo ) return
+
+		if ( Object( vdo ) === vdo ) {
+			let dwh = w / h, nwh = vdo.naturalWidth / vdo.naturalHeight
+			if ( dwh > nwh ) { x += ( w - h * nwh ) / 2, w = h * nwh }
+			if ( dwh < nwh ) { y += ( h - w / nwh ) / 2, h = w / nwh }
+			ctx.drawImage( vdo, x, y, w, h )
 		}
 
 	}
@@ -521,6 +562,9 @@ function initLayer ( ) {
 			{
 				type: ImageNode, name: 'backgroundColor',
 				fill: 'rgba( 0, 0, 0, 1 )'
+			},
+			{
+				type: VideoNode, name: 'backgroundVideo',
 			},
 			{
 				type: GroupNode, name: 'backgroundGroup',
@@ -581,7 +625,7 @@ function initLayer ( ) {
 					},
 					{
 						type: TextNode, name: 'currentLabel',
-						x: 0.45, y: 0.69, w: .1, h: .3,
+						x: 0.4, y: 0.69, w: .2, h: .3,
 						pos: 'center', size: .15
 					},
 					{
@@ -663,13 +707,17 @@ function initLayer ( ) {
 
 
 
-export function drawCanvas ( must ) {
+export function drawCanvas ( mustDraw ) {
 
 	if ( ! ctx ) return
 
 	layerRoot.fire( 'update' )
 
-	if ( layerRoot.dirty || must ) {
+	if ( Media.activeBGV ) {
+		mustDraw = true
+	}
+
+	if ( layerRoot.dirty || mustDraw ) {
 
 		refreshCanvasSize( )
 

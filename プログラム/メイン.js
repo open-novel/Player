@@ -39,6 +39,7 @@ async function main( ) {
 	player.appendChild( canvas )
 
 	if ( true || option.pwa ) {
+		
 		Object.assign( document.documentElement.style, {
 			overflow: 'hidden',
 		} )

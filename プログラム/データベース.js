@@ -136,6 +136,7 @@ export async function getFile ( path ) {
 	//if ( file ) return file
 	$.log( path )
 	let file = await loadFile( path )
+	if ( ! file ) return null
 	let data = await new Response( file )[ file.type.includes( 'text/' ) ? 'text': 'blob' ]( )
 	//cacheMap.set( url, file )
 	return data

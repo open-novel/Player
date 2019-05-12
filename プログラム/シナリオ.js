@@ -99,7 +99,7 @@ export async function play ( layer, state, others ) {
 			} else if( Array.isArray( scenario_act_title ) ) newScenario = scenario_act_title
 			else act = scenario_act_title
 
-			if ( ! act ) act = newScenario.find( act => act.type == 'マーク' && textEval( act.prop ) == jumpMark )
+			if ( ! act ) act = newScenario.find( act => act.type == 'マーク' && textEval( act.prop[ 0 ] ) == jumpMark )
 			if ( ! act ) { $.log( 'mark not found', jumpMark, newScenario ); return; }
 
 
@@ -118,9 +118,21 @@ export async function play ( layer, state, others ) {
 
 			if ( Action.isOldLayer( layer ) ) return
 
+			let prevAct = nowAct
 			nowAct = act
 
 			let { type, prop } = act
+
+
+			if ( Array.isArray( prop ) ) {
+				console.log( 'prop校正+', act )
+				prop = [ prop ]
+			}
+			if ( Array.isArray( prop[ 0 ] ) ) {
+				console.log( 'prop校正-', act )
+				prop = prop[ 0 ]
+			}
+
 
 			switch ( type ) {
 
@@ -136,36 +148,37 @@ export async function play ( layer, state, others ) {
 					//await $.timeout( 500 )
 
 				} break
+
 				case '立絵': {
 
-					Action.removePortraits( layer )
-					state.portraits = [ ]
-
-					await Promise.all( prop.map( p => {
-
-						let [ pos, name ] = p.map( textEval )
-
-						if ( ! name ) return
-						pos = pos.normalize('NFKC')
+					if ( prevAct.type != type ) {
+						Action.removePortraits( layer )
+						state.portraits = [ ]
+					}
 
 
-						if ( pos == '左' ) pos = [ 0, 0, 1 ]
-						else if ( pos == '右' ) pos = [ -0, 0, 1 ]
-						else if ( pos ) {
-							pos = pos.match( /-?\d+(?=%|％)/g )
-							if ( pos.length == 1 ) pos[ 1 ] = 0
-							if ( pos.length == 2 ) pos[ 2 ] = 1
-							pos = pos.map( d => d / 100 )
-						} else throw `立ち絵『${ name }』の位置指定が不正です。`
+					let [ pos, name ] = prop.map( textEval )
 
-						//$.log(pos)
+					if ( ! name ) continue
+					pos = pos.normalize('NFKC')
 
-						let path = `${ basePath }/立ち絵/${ name }`
 
-						state.portraits.push( [ path, pos ] )
-						return Action.showPortrait( layer, path, pos )
+					if ( pos == '左' ) pos = [ 0, 0, 1 ]
+					else if ( pos == '右' ) pos = [ -0, 0, 1 ]
+					else if ( pos ) {
+						pos = pos.match( /-?\d+(?=%|％)/g )
+						if ( pos.length == 1 ) pos[ 1 ] = 0
+						if ( pos.length == 2 ) pos[ 2 ] = 1
+						pos = pos.map( d => d / 100 )
+					} else throw `立ち絵『${ name }』の位置指定が不正です。`
 
-					} ) )
+					//$.log(pos)
+
+					let path = `${ basePath }/立ち絵/${ name }`
+
+					state.portraits.push( [ path, pos ] )
+					await Action.showPortrait( layer, path, pos )
+
 
 					/*Promise.race( [
 						$.timeout( 3000 ).then( ()=>'timeover!' ),
@@ -174,34 +187,36 @@ export async function play ( layer, state, others ) {
 
 
 				} break
+
 				case '背景': {
 
-					Action.removeBGImages( layer )
-					state.BGImages = [ ]
+					if ( prevAct.type != type ) {
+						Action.removeBGImages( layer )
+						state.BGImages = [ ]
+					}
 
-					await Promise.all( prop.map( p => {
 
-						let [ pos, name ] = p.map( textEval )
+					let [ pos, name ] = prop.map( textEval )
 
-						if ( ! name ) [ name, pos ] = [ pos, name ]
-						if ( ! name ) return
-						pos = pos.normalize('NFKC')
+					if ( ! name ) [ name, pos ] = [ pos, name ]
+					if ( ! name ) continue
+					pos = pos.normalize('NFKC')
 
-						if ( pos ) {
-							pos = pos.match( /-?\d+(?=%|％)/g )
-							if ( pos.length == 1 ) pos[ 1 ] = 0
-							if ( pos.length == 2 ) pos[ 2 ] = 1
-							pos = pos.map( d => d / 100 )
-						} else pos = [ 0, 0, 1 ]
+					if ( pos ) {
+						pos = pos.match( /-?\d+(?=%|％)/g )
+						if ( pos.length == 1 ) pos[ 1 ] = 0
+						if ( pos.length == 2 ) pos[ 2 ] = 1
+						pos = pos.map( d => d / 100 )
+					} else pos = [ 0, 0, 1 ]
 
-						let path = `${ basePath }/背景/${ name }`
+					let path = `${ basePath }/背景/${ name }`
 
-						state.BGImages.push( [ path, pos ] )
-						return Action.showBGImage( layer, path, pos )
+					state.BGImages.push( [ path, pos ] )
+					await Action.showBGImage( layer, path, pos )
 
-					} ) )
 
 				} break
+
 				case '選択': {
 
 					let newAct = await Action.scenarioChoices( layer, prop.map(
@@ -218,6 +233,7 @@ export async function play ( layer, state, others ) {
 					return playScnario( newAct, mark )
 
 				} break
+
 				case '分岐': {
 
 					for ( let p of prop ) {
@@ -234,9 +250,8 @@ export async function play ( layer, state, others ) {
 					}
 
 				} break
-				case '繰返': {
 
-					$.log( type, prop )
+				case '繰返': {
 
 					for ( let p of prop ) {
 						let [ con, newAct ] = p.map( textEval )
@@ -247,9 +262,10 @@ export async function play ( layer, state, others ) {
 					}
 
 				} break
+
 				case 'ジャンプ': {
 
-					let [ title, mark　] = prop.map( textEval )
+					let [ title, mark ] = prop.map( textEval )
 
 					let scenarioOrTitle = title || scenario
 					$.log( 'JMP', title, mark, scenario )
@@ -257,31 +273,31 @@ export async function play ( layer, state, others ) {
 					return playScnario( scenarioOrTitle, mark || undefined )
 
 				} break
+
 				case '変数': {
 
-					await Promise.all( prop.map( async p => {
-						let [ key, value ] = p.map( textEval )
-						await $Set( key, value )
-					} ) )
-
+					let [ key, value ] = prop.map( textEval )
+					await $Set( key, value )
+					
 
 				} break
+
 				case '入力': {
 
-					await Promise.all( prop.map( async p => {
-						let [ key, value ] = p.map( textEval )
-						value = prompt( '', value ) || value
-						await $Set( key, value )
-					} ) )
+					let [ key, value ] = prop.map( textEval )
+					value = prompt( '', value ) || value
+					await $Set( key, value )
 
 
 				} break
+
 				case 'BGM': {
 
-					let name = textEval( prop )
+					let [ name ] = prop.map( textEval )
 
 					if ( ! name ) Action.stopBGM( )
 					else {
+
 						let path = `${ basePath }/BGM/${ name }`
 
 						state.BGM = path
@@ -289,9 +305,35 @@ export async function play ( layer, state, others ) {
 					}
 
 				} break
+
+				case 'SE': {
+
+					let [ name ] = prop.map( textEval )
+
+					if ( name ) {
+						let path = `${ basePath }/SE/${ name }`
+
+						await Action.playSE( path )
+					}
+
+				} break
+				case 'ビデオ': {
+
+					let [ name ] = prop.map( textEval )
+
+					if ( name ) {
+
+						let path = `${ basePath }/ビデオ/${ name }`
+
+						await Action.playBGV( path )
+					}
+
+					Action.stopBGV( )
+
+				} break
 				case '効果': {
 
-					let [ type, value ] = prop[ 0 ].map( textEval )
+					let [ type, value ] = prop.map( textEval )
 
 					value = value.normalize( 'NFKC' )
 					value = + ( value.match( /[\d.]+/ ) || [ 0 ] ) [ 0 ]
@@ -299,9 +341,10 @@ export async function play ( layer, state, others ) {
 					await Action.runEffect( layer, type, value )
 
 				} break
+
 				case 'スクリプト': {
 
-					switch ( textEval( prop ) ) {
+					switch ( textEval( prop[ 0 ] ) ) {
 
 						case '終わる': case　'おわる': {
 
@@ -318,17 +361,18 @@ export async function play ( layer, state, others ) {
 
 
 				} break
+
 				case 'マーク': {
 
-					let mark = textEval( prop )
+					let [ mark ] = prop.map( textEval )
 					$.log( 'マーク', mark )
 					state.mark = mark
 
-					DB.saveState( state.title, 1001, getState( layer ) )
+					await DB.saveState( state.title, 1001, getState( layer ) )
 
 				} break
 				default : {
-					$.warn( `"${ type }" このアクションの「実行」は未実装です` )
+					$.warn( `"${ type }" このアクションは未実装です` )
 				}
 
 			}
@@ -388,7 +432,7 @@ export function parse ( text, fileName ) {
 	// アクション種に応じた配下の処理と、一次元配列への展開
 	function secondParse ( actList ) {
 
-		let actRoot = { type: 'マーク', prop: '$root', meta: { fileName, lineNo: 0 } }
+		let actRoot = { type: 'マーク', prop: [ '$root' ], meta: { fileName, lineNo: 0 } }
 		let progList = [ actRoot ]
 		let prev = actRoot
 
@@ -464,6 +508,9 @@ export function parse ( text, fileName ) {
 						case 'パラメータ': type = '変数'
 				break; case '立ち絵': type = '立絵'
 				break; case 'ＢＧＭ': type = 'BGM'
+				break; case '効果音': type = 'SE'
+				break; case 'ＳＥ': type = 'SE'
+				break; case '動画': type = 'ビデオ'
 				break; case '選択肢': type = '選択'
 				break; case '繰り返し': case '繰返し': type = '繰返'
 				break; case 'エフェクト': type = '効果'
@@ -473,18 +520,13 @@ export function parse ( text, fileName ) {
 
 				case 'コメント': /* 何もしない */
 				break
-				case '立絵': case '背景': case '変数': case '入力': case '効果':
-					subParse( { type, children, meta } )
-				break
-				case '会話':
-					subParse( { type, children, meta, separate: true } )
-				break
 				case '選択': case '分岐': case '繰返':
 					//if ( type == '分岐' ) debugger
 					subParse( { type, children, meta, subjump: true } )
 				break
 				default :
-					addAct( type, children[ 0 ].trim( ), { meta } )
+					subParse( { type, children, meta, separate: true } )
+					//addAct( type, children[ 0 ].trim( ), { meta } )
 
 			}
 
@@ -610,16 +652,6 @@ export function parse ( text, fileName ) {
 
 			switch ( type ) {
 
-				case '会話': {
-
-					prop = prop.map( parseText )
-
-				} break
-				case '立絵': case '背景': case '選択': case '効果': {
-
-					prop = prop.map( p => p.map( parseText ) )
-
-				} break
 				case '分岐': case '繰返': {
 
 					prop = prop.map( p => [ subParseText( p[ 0 ] ), parseText( p[ 1 ] ) ] )
@@ -627,26 +659,23 @@ export function parse ( text, fileName ) {
 				} break
 				case '変数': case '入力': {
 
-					prop = prop.map( p => {
-						p = p[ 0 ].split(/[:：]/)
-						return [ parseText( p[ 0 ].replace(/^＄/, '$' ) ), subParseText( p[ 1 ] ) ]
-					} )
+					prop = prop[ 0 ].split(/[:：]/)
+					prop = [ parseText( prop[ 0 ].replace(/^＄/, '$' ) ), subParseText( prop[ 1 ] ) ]
+					
 
 				} break
 				case 'ジャンプ': {
 
-					prop = prop.split( /[#＃]/ ).map( parseText )
-
-
-				} break
-				case 'マーク': case 'BGM': case 'スクリプト': {
-
-					prop = parseText( prop )
+					prop = prop[ 0 ].split( /[#＃]/ ).map( parseText )
 
 				} break
 				default : {
 
-					$.warn( `"${ type }" このアクションの「パース」は未実装です` )
+					if ( typeof prop != 'object' ) prop = [ prop ]
+					if ( Array.isArray( prop[ 0 ] ) ) 
+						prop = prop.map( p => p.map( parseText ) )
+					else
+						prop = prop.map( parseText )
 
 				}
 
@@ -683,24 +712,27 @@ export function getFileList ( text ) {
 
 			case '立絵': {
 
-				for ( let p of prop ) {
-					let name = textEval( p[ 1 ] )
-					if ( name ) fileList.push( { type: 'image', path: '立ち絵/' + name } )
-				}
+				let name = textEval( prop[ 1 ] )
+				if ( name ) fileList.push( { type: 'image', path: '立ち絵/' + name } )
+				
 
 			} break
 			case '背景': {
 
-				for ( let p of prop ) {
-					let name = textEval( p[ 1 ] ) || textEval( p[ 0 ] )
-					if ( name ) fileList.push( { type: 'image', path: '背景/' + name } )
-				}
+				let name = textEval( prop[ 1 ] ) || textEval( prop[ 0 ] )
+				if ( name ) fileList.push( { type: 'image', path: '背景/' + name } )
+				
+			} break
+			case 'ビデオ': {
+
+				let name = textEval( prop[ 1 ] ) || textEval( prop[ 0 ] )
+				if ( name ) fileList.push( { type: 'video', path: type + '/' + name } )
 
 			} break
-			case 'BGM': {
+			case 'BGM': case 'SE': {
 
-				let name = textEval( prop )
-				if ( name ) fileList.push( { type: 'audio', path: 'BGM/' + name } )
+				let name = textEval( prop[ 1 ] ) || textEval( prop[ 0 ] )
+				if ( name ) fileList.push( { type: 'audio', path: type + '/' + name } )
 
 			} break
 			case '選択': {

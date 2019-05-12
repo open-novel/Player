@@ -12,8 +12,9 @@ const Archive = $.importWorker( `アーカイブ` )
 
 const extensions = {
 	text: [ 'txt' ],
-	image: [ 'webp', 'png', 'jpg', 'svg', 'gif' ],
-	audio: [ 'webm', 'mp3', 'wav', 'ogg', 'flac' ],
+	image: [ 'png', 'webp', 'jpg', 'svg', 'gif' ],
+	audio: [ 'mp3', 'webm', 'wav', 'ogg', 'm4a', 'flac' ],
+	video: [ 'mp4', 'webm', 'wav' ],
 }
 
 async function init ( { ctx, mode, installEvent, option } ) {
@@ -76,10 +77,10 @@ async function play ( { ctx, mode, installEvent: event, option: opt } ) {
 
 		await Action.initAction( settings )
 
-		if ( res == 'error' ) Action.sysMessage( '問題が発生しました' )
-		else Action.sysMessage( '再生が終了しました' )
-		await Action.sysChoices( [ ], { backLabel: '作品選択へ' } )
-
+		if ( res == 'error' ) {
+			Action.sysMessage( '問題が発生しました' )
+			await Action.sysChoices( [ ], { backLabel: '作品選択へ' } )
+		}
 	}
 }
 
@@ -108,13 +109,19 @@ async function playSystemOpening ( mode ) {
 		index += 1
 
 		let settings = titleList[ index ] || { }, { title, origin } = settings
+		/*
 		yield {
 			label: title ? title : '--------',
 			value: { settings, index },
 			bgimage: false
 		}
+		*/
 
-		let file = title ? await $.getFile( `${ origin }${ title }/背景/サムネイル` ).catch( e => null ) : null
+		let file = ! title ? null : (
+			await $.getFile( `${ origin }${ title }/その他/サムネイル` ).catch( e => null )  ||
+			await $.getFile( `${ origin }${ title }/背景/サムネイル` ).catch( e => null )
+		)
+
 		let image = file ? await $.getImage( file ) : noImage
 		yield {
 			label: title ? title : '--------',
@@ -161,14 +168,17 @@ async function playSystemOpening ( mode ) {
 	}
 	// シナリオ開始メニュー表示
 
-	let menuList = [ '初めから', '続きから', '途中から', 'インストール' ].map( label => ( { label } ) )
+	let menuList = [
+		'初めから', '続きから', '途中から',
+		'インストール', 'アップデート', '投げ銭'
+	]
 
 	WHILE: while ( true ) {
 
 		let sel = 'インストール'
 		if ( title ) {
 			Action.sysMessage( `作品名：『 ${ title || '------' } 』\\n開始メニュー` )
-			sel = await Action.sysChoices( menuList, { backLabel: '戻る' } )
+			sel = await Action.sysChoices( menuList, { backLabel: '戻る', rowLen: 3 } )
 		}
 		$.log( sel )
 
@@ -219,8 +229,9 @@ async function playSystemOpening ( mode ) {
 				return playSystemOpening( mode )
 
 			} break
-
-			default: throw 'UnEx'
+			default: {
+				await Action.sysMessage( 'この機能は未実装です' )
+			}
 		}
 
 	}
@@ -319,7 +330,7 @@ async function showSysMenu ( ) {
 					Action.sysMessage(
 						'ブラウザに認められなかったため登録できませんでした\\n' +
 						'（既に登録済みの可能性もあります）' )
-					await Action.sysChoices( [ ], { backLabel: '戻る' } )
+					await Action.sysChoices( [ ], { backLabel: '戻る', color: 'green' } )
 				}
 			} break
 			case 'データ保存状況確認': WHILE2: while ( true ) {
@@ -414,7 +425,7 @@ async function showSysMenu ( ) {
 						)
 						let choiceList = [ { label: 'ONにする' }, { label: 'OFFにする' } ]
 						$.disableChoiceList( [ ( TesterMode ? 'ON' : 'OFF' ) + 'にする'  ], choiceList )
-						let sel = await Action.sysChoices( choiceList, { backLabel: '戻る' } )
+						let sel = await Action.sysChoices( choiceList, { backLabel: '戻る', color: 'green' } )
 						if ( sel == $.Token.back ) continue WHILE2
 						if ( sel == $.Token.close ) break WHILE
 						TesterMode = ! TesterMode
@@ -517,9 +528,9 @@ async function installScenario ( index, sel ) {
 
 
 	if ( ! sel ) {
-		Action.sysMessage( 'インストール方法を選んで下さい', 100 )
+		Action.sysMessage( '作品のインストール方法を選んで下さい', 100 )
 
-		let menuList = [ '作品リストから', 'フォルダから', 'Zipファイルから' ].map( label => ( { label } ) )
+		let menuList = [ '作品リストから', 'フォルダから', 'Zipファイルから', 'GitHubから' ].map( label => ( { label } ) )
 
 		sel = await Action.sysChoices( menuList, { backLabel: '戻る' } )
 	}
@@ -542,6 +553,15 @@ async function installScenario ( index, sel ) {
 			//window.open( 'https://github.com/open-novel/open-novel.github.io/wiki/作品リンク集' )
 
 			let res = await installByScenarioList( )
+			if ( res == $.Token.back ) return installScenario( index )
+			if ( res == $.Token.close ) return $.Token.close
+			if ( $.isToken( res ) ) return res
+			return $.Token.success
+
+		} break
+		case 'GitHubから': {
+
+			let res = await installByGitHub( )
 			if ( res == $.Token.back ) return installScenario( index )
 			if ( res == $.Token.close ) return $.Token.close
 			if ( $.isToken( res ) ) return res
@@ -601,12 +621,93 @@ async function installScenario ( index, sel ) {
 	if ( ! files ) return $.Token.failure
 	if ( $.isToken( files ) ) return files
 
+
+
+	async function installByGitHub ( { user = '' } = { } ) {
+
+		await Action.sysMessage( '※この機能は未完成です※' )
+
+		let api = 'https://api.github.com'
+
+		let rate = await $.fetchJSON( `${ api }/rate_limit` )
+		let { remaining, reset } = rate.resources.core
+		let resetmin = Math.ceil( ( reset - Date.now( ) / 1000 ) / 60 ) 
+
+		if ( remaining == 0 ) {
+			await Action.sysMessage(
+				'通信回数制限のため現在この機能は利用できません\n' +
+				`（リセット：約${ resetmin }分後）`
+			)
+			return $.Token.failure
+		}
+		console.log(
+			`残り${ remaining }回の通信でこの機能は制限されます　` +
+			`（リセット：約${ resetmin }分後）`
+		)
+
+
+		if ( ! user ) {
+			await Action.sysMessage( 'ユーザー名を入力してください' )
+			user = ( window.prompt( 'ユーザー名を入力してください', '' ) || '' ).trim( )
+		}
+		if ( ! /^[-\w]+$/.test( user ) ) {
+			await Action.sysMessage( 'ユーザー名が不正です' )
+			return $.Token.failure
+		}
+		let repoList = await $.fetchJSON( `${ api }/users/${ user }/repos` )
+		if ( ! repoList ) {
+			await Action.sysMessage( 'ユーザーが存在しません' )
+			return $.Token.failure
+		}
+		if ( ! repoList.length ) {
+			await Action.sysMessage( 'リポジトリが存在しません' )
+			return $.Token.failure
+		}
+
+		Action.sysMessage( 'リポジトリを選んでください' )
+		let repo = await Action.sysPageChoices( async function * ( index ) {
+			let repo = repoList[ index ]
+			yield repo ? { label: repo.name, value: repo } : { disabled: true }
+		}, { maxPages: Math.ceil( repoList.length / 6 ), colLen: 2 } )
+
+		let folderList = await $.fetchJSON( `${ api }/repos/${ user }/${ repo.name }/contents` )
+
+		//TODO: zipに対応
+		folderList = (
+			await Promise.all( folderList.map( async data => {
+				if ( data.type != 'dir' ) return null
+				let subs = await $.fetchJSON( `${ data.url }` )
+				if ( ! subs.find( data => data.type == 'dir' && data.name == 'シナリオ' ) )
+					return null
+				return data
+			} ) )
+		).filter( data => !! data )
+
+		if ( ! folderList.length ) {
+			await Action.sysMessage( 'リポジトリ内に作品が存在しません' )
+			return installByGitHub( { user } )
+		}
+		Action.sysMessage( 'インストールする作品を選んでください' )
+		let folder = await Action.sysPageChoices( async function * ( index ) {
+			let folder = folderList[ index ]
+			yield folder ? { label: folder.name, value: folder } : { disabled: true }
+		}, { maxPages: Math.ceil( folderList.length / 9 ) } )
+
+		$.log( folder )
+
+		await Action.sysMessage( '※この機能は未完成です※' )
+		return $.Token.failure
+	}
+
+
+
 	async function installByScenarioList ( ) {
 
 		let iframe, p
 
 		Action.sysMessage( '提供サイトリストを取得中……' )
 
+		/*
 		p = player.on( 'install-sites' )
 		iframe = document.createElement( 'iframe' )
 		iframe.src = 'https://open-novel.github.io/list.html'
@@ -620,9 +721,15 @@ async function installScenario ( index, sel ) {
 		}
 
 		let linkList = data.sites.map( a => ( { label: a[ 0 ], value: a[ 1 ] } ) )
+		*/
 
-		// let linkList = [ { label: '旧作品集', value: 'https://open-novel.github.io/Products/' } ]
-		let port
+		let api = 'https://raw.githubusercontent.com/wiki/open-novel/open-novel.github.io/作品リンク集.md'
+		let text = await $.fetchFile( api, 'text' )
+		let linkList = text.match(/^\*\s*\[.+?\]\(.+?\)/mg)
+			.map( t => t.match( /\[(.+?)\]\((.+?)\)/ ) )
+			.map( a => ( { label: a[ 1 ], value: a[ 2 ] } ) )
+
+
 		WHILE: while ( true ) {
 
 			Action.sysMessage( '作品集を選んでください' )
@@ -634,7 +741,7 @@ async function installScenario ( index, sel ) {
 
 			Action.sysMessage( '作品リストを取得中……' )
 
-			iframe.remove( )
+			//iframe.remove( )
 			p = player.on( 'install-list' )
 			iframe = document.createElement( 'iframe' )
 			iframe.src = siteURL
@@ -648,7 +755,7 @@ async function installScenario ( index, sel ) {
 					' \\n'+
 					'（サイト上の連携スクリプトが古い可能性があります）'
 				)
-				let sel = await Action.sysChoices( [ 'webサイトを開く' ], { backLabel: '戻る' } )
+				let sel = await Action.sysChoices( [ 'Webサイトを開く' ], { backLabel: '戻る' } )
 				if ( sel == $.Token.close ) return sel
 				if ( sel == 'Webサイトを開く' ) window.open( siteURL )
 				continue WHILE
@@ -661,7 +768,6 @@ async function installScenario ( index, sel ) {
 
 			let cacheMap = new Map
 
-			port = data.port
 
 			let sel = await Action.sysPageChoices( async function * ( index ) {
 
@@ -675,7 +781,9 @@ async function installScenario ( index, sel ) {
 				}
 
 				if ( ! title ) return
-				data.port.postMessage( { type: 'getFile', index, path: '背景/サムネイル', extensions: extensions[ 'image' ]  } )
+				;[ '背景/サムネイル', 'その他/サムネイル' ].forEach( path =>
+					data.port.postMessage( { type: 'getFile', index, path, extensions: extensions[ 'image' ]  } )
+				)
 
 				let image
 				if ( cacheMap.has( index ) ) image = cacheMap.get( index )
@@ -683,12 +791,13 @@ async function installScenario ( index, sel ) {
 					let file = await new Promise ( ok => {
 						data.port.addEventListener( 'message', evt => {
 							if ( evt.data.index != index ) return
+							cacheMap.set( index, image )
 							ok( evt.data.file )
 						} )
 						data.port.start( )
 					} )
 					image = file ? await $.getImage( file ) : noImage
-					cacheMap.set( index, image )
+
 				}
 
 				yield {
@@ -700,6 +809,7 @@ async function installScenario ( index, sel ) {
 
 			//sel = await Action.sysChoices( titleList, { backLabel: '戻る' } )
 			if ( sel == $.Token.back ) continue WHILE
+			if ( $.isToken( sel ) ) return sel
 			data.port.postMessage( { type: 'select', index: sel } )
 			break
 
@@ -779,9 +889,11 @@ async function installScenario ( index, sel ) {
 			$.hint( '設定ファイル省略モードでインストールを続行します' )
 		}
 
-		await getFile( '背景/サムネイル', 'image' ).catch( ( ) => null )
+		await Promise.all( [ '背景/サムネイル', 'その他/サムネイル', 'その他/投げ銭' ].map( path =>
+			getFile( path, 'image' ).catch( ( ) => null )
+		) )
 
-		doneCount = fetchCount = 2
+		doneCount = fetchCount
 		failure = false
 
 		async function getScenario( path ) {

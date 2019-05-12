@@ -56,6 +56,10 @@ export async function fetchFile ( name, type = 'blob' ) {
 }
 
 
+export async function fetchJSON ( name ) {
+	return fetchFile( name, 'json' ).catch( ( ) => null )
+}
+
 
 export function Deferred ( ) {
 	let resolve, reject
@@ -121,17 +125,25 @@ export function getImage ( blob ) {
 }
 
 
-export function download ( blob, title ) {
+export const isiOS = !! navigator.userAgent.match( /iPhone|iPad/ )
+
+
+export async function download ( blob, title ) {
+
+	if ( isiOS ) return
 	let link = document.createElement( 'a' )
-	link.href = URL.createObjectURL( blob )
+	link.href = typeof blob == 'string' ? blob : URL.createObjectURL( blob )
 	link.download = 'ONP'
 	+ decodeURIComponent( `_【${ title }】_` )
 	+ ( new Date ).toISOString( ).replace( /\.\d+Z$|[^\d]|/g, '' )
+	link.target = '_blank'
 	document.body.append( link )
 	link.click( )
 	link.remove( )
 	URL.revokeObjectURL( link.href )
 }
+
+
 
 
 export function AwaitRegister ( fn ) {
