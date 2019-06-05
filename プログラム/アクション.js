@@ -9,6 +9,8 @@ import * as Renderer from './レンダラー.js'
 import * as Media from './メディア.js'
 import * as DB from './データベース.js'
 
+const FlipImg = $.importWorker( `APNG` )
+
 
 
 let nowLayer, settings, trigger, others, stateList = [ ], messageLog = [ ]
@@ -538,16 +540,21 @@ export async function showMessage ( layer, name, text, speed ) {
 
 		let time = new $.Time
 
+		let interrupt = false
+
 		if ( speed == Infinity ) messageArea.put( decoListPure )
 
 		else loop: while ( true ) {
 
-			let interrupt = await trigger.stepOrFrameupdate( )
-
-			let to = interrupt ? len : speed * time.get( ) / 1000 | 0
+			let to = ( interrupt || speed == Infinity ) ? len : ( speed * time.get( ) / 1000 | 0 )
 
 			for ( ; index < to && index < len; index ++ ) {
-				let deco = decoList[ index ], wait = deco.wait || 0
+				let deco = decoList[ index ], wait = deco.wait || 0, pace = deco.pace
+				if ( pace ) {
+					index ++
+					speed = pace
+					continue loop
+				}
 				if ( wait ) {
 					index ++
 					time.pause( )
@@ -559,6 +566,8 @@ export async function showMessage ( layer, name, text, speed ) {
 			}
 
 			if ( to >= len ) break
+
+			interrupt = await trigger.stepOrFrameupdate( )
 		}
 
 		await trigger.step( )
@@ -584,6 +593,7 @@ function decoText ( text ) {
 			let [ , type, val ] = magic
 			switch ( type ) {
 							case 'w': decoList.push( { wait: val || Infinity } )
+				break;	case 'p': decoList.push( { pace: val || Infinity } )
 				break;	case 'n': { decoList = [ ], decoLines.push( decoList ) }
 				break;	case 'b': bold = true
 				break;	case 'B': bold = false
@@ -591,6 +601,7 @@ function decoText ( text ) {
 				break;	case 'C': color = undefined
 				break;	case 's': mag = val
 				break;	case 'S': mag = 1
+				break;	case '_':
 				break;	default : $.warn( `"${ type }" このメタ文字は未実装です`　)
 			}
 		} else {
@@ -753,7 +764,110 @@ export function removePortraits ( layer ) {
 
 
 
-async function setAnime ( image, xml ) {
+
+function animateImages ( time ) {
+
+	for ( let func of imageAnimes ) func( time )
+
+}
+
+
+async function setPNGAnime ( image, blob ) {
+
+	let file = await FlipImg.splitPNG( await new Response( blob ).arrayBuffer( ) )
+	
+	let plays = file.plays
+	if ( ! plays ) return
+
+	//let baseTime = performance.now( )
+
+	let canvas = document.createElement( 'canvas' )
+	canvas.width = file.width
+	canvas.height = file.height
+	let ctx = canvas.getContext( '2d' )
+	image.img = canvas
+
+	file.forEach( chunk => {
+		chunk.data = chunk.data.map( data => new Blob( [ data ], { type: 'image/png' } ) )
+
+	} )
+
+	//let reader = new FileReader
+	//reader.onload = ( ) => $.log( reader.result )
+	//reader.readAsDataURL( file[ 0 ].data[ 0 ] )
+
+	$.log( file )
+
+	
+	let loop = 0, frame = 0, dispose = '', prev = null, preferred = performance.now( )
+	async function animate ( ) {
+		
+		if ( ! image.parent ) return $.log( 'APNGアニメ中断' )
+		loop ++
+		if ( frame == 0 ) {
+			if( loop > plays ) return $.log( 'APNGアニメ完了' )
+			dispose = 'BACKGROUND' 
+		}
+
+		let chunk = file[ frame ]
+
+		let { width, height } = file
+
+		let { blend, delay, x, y } = chunk 
+
+
+		let now = performance.now( )
+
+		let lag = now - preferred
+
+		setTimeout( animate, delay * 1000 - lag )
+
+		preferred = now + delay * 1000 
+
+
+		let imgs = await Promise.all( 
+			chunk.data.map( blob => $.getImage( blob ) )
+		)
+		
+
+		if ( dispose == 'BACKGROUND' )
+			ctx.clearRect( 0, 0, width, height )
+		if ( dispose == 'PREVIOUS' )
+			ctx.putImageData( prev, 0, 0 )
+
+
+		dispose = chunk.dispose
+
+		if ( dispose == 'PREVIOUS' )
+			prev = ctx.getImageData( 0, 0, file.width, file.height )
+
+
+		for ( let img of imgs ) {
+			if ( blend == 'SOURCE' ) {
+				ctx.clearRect( 0, 0, width, height )
+				blend = 'OVER'
+
+			}
+
+			//window.open( URL.createObjectURL( blob ) )
+			ctx.drawImage( img, x, y )
+			
+		}
+
+
+		if ( ++frame >= file.length ) frame = 0
+
+
+	}
+	animate( )
+
+	imageAnimes.push( ( ) => { } )
+
+
+}
+
+
+async function setSVGAnime ( image, xml ) {
 	let animates = Array.from( xml.querySelectorAll(
 		'animate,  animateColor, animateMotion, animateTransform'
 	), element => {
@@ -766,39 +880,25 @@ async function setAnime ( image, xml ) {
 		if ( values.length == 0 ) return null
 		return { element, values, duration }
 	} ).filter( obj => !! obj )
-	imageAnimes.push( { xml, animates, image, baseTime: performance.now( ) } )
-}
 
-function animateImages ( time ) {
+	let baseTime = performance.now( )
 
-	for ( let { xml, animates, image, baseTime } of imageAnimes ) {
-
+	let no = imageAnimes.push( time => {
+		if ( ! image.parent ) return imageAnimes.splice( no - 1, 1 )
 		let msec = time - baseTime
-
-		// Array.from( xml.querySelectorAll( 'animate' ), elm => {
-		// 	let begin = +( elm.getAttribute( 'begin' ) || '' ).match( /\d+|/ )[ 0 ] || 0
-		// 	let end = +( elm.getAttribute( 'end' ) || '' ).match( /\d+|/ )[ 0 ] || 0
-		// 	elm.setAttribute( 'begin', begin - sec + 's' )
-		// 	if ( end ) elm.setAttribute( 'end', end - sec + 's' )
-		// } )
-
 		for ( let { element, values, duration } of animates ) {
-
-
 			let index = ( ( msec / duration ) % 1 ) * values.length | 0
 			//$.log( duration, msec / duration, index, values )
 			element.setAttribute( 'values', values[ index ] )
 		}
-
+		// TODO cache
 		let text = new XMLSerializer( ).serializeToString( xml )
 		let blob = new Blob( [ text ], { type: 'image/svg+xml' } )
-		//$.log( blob )
 		$.getImage( blob ).then( img => image.prop( 'img', img ) )
 
-	}
-
-
+	} )
 }
+
 
 
 async function showImage ( targetGroup, path, pos, kind ) {
@@ -816,6 +916,7 @@ async function showImage ( targetGroup, path, pos, kind ) {
 	let img, xml
 
 	let blob = await $.getFile( path )
+	let isPNG = blob.type.includes( 'png' )
 	if ( blob.type.includes( 'svg+xml' ) ) {
 		xml =  new DOMParser( ).parseFromString( await ( new Response( blob ).text( ) ) ,'image/svg+xml' )
 	}
@@ -850,7 +951,10 @@ async function showImage ( targetGroup, path, pos, kind ) {
 		} break
 	}
 
-	if ( xml && image ) setAnime( image, xml )
+
+	if ( isPNG && image ) setPNGAnime( image, blob )
+	if ( xml && image ) setSVGAnime( image, xml )
+
 
 	$.log( { x, y, w, h, pos, oldPos, image } )
 

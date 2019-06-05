@@ -293,7 +293,7 @@ export function importWorker ( name ) {
 						return a
 					}, [ ] ) )
 				return new Promise ( ( ok, ng ) => {
-					w.onmessage = ok, w.onerror = ng
+					w.onmessage = p => ok( p.data ), w.onerror = ng
 				} )
 			}
 		}

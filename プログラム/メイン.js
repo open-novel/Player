@@ -144,7 +144,7 @@ async function main( ) {
 	}
 
 
-	Player.initPlayer( { ctx, mode: location.hash.slice( 1 ), installEvent, option } )
+	Player.initPlayer( { ctx, mode: location.hash.slice( 1 ), installEvent, option, params: new URLSearchParams( location.search ) } )
 
 
 }

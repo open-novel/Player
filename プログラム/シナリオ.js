@@ -457,7 +457,7 @@ export function parse ( text, fileName ) {
 
 			}
 
-			let index = progList.push( act )
+			progList.push( act )
 			prev.next = act
 			prev = act
 		}
@@ -574,7 +574,7 @@ export function parse ( text, fileName ) {
 
 				if ( mode == 'str' ) switch ( c ) {
 
-					        case '”': case '’': case '"': case'\'':
+							case '”': case '’': case '"': case'\'':
 						if ( prev == '\\' ) now = c
 						else mode = 'any'; now = '"'
 					break; case '\\':
@@ -584,7 +584,7 @@ export function parse ( text, fileName ) {
 
 				} else switch ( c ) {
 
-					       case '＋': case '+':							now = '+'
+						   case '＋': case '+':							now = '+'
 					break; case '－':　case '―': case '-':				now = '-'
 					break; case '×': case '✕': case '＊': case '*':		now = '*'
 					break; case '÷': case '／': case '/':				now = '/'

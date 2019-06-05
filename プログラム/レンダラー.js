@@ -13,6 +13,9 @@ let [ W, H ] = [ 1, 1 ]
 
 let layerRoot = null, colorProfile = null
 
+let pointers = { }, timers = new WeakMap, base = { }
+
+
 
 async function init ( opt ) {
 
@@ -225,16 +228,19 @@ export class RectangleNode extends Node {
 
 			this.drawPath( { x, y, w, h } )
 
+			ctx.filter = `blur(${ H * .0005 }px)`
+
 			if ( disabled ) fill = 'rgba( 200, 200, 200, .5 )'
 			if ( pushed ) {
-				ctx.filter = 'brightness(50%)'
+				ctx.filter += ',brightness(50%)'
 			} else {
 				if ( shadow ) setShadow( { offset, alpha: .5 } )
-				if ( forcused ) ctx.filter = 'brightness(150%)'
+				if ( forcused ) ctx.filter += ',brightness(150%)'
 			}
 			if ( forcused ) {
-				ctx.lineWidth = H * .02
-				ctx.strokeStyle = 'rgba( 255, 255, 220, .5 )'
+				ctx.lineWidth = H * .03
+				ctx.strokeStyle = 'rgba( 255, 255, 255, .5 )'
+
 				ctx.stroke( )
 			}
 
@@ -276,6 +282,9 @@ export class PolygonNode extends Node {
 		if ( ! fill && c ) fill = c
 
 		if ( fill ) {
+
+			ctx.filter = `blur(${ H * .0005 }px)`
+
 			if ( disabled ) fill = 'rgba( 200, 200, 200, .5 )'
 			if ( pushed ) {
 				ctx.filter = 'brightness(50%)'
@@ -460,6 +469,37 @@ export class DecoTextNode extends Node {
 }
 
 
+export class ProgressNode extends Node {
+
+	constructor ( opt ) {
+		const def = { value: 0 }
+		opt = Object.assign( def, opt )
+		super ( opt )
+	}
+
+	draw ( { ctx, x, y, w, h } ) {
+
+		let { value, fill } = this
+		if ( value == 0 ) return
+
+		ctx.lineWidth = H * .04
+		ctx.strokeStyle = fill
+
+		ctx.beginPath( )
+		if ( value == 1 ) {
+			ctx.arc( x, y, w, 0, Math.PI*2, false )
+		} else {
+			ctx.filter = `blur(${ w * .05 / value ** 2 }px)`
+			ctx.arc( x, y, w,
+				270 * Math.PI / 180 + .000001,
+				( ( value * 360 + 270 ) % 360 ) * Math.PI / 180,
+				false )
+		}
+		ctx.stroke( )
+	}
+}
+
+
 export class ImageNode extends Node {
 
 	constructor ( opt ) {
@@ -578,11 +618,11 @@ function initLayer ( ) {
 				children: [
 					{
 						type: DecoTextNode, name: 'nameArea',
-						x: .05, w: .1, y: .18, size: .175, fill: 'rgba( 255, 255, 220, 1 )',
+						x: .05, w: .1, y: .18, size: .175, fill: 'rgba( 255, 255, 240, 1 )',
 					},
 					{
 						type: DecoTextNode, name: 'messageArea',
-						x: .2, w: .75, y: .18, size: .175, fill: 'rgba( 255, 255, 220, 1 )'
+						x: .2, w: .75, y: .18, size: .175, fill: 'rgba( 255, 255, 240, 1 )'
 					},
 				]
 			},
@@ -664,6 +704,10 @@ function initLayer ( ) {
 						]
 					}
 				]
+			},
+			{
+				type: ProgressNode, name: 'progressCircle', shape: 'circle',
+				w: .05, h: .05, fill: 'rgba( 75, 200, 100, .75 )'
 			}
 		]
 	}, layerRoot )
@@ -712,6 +756,13 @@ export function drawCanvas ( mustDraw ) {
 	if ( ! ctx ) return
 
 	layerRoot.fire( 'update' )
+
+	if ( timers.has( base ) ) {
+		let time = timers.get( base ).get( )
+		let value = ( time - 1000 ) / 1000
+		value = value < 0 ? 0 : value < 1 ? value : 1
+		layerRoot.progressCircle.prop( 'value', value )			
+	}
 
 	if ( Media.activeBGV ) {
 		mustDraw = true
@@ -851,7 +902,7 @@ export function onAction ( type ) {
 }
 
 
-let pointers = { }, timers = new WeakMap
+
 export function onPoint ( { type, x, y } ) {
 
 	if ( ! ctx ) return
@@ -878,7 +929,6 @@ export function onPoint ( { type, x, y } ) {
 				node.fire( 'enter' )
 				if ( node.listenerMode && node.listenerMode != 'block' )
 					node.forcused = true
-
 			} break
 			case 'down': {
 				node.fire( 'down' )
@@ -909,13 +959,20 @@ export function onPoint ( { type, x, y } ) {
 
 	switch ( type ) {
 		case 'move': {
+			layerRoot.progressCircle.prop( 'x', x / W )
+			layerRoot.progressCircle.prop( 'y', y / H )
 			for ( let node of pointer ) {
 				node.fire( 'leave' )
 				node.pushed = false
 				node.forcused = false
 			}
 		} break
+		case 'down': {
+			timers.set( base, new $.Time )
+		} break
 		case 'up': {
+			layerRoot.progressCircle.prop( 'value', 0 )
+			timers.delete( base )
 			for ( let node of pointer ) {
 				node.fire( 'up' )
 				node.pushed = false
