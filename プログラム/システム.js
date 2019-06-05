@@ -195,10 +195,10 @@ async function playSystemOpening ( mode ) {
 
 	// シナリオ開始メニュー表示
 
-	let menuList = [
+	let menuList = $.disableChoiceList( [ 'アップデート', '投げ銭' ], [
 		'初めから', '続きから', '途中から',
 		'インストール', 'アップデート', '投げ銭'
-	]
+	] )
 
 	WHILE: while ( true ) {
 
@@ -663,7 +663,7 @@ async function installScenario ( index, sel ) {
 
 			let rate = await $.fetchJSON( `${ api }/rate_limit` )
 			let { remaining, reset } = rate.resources.core
-			let resetmin = Math.ceil( ( reset - Date.now( ) / 1000 ) / 60 ) 
+			let resetmin = Math.ceil( ( reset - Date.now( ) / 1000 ) / 60 )
 
 			if ( remaining == 0 ) {
 				await Action.sysMessage(
@@ -681,7 +681,7 @@ async function installScenario ( index, sel ) {
 				await Action.sysMessage( 'ユーザー名を入力してください' )
 				user = ( window.prompt( 'ユーザー名を入力してください', '' ) || '' ).trim( )
 			}
-			
+
 			if ( ! /^[-\w]+$/.test( user ) ) {
 				await Action.sysMessage( 'ユーザー名が不正です' )
 				return $.Token.failure
@@ -775,7 +775,7 @@ async function installScenario ( index, sel ) {
 				return $.Token.failure
 			} )
 
-		
+
 	}
 
 
