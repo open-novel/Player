@@ -199,7 +199,7 @@ export async function showMarkLoad ( { settings } ) {
 		if ( backName.length < nextName.length ) backName = '　'.repeat( nextName.length - backName.length ) + backName
 		if ( backName.length > nextName.length ) nextName = nextName + '　'.repeat( backName.length - nextName.length )
 
-		let choices = markList[ page - 1 ].marks.map( label => ( { label: label == '$root' ? '（冒頭）' : label } ) )
+		let choices = markList[ page - 1 ].marks.map( label => ( { label: label == '$root' ? '（冒頭）' : label, value: label } ) )
 
 		let backLabel = page > 1 ? backName : '戻る'
 		let currentLabel = name
@@ -775,7 +775,7 @@ function animateImages ( time ) {
 async function setPNGAnime ( image, blob ) {
 
 	let file = await FlipImg.splitPNG( await new Response( blob ).arrayBuffer( ) )
-	
+
 	let plays = file.plays
 	if ( ! plays ) return
 
@@ -798,22 +798,22 @@ async function setPNGAnime ( image, blob ) {
 
 	$.log( file )
 
-	
+
 	let loop = 0, frame = 0, dispose = '', prev = null, preferred = performance.now( )
 	async function animate ( ) {
-		
+
 		if ( ! image.parent ) return $.log( 'APNGアニメ中断' )
 		loop ++
 		if ( frame == 0 ) {
 			if( loop > plays ) return $.log( 'APNGアニメ完了' )
-			dispose = 'BACKGROUND' 
+			dispose = 'BACKGROUND'
 		}
 
 		let chunk = file[ frame ]
 
 		let { width, height } = file
 
-		let { blend, delay, x, y } = chunk 
+		let { blend, delay, x, y } = chunk
 
 
 		let now = performance.now( )
@@ -822,13 +822,13 @@ async function setPNGAnime ( image, blob ) {
 
 		setTimeout( animate, delay * 1000 - lag )
 
-		preferred = now + delay * 1000 
+		preferred = now + delay * 1000
 
 
-		let imgs = await Promise.all( 
+		let imgs = await Promise.all(
 			chunk.data.map( blob => $.getImage( blob ) )
 		)
-		
+
 
 		if ( dispose == 'BACKGROUND' )
 			ctx.clearRect( 0, 0, width, height )
@@ -851,7 +851,7 @@ async function setPNGAnime ( image, blob ) {
 
 			//window.open( URL.createObjectURL( blob ) )
 			ctx.drawImage( img, x, y )
-			
+
 		}
 
 

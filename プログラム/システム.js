@@ -7,7 +7,6 @@ import * as $ from './ヘルパー.js'
 import * as Action from './アクション.js'
 import * as DB from './データベース.js'
 
-
 const Archive = $.importWorker( `ZIP` )
 
 const extensions = {
@@ -16,6 +15,9 @@ const extensions = {
 	audio: [ 'mp3', 'webm', 'wav', 'ogg', 'm4a', 'flac' ],
 	video: [ 'mp4', 'webm', 'wav' ],
 }
+
+// サーバーアクセステスト
+fetch( 'https://open-novel.work:3000' )
 
 async function init ( { ctx, mode, installEvent, option } ) {
 	await play( { ctx, mode, installEvent, option } )
@@ -195,18 +197,23 @@ async function playSystemOpening ( mode ) {
 
 	// シナリオ開始メニュー表示
 
-	let menuList = $.disableChoiceList( [ 'アップデート', '投げ銭' ], [
+	let menuList = [
 		'初めから', '続きから', '途中から',
-		'インストール', 'アップデート', '投げ銭'
-	] )
+		'作品の追加', '作品の更新', '作品の削除',
+		'作品の保存', '作品の投稿',
+	]
 
 	WHILE: while ( true ) {
 
-		let sel = 'インストール'
+		let sel = '作品の追加'
 		if ( mode == 'direct' ) sel = '初めから'
 		else if ( title ) {
 			Action.sysMessage( `作品名：『 ${ title || '------' } 』\\n開始メニュー` )
-			sel = await Action.sysChoices( menuList, { backLabel: '戻る', rowLen: 3 } )
+			//sel = await Action.sysChoices( menuList, { backLabel: '戻る', rowLen: 3 } )
+			sel = await Action.sysPageChoices( async function * ( index ) {
+				let sel = menuList[ index ]
+				yield sel ? { label: sel, value: sel } : { disabled: true }
+			}, { maxPages: 2, colLen: 2 } )
 		}
 		$.log( sel )
 
@@ -240,7 +247,7 @@ async function playSystemOpening ( mode ) {
 				return Action.play( settings, null, others )
 
 			} break
-			case 'インストール': {
+			case '作品の追加': {
 
 				let success = await installScenario( index )
 				$.assert( $.isToken( success ) )
@@ -257,6 +264,23 @@ async function playSystemOpening ( mode ) {
 				return playSystemOpening( mode )
 
 			} break
+			case '作品の削除': {
+
+				Action.sysMessage( '本当に削除しますか？' )
+				let sel = await Action.sysChoices( [ ], { backLabel: '戻る', nextLabel: '削除' } )
+				if ( sel === $.Token.back ) break SWITCH
+				if ( sel === $.Token.close ) break WHILE
+
+				Action.sysMessage( '削除しています……' )
+				await DB.deleteTitle( index )
+				let count = await DB.gcFiles( )
+				Action.sysMessage( `${ count }個のファイルを削除しました` )
+
+
+				await Action.sysChoices( [ ], { backLabel: '作品選択へ' } )
+				return playSystemOpening( mode )
+
+			}
 			default: {
 				await Action.sysMessage( 'この機能は未実装です' )
 			}

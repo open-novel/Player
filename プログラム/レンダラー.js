@@ -337,8 +337,9 @@ export class TextNode extends Node {
 	draw ( { x, y, w, h, c, disabled } ) {
 
 		let { fill, shadow, text, size, pos, rotate } = this
-		if ( ! fill && c ) fill = c
+		if ( typeof text != 'string' ) text = '######'
 
+		if ( ! fill && c ) fill = c
 		if ( disabled ) fill = 'rgba( 255, 255, 255, .5 )'
 
 		ctx.font = `${ h * size }px "Hiragino Kaku Gothic ProN", Meiryo`
@@ -759,9 +760,9 @@ export function drawCanvas ( mustDraw ) {
 
 	if ( timers.has( base ) ) {
 		let time = timers.get( base ).get( )
-		let value = ( time - 1000 ) / 1000
+		let value = ( time - 500 ) / 1000
 		value = value < 0 ? 0 : value < 1 ? value : 1
-		layerRoot.progressCircle.prop( 'value', value )			
+		layerRoot.progressCircle.prop( 'value', value )
 	}
 
 	if ( Media.activeBGV ) {
@@ -943,7 +944,7 @@ export function onPoint ( { type, x, y } ) {
 				node.pushed = false
 				if ( pointer.delete( node ) ) {
 					let time = timers.get( node ).get( )
-					if ( time <= 2000 ) node.fire( 'click' )
+					if ( time <= 1500 ) node.fire( 'click' )
 					else { onAction( 'menu' ); break W }
 				}
 			} break

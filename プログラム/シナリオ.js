@@ -20,7 +20,7 @@ export async function play ( layer, state, others ) {
 	stateMap.set( layer, state )
 
 	let { scenario, act = scenario[ 0 ], scenarioStack = [ ], varMap = new Map } = state
-	let basePath = ( state.origin || '' ) + state.title 
+	let basePath = ( state.origin || '' ) + state.title
 
 	let { saveGlobalVarMap, globalVarMap = new Map, jump = null } = others
 	Object.assign( state, { act, scenarioStack, varMap } )
@@ -278,7 +278,7 @@ export async function play ( layer, state, others ) {
 
 					let [ key, value ] = prop.map( textEval )
 					await $Set( key, value )
-					
+
 
 				} break
 
@@ -661,7 +661,7 @@ export function parse ( text, fileName ) {
 
 					prop = prop[ 0 ].split(/[:：]/)
 					prop = [ parseText( prop[ 0 ].replace(/^＄/, '$' ) ), subParseText( prop[ 1 ] ) ]
-					
+
 
 				} break
 				case 'ジャンプ': {
@@ -672,7 +672,7 @@ export function parse ( text, fileName ) {
 				default : {
 
 					if ( typeof prop != 'object' ) prop = [ prop ]
-					if ( Array.isArray( prop[ 0 ] ) ) 
+					if ( Array.isArray( prop[ 0 ] ) )
 						prop = prop.map( p => p.map( parseText ) )
 					else
 						prop = prop.map( parseText )
@@ -714,14 +714,14 @@ export function getFileList ( text ) {
 
 				let name = textEval( prop[ 1 ] )
 				if ( name ) fileList.push( { type: 'image', path: '立ち絵/' + name } )
-				
+
 
 			} break
 			case '背景': {
 
 				let name = textEval( prop[ 1 ] ) || textEval( prop[ 0 ] )
 				if ( name ) fileList.push( { type: 'image', path: '背景/' + name } )
-				
+
 			} break
 			case 'ビデオ': {
 
@@ -791,7 +791,13 @@ export function getMarkList ( text, name ) {
 		let { type, prop } = act
 
 		if ( type != 'マーク' ) continue
-		let mark = textEval( prop )
+		let mark
+			console.log ( prop )
+			if ( typeof prop == 'string' )
+				mark = textEval( prop )
+			else
+				[ mark ] = prop.map( textEval )
+
 		if ( mark ) markList.push( mark )
 
 	}

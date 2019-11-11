@@ -121,10 +121,8 @@ async function unpackFile( zip ) {
 		let m = 0
 		for ( let i = 0; i < len; i ++ ) { m = ( m << 1 ) | bit1( ) }
 		//if ( m != m2 ) throw 'UnEx'
-		if ( offset >= 8 ) { throw ''
-			offset -= 8
-			pointer ++
-		}
+		if ( offset >= 8 ) throw ''
+
 		return m
 	}
 
@@ -137,10 +135,8 @@ async function unpackFile( zip ) {
 		let m = 0
 		for ( let i = 0; i < len; i ++ ) { m = m | ( bit1( ) << i ) }
 		//if ( m != m2 ) throw 'UnEx'
-		if ( offset >= 8 ) { throw ''
-			offset -= 8
-			pointer ++
-		}
+		if ( offset >= 8 ) throw ''
+
 		return m
 	}
 
@@ -160,6 +156,7 @@ async function unpackFile( zip ) {
 	function byte ( len ) {
 		if ( offset > 0 ) throw 'UnEx'
 		return bitU( len * 8 )
+		/*
 		let n
 		     if ( len == 1 ) n = view.getUint8 ( pointer, true )
 		else if ( len == 2 ) n = view.getUint16( pointer, true )
@@ -169,6 +166,7 @@ async function unpackFile( zip ) {
 		else n = 0
 		pointer += len
 		return n
+		*/
 	}
 
 	function strByte ( size, type = 'sjis' ) {

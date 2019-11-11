@@ -73,10 +73,11 @@ export async function getStateList ( title ) {
 export async function saveState ( title, index, data ) {
 
 	let type = 'State'
-	$.log( `Save${ type }`, title, index, data )
 	data = Object.assign( data, { title, index } )
 	let os = DB.transaction( [ type ], 'readwrite' ).objectStore( type )
+	$.log( `Save${ type }`, title, index, data )
 	await on( os.put( data ) )
+
 
 }
 
@@ -87,6 +88,16 @@ export async function loadState ( title, index ) {
 	let data = await on( os.get( [ title, index ] ) )
 	$.log( `Load${ type }`, title, index, data )
 	return data
+
+}
+
+
+export async function deleteState ( title, index ) {
+
+	let type = 'State'
+	let os = DB.transaction( [ type ], 'readwrite' ).objectStore( type )
+	await on( os.delete( [ title, index ] ) )
+	$.log( `Delete${ type }`, title, index )
 
 }
 
@@ -115,6 +126,31 @@ export async function saveFiles ( data ) {
 	} )
 }
 
+export async function gcFiles ( ) {
+
+	let list = await getTitleList( )
+	list = list.map( obj => obj.origin + obj.title +'/' )
+	$.log( list )
+
+	let type = 'File'
+	let os = DB.transaction( [ type ], 'readwrite' ).objectStore( type )
+	let { promise, resolve } = new $.Deferred, count = 0
+	os.openCursor( ).onsuccess = ( { target: { result: cursor } } ) => {
+		if ( ! cursor ) return resolve( )
+		let key = cursor.key
+		if ( ! list.some( path => key.startsWith( path ) ) ) {
+			cursor.delete( )
+			++count
+			$.log( 'DELETE!!', key )
+		}
+		cursor.continue( )
+	}
+	await promise
+
+	return count
+
+}
+
 
 export async function loadFile ( path ) {
 
@@ -124,7 +160,7 @@ export async function loadFile ( path ) {
 	$.log( `Load${ type }`, path, data )
 	if ( data && data.buffer ) {
 		data = new File( [ data.buffer ], data.name, { type: data.type } )
-	} 
+	}
 	return data
 }
 
@@ -174,5 +210,13 @@ export async function loadTitle ( index ) {
 	let type = 'TitleList'
 	let os = DB.transaction( [ type ], 'readonly' ).objectStore( type )
 	return on( os.get( index ) )
+
+}
+
+export async function deleteTitle ( index ) {
+
+	let type = 'TitleList'
+	let os = DB.transaction( [ type ], 'readwrite' ).objectStore( type )
+	return on( os.delete( index ) )
 
 }
