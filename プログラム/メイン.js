@@ -4,21 +4,16 @@ http://creativecommons.org/publicdomain/zero/1.0
 */
 
 import * as $ from './ヘルパー.js'
-// let Player
-// if ( $.channel == 'Dev' )
-// 	Player = import( '/Player_Dev/プログラム/システム.js' )
-// else Player = import( './システム.js' )
-
-import * as Player_Dev from '/Player_Dev/プログラム/システム.js'
-import * as Player_Sbl from './システム.js'
-
-const Player = $.channel == 'Dev' ? Player_Dev : Player_Sbl
 
 window.addEventListener( 'DOMContentLoaded', main )
 
 let installEvent = new $.Deferred
 
 async function main( ) {
+
+	let Player
+	if ( $.channel == 'Dev' ) Player = await import( '/Player_Dev/プログラム/システム.js' )
+	else Player = await import( './システム.js' )
 
 	//Canvas要素の配置と準備
 	const wrapper = document.querySelector( '#ONPWrapper' )
@@ -39,7 +34,7 @@ async function main( ) {
 	player.appendChild( canvas )
 
 	if ( true || option.pwa ) {
-		
+
 		Object.assign( document.documentElement.style, {
 			overflow: 'hidden',
 		} )
@@ -60,7 +55,7 @@ async function main( ) {
 			display: 'inline-block',
 			margin: 'auto',
 			height: '56.25vw',
-			width: '177.78vh',
+			width: '177.7778vh',
 			maxHeight: '100vh',
 			maxWidth: '100vw',
 		} )
