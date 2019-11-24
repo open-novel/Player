@@ -10,7 +10,7 @@ let DB = null
 
 export async function init ( ) {
 
-	const VERSION = 4
+	const VERSION = 5
 
 	let upgrade = ( db, { oldVersion: ver } ) => {
 
@@ -18,10 +18,13 @@ export async function init ( ) {
 			let os = db.createObjectStore( type, key ? { keyPath: key } : undefined )
 		}
 
-		if ( ver <= 5 ) {
+		if ( ver <= 3 ) {
 			createObjectStore( 'State', [ 'title', 'index' ] )
 			createObjectStore( 'File' )
 			createObjectStore( 'TitleList', 'index' )
+		}
+		if ( ver <= 4 ) {
+			createObjectStore( 'Setting' )
 		}
 
 	}
@@ -51,6 +54,23 @@ function on ( req, option ) {
 
 }
 
+
+
+export async function getSetting ( key ) {
+
+	let type = 'Setting'
+	let os = DB.transaction( [ type ], 'readonly' ).objectStore( type )
+	return await on( os.get( key ) )
+
+}
+
+export async function setSetting ( key, val ) {
+
+	let type = 'Setting'
+	let os = DB.transaction( [ type ], 'readwrite' ).objectStore( type )
+	return await on( os.put( val, key ) )
+
+}
 
 
 export async function getStateList ( title ) {
@@ -179,12 +199,31 @@ export async function getFile ( path ) {
 }
 
 
+export async function getAllFiles ( prefix ) {
+
+	let type = 'File',  list = [ ]
+	let os = DB.transaction( [ type ], 'readonly' ).objectStore( type )
+	let { promise, resolve } = new $.Deferred
+	os.openCursor( ).onsuccess = ( { target: { result: cursor } } ) => {
+		if ( ! cursor ) return resolve( )
+		let key = cursor.key
+		if ( key.startsWith( prefix ) ) {
+			list.push( cursor.value )
+		}
+		cursor.continue( )
+	}
+	await promise
+
+	return list
+
+}
+
 
 export async function getTitleList ( ) {
 
 	let type = 'TitleList'
 	let os = DB.transaction( [ type ], 'readonly' ).objectStore( type )
-	let { promise, resolve } = new $.Deferred, list = [ ]
+	let { promise, resolve } = new $.Deferred, list = { }
 	os.openCursor( ).onsuccess = ( { target: { result: cursor } } ) => {
 		if ( ! cursor ) return resolve( )
 		list[ cursor.key ] = cursor.value
