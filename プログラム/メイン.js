@@ -4,16 +4,13 @@ http://creativecommons.org/publicdomain/zero/1.0
 */
 
 import * as $ from './ヘルパー.js'
+import * as Player from './システム.js'
 
 window.addEventListener( 'DOMContentLoaded', main )
 
 let installEvent = new $.Deferred
 
 async function main( ) {
-
-	let Player
-	if ( $.channel == 'Dev' ) Player = await import( '/Player_Dev/プログラム/システム.js' )
-	else Player = await import( './システム.js' )
 
 	//Canvas要素の配置と準備
 	const wrapper = document.querySelector( '#ONPWrapper' )
@@ -149,8 +146,3 @@ window.addEventListener( 'beforeinstallprompt', e => {
 	e.preventDefault( )
 	return false
 } )
-
-let time = Date.now( )
-if ( ! location.href.includes( '/Player' ) )
-	navigator.serviceWorker.register( `/サービス.js?t=${ time }` )
-//navigator.serviceWorker.register( `Player/サービス.js?t=${ time }`, { scope: '/Player/' } )
