@@ -6,11 +6,8 @@ http://creativecommons.org/publicdomain/zero/1.0
 import * as $ from './ヘルパー.js'
 import * as Player from './システム.js'
 
-window.addEventListener( 'DOMContentLoaded', main )
 
-let installEvent = new $.Deferred
-
-async function main( ) {
+export async function main( { installEvent = new $.Deferred } = { } ) {
 
 	//Canvas要素の配置と準備
 	const wrapper = document.querySelector( '#ONPWrapper' )
@@ -140,9 +137,3 @@ async function main( ) {
 
 
 }
-
-window.addEventListener( 'beforeinstallprompt', e => {
-	installEvent.resolve( e )
-	e.preventDefault( )
-	return false
-} )
