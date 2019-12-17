@@ -9,6 +9,8 @@ import * as DB from './データベース.js'
 
 const Archive = $.importWorker( `ZIP` )
 
+const open2chURL = 'http://hayabusa.open2ch.net/test/read.cgi/news4vip/1537182605/l10'
+
 const extensions = {
 	text: [ 'txt' ],
 	image: [ 'png', 'webp', 'jpg', 'svg', 'gif' ],
@@ -16,8 +18,7 @@ const extensions = {
 	video: [ 'mp4', 'webm', 'wav' ],
 }
 
-// サーバーアクセステスト
-fetch( 'https://open-novel.work:3000' )
+
 
 async function init ( { ctx, mode, installEvent, option } ) {
 	await play( { ctx, mode, installEvent, option } )
@@ -45,7 +46,7 @@ async function play ( { ctx, mode, installEvent: event, option: opt, params = ne
 
 		let text =
 			`openノベルプレイヤー` +
-			( $.Settings.TesterMode ? '　★テスターモード★' : '' ) + `\\n \\n` +
+			( localStorage.TesterMode ? '　★テスターモード★' : '' ) + `\\n \\n` +
 			`${ settings[ 'バージョン' ][ 0 ] }${ $.channel.includes( 'Dev' ) ? '(開発版)' : '' }  ${ settings[ '更新年月日' ][ 0 ] } \\n`
 
 
@@ -117,12 +118,12 @@ async function playSystemOpening ( mode ) {
 
 
 	let cho
+	let altBack = ( localStorage.LocalSync && window.chooseFileSystemEntries ) ? 'ローカル' : undefined
 	if ( mode == 'direct' ) {
 
 		cho = { settings: titleList[ 0 ], index: 0 }
 
 	} else {
-
 
 		let noImage = await $.getImage( await $.fetchFile( './画像/画像なし.svg' ) )
 			.catch(
@@ -152,12 +153,42 @@ async function playSystemOpening ( mode ) {
 				value: { settings, index },
 				bgimage: image
 			}
-		}, { maxPages: 5, rowLen: 2, menuType: 'open' } )
+		}, { maxPages: 5, rowLen: 2, menuType: 'open', altBack } )
 
 
 		if ( cho == $.Token.back ) {
-			location.reload( )
-			await $.neverDone
+
+			if ( ! altBack ) {
+				location.reload( )
+				await $.neverDone
+			}
+
+			let handle = await window.chooseFileSystemEntries( { type: 'openDirectory' } )
+			let status = await handle.requestPermission( { writable: true } )
+			$.log( status )
+			let folderList = [ ]
+			for await ( let h of handle.getEntries( ) ) {
+				if ( h.isDirectory ) folderList.push( h )
+			}
+
+			cho = await Action.sysPageChoices( async function * ( index ) {
+
+
+				let folder = folderList[ index ] || { }
+				let title = folder.name
+
+				yield {
+					label: title ? title : '--------',
+					value: folder,
+				}
+			}, { maxPages: 5, rowLen: 2, menuType: 'open', altBack: 'プレイヤー' } )
+
+			$.log( cho )
+
+			Action.sysMessage( '実装中です\\nまだ機能しません' )
+			await Action.sysChoices( [ ], { backLabel: 'トップへ' } )
+			return playSystemOpening( mode )
+
 		}
 
 		if ( cho == $.Token.close ) {
@@ -199,20 +230,23 @@ async function playSystemOpening ( mode ) {
 
 	let menuList = [
 		'初めから', '続きから', '途中から',
-		'作品の追加', '作品の更新', '作品の削除',
-		'作品の保存', '作品の投稿',
+		'削除する', '保存する', '投稿する',
+		'更新する', '上書する',
 	]
+	$.disableChoiceList( [ '上書する', '更新する', ], menuList )
+	//if ( settings.origin != 'local/' ) $.disableChoiceList( [ '投稿する', ], menuList )
+
+	console.log( menuList )
 
 	WHILE: while ( true ) {
 
-		let sel = '作品の追加'
+		let sel = '上書する'
 		if ( mode == 'direct' ) sel = '初めから'
 		else if ( title ) {
 			Action.sysMessage( `作品名：『 ${ title || '------' } 』\\n開始メニュー` )
 			//sel = await Action.sysChoices( menuList, { backLabel: '戻る', rowLen: 3 } )
 			sel = await Action.sysPageChoices( async function * ( index ) {
-				let sel = menuList[ index ]
-				yield sel ? { label: sel, value: sel } : { disabled: true }
+				yield ( menuList[ index ] || { disabled: true } )
 			}, { maxPages: 2, colLen: 2 } )
 		}
 		$.log( sel )
@@ -223,9 +257,9 @@ async function playSystemOpening ( mode ) {
 			case $.Token.close:
 				break WHILE
 
-			case '初めから':
+			case '初めから': {
 				return Action.play( settings, null, others )
-
+			} break
 			case '続きから': {
 
 				let state = await Action.showSaveLoad( { title, isLoad: true, settings, others } )
@@ -247,7 +281,7 @@ async function playSystemOpening ( mode ) {
 				return Action.play( settings, null, others )
 
 			} break
-			case '作品の追加': {
+			case '上書する': {
 
 				let success = await installScenario( index )
 				$.assert( $.isToken( success ) )
@@ -264,7 +298,7 @@ async function playSystemOpening ( mode ) {
 				return playSystemOpening( mode )
 
 			} break
-			case '作品の削除': {
+			case '削除する': {
 
 				Action.sysMessage( '本当に削除しますか？' )
 				let sel = await Action.sysChoices( [ ], { backLabel: '戻る', nextLabel: '削除' } )
@@ -280,10 +314,96 @@ async function playSystemOpening ( mode ) {
 				await Action.sysChoices( [ ], { backLabel: '作品選択へ' } )
 				return playSystemOpening( mode )
 
-			}
+			} break
+			case '保存する': {
+
+				Action.sysMessage( 'ZIPファイル作成中……' )
+				let zip = await makeZIP()
+
+				$.download( zip, zip.name )
+				Action.sysMessage( '作品をZIPファイルにしました' )
+
+				let sel = await Action.sysChoices( [ ], { backLabel: '戻る' } )
+				if ( sel === $.Token.back ) break SWITCH
+				if ( sel === $.Token.close ) break WHILE
+
+			} break
+			case '投稿する': {
+
+				let sel
+				let ok = await fetch( 'https://open-novel.work' ).then( res => res.ok, ( ) => false  )
+
+				if ( ! ok ) {
+					Action.sysMessage( 'サーバーの準備ができていません\\nしばらく経ってからやり直してください' )
+					sel = await Action.sysChoices( [ ], { backLabel: '戻る' } )
+					if ( sel === $.Token.back ) break SWITCH
+					if ( sel === $.Token.close ) break WHILE
+				}
+
+				Action.sysMessage(
+					`作品データをプレイヤー作者に送信して、\\n` +
+					`公開するための審査を受けることができます。\\n` +
+					`作品投稿要項に同意して投稿しますか？`
+				)
+
+				while ( true ) {
+					sel = await Action.sysChoices( [ '作品投稿要項を見る' ], { backLabel: '同意しない', nextLabel: '同意する' } )
+					if ( sel == '作品投稿要項を見る' ) window.open( 'https://github.com/open-novel/open-novel.github.io/wiki/作品投稿要綱' )
+					if ( sel === $.Token.next ) break
+					if ( sel === $.Token.back ) break SWITCH
+					if ( sel === $.Token.close ) break WHILE
+				}
+
+
+				Action.sysMessage( 'ZIPファイル作成中……' )
+				let zip = await makeZIP( )
+
+				Action.sysMessage( '投稿中……' )
+				let res = await ( await fetch(
+					'https://scenario.open-novel.work',
+					{
+						method: 'POST',
+						mode: 'cors',
+						headers: { 'content-type': 'application/zip' },
+						body: zip
+					}
+				) ).json( )
+
+				if ( res.completed ) {
+
+					if ( navigator.clipboard ) navigator.clipboard.writeText( `(ID: ${ res.data.id } )` )
+					Action.sysMessage(
+						`作品審査を受け付ました　（ID: ${ res.data.id } ）\\n`
+						+ 'open2ch掲示板で上記IDと作品紹介文を投稿してください\\n'
+						+ '（IDは対応環境ではクリップボードにコピーされています）'
+					)
+
+				} else {
+					Action.sysMessage( '投稿が失敗しました\\n理由：' + res.data )
+				}
+
+				sel = await Action.sysChoices( [ 'open2chスレを開く' ], { backLabel: '戻る' } )
+				if ( sel === $.Token.back ) break SWITCH
+				if ( sel === $.Token.close ) break WHILE
+				window.open( open2chURL )
+
+			} break
 			default: {
 				await Action.sysMessage( 'この機能は未実装です' )
 			}
+		}
+
+
+		async function makeZIP ( ) {
+			let prefix = settings.origin + title + '/'
+
+			let files = await DB.getAllFiles( prefix )
+			//let files = [ new File( [ ], 't1', { type: 'text/plain' } ) ]
+			let abs = await Promise.all( files.map( file => new Response( file ).arrayBuffer( ) ) )
+			let data = abs.map( ( ab, i ) => ( { buf: ab, name: files[ i ].name, type: files[ i ].type } ) )
+
+			let zip = await Archive.packFile( data, abs )
+			return new File( [ zip ], title + '.zip', { type: 'application/zip' } )
 		}
 
 	}
@@ -334,7 +454,7 @@ async function showSysMenu ( ) {
 			break
 			case '操作方法リンク': window.open( 'https://github.com/open-novel/open-novel.github.io/wiki/' )
 			break
-			case '制作スレリンク': window.open( 'http://hayabusa.open2ch.net/test/read.cgi/news4vip/1537182605/l30' )
+			case '制作スレリンク': window.open( open2chURL )
 			break
 
 			case '受信チャンネル設定': {
@@ -436,13 +556,20 @@ async function showSysMenu ( ) {
 					'クリックで各機能を設定できます'
 				)
 
-				let { VR, TesterMode } = $.Settings
+				let { VR } = $.Settings
+				let { TesterMode, LocalSync } = localStorage
+				let chooseFile = window.chooseFileSystemEntries
 
 				let sel = await Action.sysChoices( [
 
 					{
-						label: `テスターモード　（現在${ TesterMode ? 'ON ' : 'OFF' }）`,
+						label: `テスターモード　（${ TesterMode ? '現在ON ' : '現在OFF' }）`,
 						value: 'テスターモード'
+					},
+
+					{
+						label: `ローカル同期　　（${ ! chooseFile ? '非対応' : LocalSync ? '現在ON ' : '現在OFF' }）`,
+						value: 'ローカル同期', disabled: ! chooseFile
 					},
 
 					async function * ( ) {
@@ -469,13 +596,16 @@ async function showSysMenu ( ) {
 				if ( sel == $.Token.close ) break WHILE
 
 				switch ( sel ) {
+
 					case 'テスターモード': {
+
 						Action.sysMessage(
 							'テスターモードが有効だと以下の効果があります\\n' +
 							'・詳細なログをコンソールに表示\\n' +
 							'・アクセス解析を無効'
 						)
-						let choiceList = [ { label: 'ONにする' }, { label: 'OFFにする' } ]
+
+						let choiceList = [ 'ONにする', 'OFFにする' ]
 						$.disableChoiceList( [ ( TesterMode ? 'ON' : 'OFF' ) + 'にする'  ], choiceList )
 						let sel = await Action.sysChoices( choiceList, { backLabel: '戻る', color: 'green' } )
 						if ( sel == $.Token.back ) continue WHILE2
@@ -489,8 +619,34 @@ async function showSysMenu ( ) {
 						await Action.sysChoices( [ ], { backLabel: 'リセットする', color: 'green' } )
 						location.reload( )
 						await $.neverDone
+
+					} break
+					case 'ローカル同期': {
+
+						Action.sysMessage(
+							'ローカルファイルに読み書きする権限を与えることで\\n' +
+							'自分の端末にある作品を１つ１つ登録しなくても\\n' +
+							'指定したフォルダ内の作品を表示・編集することができます'
+						)
+
+						let choiceList = [ 'ONにする', 'OFFにする' ]
+						$.disableChoiceList( [ ( LocalSync ? 'ON' : 'OFF' ) + 'にする'  ], choiceList )
+						let sel = await Action.sysChoices( choiceList, { backLabel: '戻る', color: 'green' } )
+						if ( sel == $.Token.back ) continue WHILE2
+						if ( sel == $.Token.close ) break WHILE
+						LocalSync = ! LocalSync
+						localStorage.LocalSync = LocalSync ? 'Yes' : ''
+						Action.sysMessage(
+							'次回起動時からローカル同期が【' + ( LocalSync ? 'ON' : 'OFF' ) + '】になるよう設定しました\\n' +
+							'変更を反映させるためにプレイヤーをリセットしてください'
+						)
+						await Action.sysChoices( [ ], { backLabel: 'リセットする', color: 'green' } )
+						location.reload( )
+						await $.neverDone
+
 					} break
 					case 'VR': {
+
 						let res = await $.trying( Action.presentVR( VR.enabled = ! VR.enabled ) )
 						if ( res == $.Token.failure ) {
 							VR.failureNum = ( VR.failureNum || 0 ) + 1
@@ -498,8 +654,10 @@ async function showSysMenu ( ) {
 						} else {
 							VR.failure = false
 						}
+
 					} break
 					case '投げ銭': {
+
 						let methods = [{
 							supportedMethods: [ 'basic-card' ],
 							data: {
@@ -928,7 +1086,7 @@ async function installScenario ( index, sel ) {
 
 	async function unpackFile ( zip ) {
 		if ( ! zip ) return $.Token.failure
-		let data = ( await Archive.unpackFile( zip ) )
+		let data = ( await Archive.unpackFile( zip, [ zip ] ) )
 		if ( ! data ) return $.Token.failure
 		return data.map( f => new File( [ f.data ], f.name, { type: f.type } ) )
 	}

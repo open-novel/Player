@@ -5,21 +5,197 @@ http://creativecommons.org/publicdomain/zero/1.0
 
 'use strict'
 
-// const $ = { log ( ...args ) { return console.log( ...args ) } }
-const $ = { log ( ) { } }
+const $ = { log ( ...args ) { return console.log( ...args ) } }
+//const $ = { log ( ) { } }
 
+const Ext2MIME = {
+	'aac': 'audio/aac',
+	'avi': 'video/x-msvideo',
+	'bmp': 'image/bmp',
+	'gif': 'image/gif',
+	'ico': 'image/x-icon',
+	'jpeg': 'image/jpeg',
+	'jpg': 'image/jpeg',
+	'json': 'application/json',
+	'mid': 'audio/midi',
+	'midi': 'audio/midi',
+	'mp3': 'audio/mpeg',
+	'mp4': 'video.mp4',
+	'mpeg': 'video/mpeg',
+	'mpg': 'video/mpeg',
+	'oga': 'audio/ogg',
+	'ogv': 'video/ogg',
+	'png': 'image/png',
+	'svg': 'image/svg+xml',
+	'tif': 'image/tiff',
+	'tiff': 'image/tiff',
+	'text': 'text/plain',
+	'txt': 'text/plain',
+	'wav': 'audio/wav',
+	'weba': 'audio/webm',
+	'webm': 'video/webm',
+	'webp': 'image/webp',
+	'woff': 'font/woff',
+	'woff2': 'font/woff2',
+	'zip': 'application/zip',
+	'3gp': 'video/3gpp',
+	'3g2': 'video/3gpp2',
+}
+
+const MIME2Ext = Object.entries( Ext2MIME ).reduce(
+	( obj, [ key, val] ) => Object.assign( obj, { [ val ]: key } ), { }
+)
 
 
 self.addEventListener( 'message', async e => {
 
-	let fn = { unpackFile }[ e.data.fn ]
+	let fn = { packFile, unpackFile }[ e.data.fn ]
 	if ( ! fn ) throw 'UnEx'
 
-	let [ res, trans ] = await fn( ...e.data.args )
+	let [ res, trans ] = await fn( e.data.arg )
 
 	self.postMessage( res, trans )
 
 } )
+
+
+
+async function packFile( data ) {
+
+	const crc_table = initCRC( )
+	let parts
+
+	let blobs = pack( data )
+	let zip = await await new Response( new Blob( blobs ) ).arrayBuffer( )
+
+	return [ zip, [ zip ] ]
+
+
+	function initCRC ( ) {
+
+		const crc_table = new Uint32Array( 256 )
+		for ( let n = 0; n < 256; n++ ) {
+			let c = n
+			for ( let k = 0; k < 8; k++ ) {
+				if ( c & 1 ) {
+					c = 0xedb88320 ^ ( c >>> 1 )
+				} else {
+					c = c >>> 1
+				}
+			}
+			crc_table[ n ] = c
+		}
+		return crc_table
+
+	}
+
+
+	function crc32( buf ) {
+		//return 0
+		let c = 0xffffffff
+		buf = new Uint8Array( buf )
+		for ( let n = 0; n < buf.length; n++ ) {
+			c = crc_table[ ( c ^ buf[ n ] ) & 0xff ] ^ ( c >>> 8 )
+		}
+		return c ^ 0xffffffff
+	}
+
+
+	function num ( len, val ) {
+		let ta = new Uint8Array( len )
+		for (  let i = 0; i < len; i++ ) {
+			ta[ i ] = val & 0xFF
+			val = val >> 8
+		}
+		parts.push( ta )
+	}
+
+
+	function basic ( buf ) {
+
+		num( 2, 10 )  // need version
+		num( 2, 0b0000100000000000 )  // purpose
+		num( 2, 0 )  // compression
+		num( 2, 0 )  // TODO time
+		num( 2, 0 )  // TODO date
+		num( 4, crc32( buf ) )  // crc
+		num( 4, buf.byteLength )  // size
+		num( 4, buf.byteLength )  // size
+
+	}
+
+
+	function pack ( data ) {
+
+		let blobs = [ ]
+
+		data = data.map( ( { buf, name, type } ) => {
+			return {
+				buf, type,
+				name: new TextEncoder( ).encode( name + '.' + ( MIME2Ext[ type ] || 'unknown' )  )
+			}
+		} )
+
+		data.forEach( ( { buf, name } ) => {
+
+			parts = [ ]
+			num( 4, 0x04034b50 )   // signature
+			basic( buf )
+			num( 2, name.byteLength )  // filename len
+			num( 2, 0 )  // extra len
+			parts.push( name )
+			num( 0, 0 )  // extra
+			parts.push( buf )
+			blobs.push( new Blob( parts ) )
+
+		} )
+
+
+		let offset = 0, censize = 0
+		data.forEach( ( { buf, name }, i ) => {
+
+			parts = [ ]
+			num( 4, 0x02014b50 )   // signature
+			num( 1, 10 )
+			num( 1, 0 )  // made by UNIX
+			basic( buf )
+			num( 2, name.byteLength )  // filename len
+			num( 2, 0 )  // extra len
+			num( 2, 0 )  // comment len
+			num( 2, 0 )  // disk num
+			num( 2, 0 )  // attributes
+			num( 4, 0 )  // attributes
+			num( 4, offset )
+			parts.push( name )
+			num( 0, 0 )  // extra
+			num( 0, 0 )  // comment
+			blobs.push( new Blob( parts ) )
+
+			offset += blobs[ i ].size
+			censize += blobs[ blobs.length - 1 ].size
+
+		} )
+
+
+		parts = [ ]
+		num( 4, 0x06054b50  )   // signature
+		num( 2, 0 )  // disk num
+		num( 2, 0 )
+		num( 2, blobs.length / 2 )  // total num
+		num( 2, blobs.length / 2 )  // total num
+		num( 4, censize )
+		num( 4, offset )
+		num( 2, 0 )  // comment len
+		num( 0, 0 )  // comment
+		blobs.push( new Blob( parts ) )
+
+		return blobs
+
+	}
+
+
+}
+
 
 
 
@@ -316,38 +492,7 @@ async function unpackFile( zip ) {
 		}
 
 		let ext = ( file.name.match( /\.([^.]+)$/ ) || [ ,'' ] )[ 1 ]
-		file.type = {
-			'aac': 'audio/aac',
-			'avi': 'video/x-msvideo',
-			'bmp': 'image/bmp',
-			'gif': 'image/gif',
-			'ico': 'image/x-icon',
-			'jpeg': 'image/jpeg',
-			'jpg': 'image/jpeg',
-			'json': 'application/json',
-			'mid': 'audio/midi',
-			'midi': 'audio/midi',
-			'mp3': 'audio/mpeg',
-			'mp4': 'video.mp4',
-			'mpeg': 'video/mpeg',
-			'oga': 'audio/ogg',
-			'ogv': 'video/ogg',
-			'png': 'image/png',
-			'svg': 'image/svg+xml',
-			'tif': 'image/tiff',
-			'tiff': 'image/tiff',
-			'text': 'text/plain',
-			'txt': 'text/plain',
-			'wav': 'audio/wav',
-			'weba': 'audio/webm',
-			'webm': 'video/webm',
-			'webp': 'image/webp',
-			'woff': 'font/woff',
-			'woff2': 'font/woff2',
-			'zip': 'application/zip',
-			'3gp': 'video/3gpp',
-			'3g2': 'video/3gpp2',
-		}[ ext ] || ''
+		file.type = Ext2MIME[ ext ] || ''
 		//file.data = new File( [ data ], file.name, { type } )
 
 

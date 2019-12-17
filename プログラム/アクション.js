@@ -1052,7 +1052,8 @@ export async function scenarioChoices ( layer, choices ) {
 export async function showChoices ( {
 		layer, choices, inputBox = layer.menuBox, rowLen = 3,
 		backLabel = '', currentLabel = '', nextLabel = '',
-		menuType = 'close', menuEnebled = true, color = 'blue'
+		menuType = 'close', menuEnebled = true, color = 'blue',
+		altBack
 	} ) {
 
 	let m = .05
@@ -1110,10 +1111,12 @@ export async function showChoices ( {
 		async function observe( ) {
 			for await ( let obj of cho( ) ) {
 				//$.log( 'obj', obj )
-				( { label = '', value = undefined, disabled = false, bgimage = null } = obj )
+				( { label = '', value = label, disabled = false, bgimage = null } = obj )
 				textArea.set( label )
-				choiceBox.disabled = disabled
-				image.img = bgimage
+				choiceBox.prop( 'disabled', disabled )
+				choiceBox.prop( 'sound', ! disabled )
+				image.prop( 'img', bgimage )
+				image.prop( 'sound', ! disabled )
 				textArea.prop( 'size', bgimage ? .35 : .7 )
 				textArea.prop( 'y', bgimage ? .55 : .05 )
 				//if ( Object( bgimage ) === bgimage ) image.show( )
@@ -1136,12 +1139,15 @@ export async function showChoices ( {
 	inputBox.fill = len != 0 ? '' : 'rgba(0,0,0,0)'
 	layer.buttonGroup.prop( 'color', color )
 
-
 	layer.backLabel.clear( )
 	layer.currentLabel.clear( )
 	layer.nextLabel.clear( )
 
+	if ( altBack ) altBack = 'red'
+
 	if ( backLabel ) {
+		backButton.prop( 'color', altBack )
+		layer.backLabel.prop( 'color', altBack )
 		layer.backLabel.set( backLabel )
 		backButton.show( )
 		nextClicks.push( backButton.on( 'click' ).then( ( ) => $.Token.back ) )
@@ -1185,7 +1191,7 @@ export async function showChoices ( {
 
 }
 
-export async function sysPageChoices ( dataYielder, { maxPages, rowLen = 3, colLen = 3, menuType } ) {
+export async function sysPageChoices ( dataYielder, { maxPages, rowLen = 3, colLen = 3, menuType, altBack } ) {
 
 	let cho, page = 1
 
@@ -1198,7 +1204,8 @@ export async function sysPageChoices ( dataYielder, { maxPages, rowLen = 3, colL
 
 		cho = await sysChoices( list, {
 			rowLen, menuType,
-			backLabel: ( page > 1 ? `ページ${ page - 1 }` : '戻る' ),
+			backLabel: ( page > 1 ? `ページ${ page - 1 }` : ( altBack ? altBack : '戻る' ) ),
+			altBack: page > 1 ? undefined : altBack,
 			currentLabel: `ページ${ page }`,
 			nextLabel: ( page < maxPages ? `ページ${ page + 1 }` : '' ),
 		} )

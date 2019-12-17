@@ -15,11 +15,11 @@ import * as DB from './データベース.js'
 
 
 
-export let Settings = { VR: { enabled: false }, TesterMode: !! localStorage.TesterMode }
+export let Settings = { VR: { enabled: false } }
 
 
-let logEnabled = Settings.TesterMode
-localStorage.DoNotAnalytic = Settings.TesterMode ? 'Yes' : ''
+let logEnabled = localStorage.TesterMode
+localStorage.DoNotAnalytic = localStorage.TesterMode ? 'Yes' : ''
 
 const NOP = ( ) => { }
 
@@ -133,7 +133,7 @@ export async function download ( blob, title ) {
 	if ( isiOS ) return
 	let link = document.createElement( 'a' )
 	link.href = typeof blob == 'string' ? blob : URL.createObjectURL( blob )
-	link.download = 'ONP'
+	link.download = title.includes( '.' ) ? title :	'ONP'
 	+ decodeURIComponent( `_【${ title }】_` )
 	+ ( new Date ).toISOString( ).replace( /\.\d+Z$|[^\d]|/g, '' )
 	link.target = '_blank'
@@ -170,8 +170,11 @@ export function AwaitRegister ( fn ) {
 
 
 export function disableChoiceList ( disables, choiceList ) {
-	for ( let choice of choiceList ) {
-		if ( disables.includes( choice.label ) ) choice.disabled = true
+	for ( let i = 0; i < choiceList.length; i++ ) {
+		let cho = choiceList[ i ]
+		if ( typeof  cho == 'string' ) cho = { label: cho }
+		if ( disables.includes( cho.label ) ) cho.disabled = true
+		choiceList[ i ] = cho
 	}
 }
 
@@ -281,17 +284,12 @@ export class Time {
 
 export function importWorker ( name ) {
 
-	let w = new Worker( new URL( `プログラム/${ name }.js`, baseurl ) )
+	let w = new Worker( new URL( `./プログラム/${ name }.js`, baseurl ) )
 
 	return new Proxy( { }, {
 		get ( tar, key ) {
-			return async ( ...args ) => {
-				w.postMessage( { fn: key, args },
-					args.reduce( ( a, v ) => {
-						if ( v instanceof ArrayBuffer ) a.push( v )
-						else if ( ArrayBuffer.isView( v ) ) a.push( v.buffer )
-						return a
-					}, [ ] ) )
+			return async ( arg, trans ) => {
+				w.postMessage( { fn: key, arg }, trans )
 				return new Promise ( ( ok, ng ) => {
 					w.onmessage = p => ok( p.data ), w.onerror = ng
 				} )

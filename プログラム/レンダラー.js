@@ -80,19 +80,20 @@ class Node {
 
 		const def = { name: 'undefined', x: 0, y: 0, w: 1, h: 1, o: 1,
 			fill: '', stroke: '', shadow: true, listenerMode: '', children: new Set,
-			awaiter: new $.Awaiter, sound: false, animeType: 'none' }
+			awaiter: new $.Awaiter, sound: null, animeType: 'none' }
 
 		Object.assign( this, def, opt )
 
 		$.normalizePos( this )
 
-		if ( this.sound ) {
+		if ( this.sound != null ) {
 			setSound( { node: this, type: 'enter', name: 'フォーカス.ogg' } )
 			setSound( { node: this, type: 'click', name: 'クリック.ogg' } )
 			async function setSound ( { node, type, name } ) {
-				await node.on( type )
-				Media.playSysEffect( name )
-				setSound ( { node, type, name } )
+				while ( true ) {
+					await node.on( type )
+					if ( node.sound ) Media.playSysEffect( name )
+				}
 			}
 		}
 
@@ -483,7 +484,7 @@ export class ProgressNode extends Node {
 		let { value, fill } = this
 		if ( value == 0 ) return
 
-		ctx.lineWidth = H * .04
+		ctx.lineWidth = H * .1
 		ctx.strokeStyle = fill
 
 		ctx.beginPath( )
@@ -708,7 +709,7 @@ function initLayer ( ) {
 			},
 			{
 				type: ProgressNode, name: 'progressCircle', shape: 'circle',
-				w: .05, h: .05, fill: 'rgba( 75, 200, 100, .75 )'
+				w: .1, h: .1, fill: 'rgba( 75, 200, 100, .75 )'
 			}
 		]
 	}, layerRoot )
@@ -743,6 +744,20 @@ function initLayer ( ) {
 			nextLabel: '$label',
 			choiceBox: 'rgba( 75, 200, 100, .9 )',
 			choiceText: 'rgba( 255, 200, 255, .9 )'
+		},
+		red: {
+			$box: 'rgba( 100, 85, 85, .5 )',
+			inputBox: '$box',
+			menuBox: '$box',
+			$button: 'rgba( 200, 100, 100, .9 )',
+			backButton: '$button',
+			nextButton: '$button',
+			$label: 'rgba( 200, 100, 100, .9 )',
+			backLabel: '$label',
+			currentLabel: '$label',
+			nextLabel: '$label',
+			choiceBox: 'rgba( 200, 100, 100, .9 )',
+			choiceText: 'rgba( 255, 255, 255, .9 )'
 		}
 	}
 
@@ -760,7 +775,7 @@ export function drawCanvas ( mustDraw ) {
 
 	if ( timers.has( base ) ) {
 		let time = timers.get( base ).get( )
-		let value = ( time - 500 ) / 1000
+		let value = ( time - 1000 ) / 1000
 		value = value < 0 ? 0 : value < 1 ? value : 1
 		layerRoot.progressCircle.prop( 'value', value )
 	}
@@ -944,7 +959,7 @@ export function onPoint ( { type, x, y } ) {
 				node.pushed = false
 				if ( pointer.delete( node ) ) {
 					let time = timers.get( node ).get( )
-					if ( time <= 1500 ) node.fire( 'click' )
+					if ( time <= 2000 ) node.fire( 'click' )
 					else { onAction( 'menu' ); break W }
 				}
 			} break
